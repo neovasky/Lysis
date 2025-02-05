@@ -3,7 +3,9 @@
  * Description: Main glossary page component
  */
 
-import { useState, useCallback } from "react";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { useState, useCallback, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -42,6 +44,8 @@ export const GlossaryPage = () => {
   );
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const [openTerms, setOpenTerms] = useState<GlossaryTerm[]>([]);
+  const [activeTermIndex, setActiveTermIndex] = useState<number>(0);
 
   const availableFilters: Filter[] = [
     {
@@ -133,6 +137,17 @@ export const GlossaryPage = () => {
     });
   };
 
+  // Wrap handleRelatedTermClick in useCallback to ensure a stable reference.
+  const handleRelatedTermClick = useCallback((termName: string) => {
+    const relatedTerm = terms.find(
+      (t) => t.term.toLowerCase() === termName.toLowerCase()
+    );
+    if (relatedTerm) {
+      setOpenTerms((prev) => [...prev, relatedTerm]);
+      setActiveTermIndex((prev) => prev + 1);
+    }
+  }, []);
+
   const renderLinkedDefinition = useCallback(
     (text: string, linkedTerms?: { term: string; definition: string }[]) => {
       if (!linkedTerms) return text;
@@ -152,14 +167,42 @@ export const GlossaryPage = () => {
           onClick={(e) => {
             const target = e.target as HTMLElement;
             if (target.classList.contains("linked-term")) {
-              console.log("Term clicked:", target.textContent);
+              const term = target.textContent;
+              if (term) handleRelatedTermClick(term);
             }
           }}
         />
       );
     },
-    []
+    [handleRelatedTermClick]
   );
+
+  const handleTermSelect = (term: GlossaryTerm) => {
+    setOpenTerms([term]);
+    setActiveTermIndex(0);
+  };
+
+  // Use an effect to handle selectedTerm changes and open the term.
+  useEffect(() => {
+    if (selectedTerm) {
+      handleTermSelect(selectedTerm);
+      setSelectedTerm(null);
+    }
+  }, [selectedTerm]);
+
+  // Modified handleCloseTerm to remove the active term from openTerms.
+  const handleCloseTerm = () => {
+    setOpenTerms((prev) => {
+      const newTerms = [...prev];
+      newTerms.splice(activeTermIndex, 1);
+      let newIndex = activeTermIndex;
+      if (newIndex >= newTerms.length) {
+        newIndex = newTerms.length - 1;
+      }
+      setActiveTermIndex(newIndex);
+      return newTerms;
+    });
+  };
 
   return (
     <Box sx={{ display: "flex", gap: 2, height: "calc(100vh - 100px)" }}>
@@ -278,7 +321,7 @@ export const GlossaryPage = () => {
                 </IconButton>
               }
             >
-              <ListItemButton onClick={() => setSelectedTerm(term)}>
+              <ListItemButton onClick={() => handleTermSelect(term)}>
                 <ListItemText
                   primary={term.term}
                   secondary={term.shortDefinition}
@@ -291,105 +334,140 @@ export const GlossaryPage = () => {
       </Paper>
 
       {/* Term Details Section */}
-      <Paper sx={{ flex: 1, p: 3, overflow: "auto", position: "relative" }}>
-        {selectedTerm ? (
-          <Stack spacing={3}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}
-            >
-              <Typography variant="h5" fontWeight={600}>
-                {selectedTerm.term}
-              </Typography>
-              <IconButton onClick={() => setSelectedTerm(null)}>
-                <CloseIcon />
-              </IconButton>
-            </Box>
-
-            <Box>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Definition
-              </Typography>
-              {renderLinkedDefinition(
-                selectedTerm.fullDefinition,
-                selectedTerm.linkedTerms
-              )}
-            </Box>
-
-            {selectedTerm.formula && (
-              <Box>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Formula
-                </Typography>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    backgroundColor: "rgba(144, 202, 249, 0.04)",
-                    border: "1px solid rgba(144, 202, 249, 0.12)",
-                  }}
-                >
-                  <Typography fontFamily="monospace" fontSize="1.1rem">
-                    {selectedTerm.formula}
-                  </Typography>
-                </Paper>
-                <Typography sx={{ mt: 1 }} color="text.secondary">
-                  {selectedTerm.formulaExplanation}
-                </Typography>
-              </Box>
-            )}
-
-            {selectedTerm.relatedTerms && (
-              <Box>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Related Terms
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  {selectedTerm.relatedTerms.map((term) => (
-                    <Paper
-                      key={term}
-                      variant="outlined"
-                      sx={{
-                        px: 1.5,
-                        py: 0.5,
-                        cursor: "pointer",
-                        "&:hover": {
-                          backgroundColor: "rgba(144, 202, 249, 0.08)",
-                        },
-                      }}
-                    >
-                      <Typography variant="body2">{term}</Typography>
-                    </Paper>
-                  ))}
-                </Stack>
-              </Box>
-            )}
-          </Stack>
-        ) : (
-          <Box
+      <Box sx={{ flex: 1, display: "flex", gap: 2, overflowX: "auto", p: 1 }}>
+        {openTerms.length > 0 ? (
+          <Paper
             sx={{
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              p: 4,
+              flex: 1,
+              p: 3,
+              minWidth: "400px",
+              maxWidth: "600px",
+              overflow: "auto",
+              position: "relative",
             }}
           >
-            <Box>
-              <Typography variant="h5" sx={{ mb: 2 }}>
-                Financial Glossary
-              </Typography>
-              <Typography color="text.secondary">
-                Explore essential financial terms and concepts. Each entry
-                includes detailed definitions, formulas, and related terms to
-                help you understand market dynamics better.
-              </Typography>
-            </Box>
+            <Stack spacing={3}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <IconButton
+                    onClick={() =>
+                      activeTermIndex > 0 &&
+                      setActiveTermIndex(activeTermIndex - 1)
+                    }
+                    disabled={activeTermIndex === 0}
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <Typography variant="h5" fontWeight={600}>
+                    {openTerms[activeTermIndex].term}
+                  </Typography>
+                  <IconButton
+                    onClick={() =>
+                      activeTermIndex < openTerms.length - 1 &&
+                      setActiveTermIndex(activeTermIndex + 1)
+                    }
+                    disabled={activeTermIndex === openTerms.length - 1}
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Box>
+                <IconButton onClick={handleCloseTerm}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
 
-            {bookmarkedTerms.size > 0 && (
+              <Box>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  Definition
+                </Typography>
+                {renderLinkedDefinition(
+                  openTerms[activeTermIndex].fullDefinition,
+                  openTerms[activeTermIndex].linkedTerms
+                )}
+              </Box>
+
+              {openTerms[activeTermIndex].formula && (
+                <Box>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Formula
+                  </Typography>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      backgroundColor: "rgba(144, 202, 249, 0.04)",
+                      border: "1px solid rgba(144, 202, 249, 0.12)",
+                    }}
+                  >
+                    <Typography fontFamily="monospace" fontSize="1.1rem">
+                      {openTerms[activeTermIndex].formula}
+                    </Typography>
+                  </Paper>
+                  <Typography sx={{ mt: 1 }} color="text.secondary">
+                    {openTerms[activeTermIndex].formulaExplanation}
+                  </Typography>
+                </Box>
+              )}
+
+              {openTerms[activeTermIndex].relatedTerms && (
+                <Box>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Related Terms
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {openTerms[activeTermIndex].relatedTerms.map(
+                      (relatedTerm) => (
+                        <Paper
+                          key={relatedTerm}
+                          variant="outlined"
+                          onClick={() => handleRelatedTermClick(relatedTerm)}
+                          sx={{
+                            px: 1.5,
+                            py: 0.5,
+                            cursor: "pointer",
+                            "&:hover": {
+                              backgroundColor: "rgba(144, 202, 249, 0.08)",
+                            },
+                          }}
+                        >
+                          <Typography variant="body2">{relatedTerm}</Typography>
+                        </Paper>
+                      )
+                    )}
+                  </Stack>
+                </Box>
+              )}
+            </Stack>
+          </Paper>
+        ) : (
+          <Paper sx={{ flex: 1, p: 3, overflow: "auto" }}>
+            {/* Welcome Screen Content */}
+            <Box
+              sx={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                p: 4,
+              }}
+            >
+              <Box>
+                <Typography variant="h5" sx={{ mb: 2 }}>
+                  Financial Glossary
+                </Typography>
+                <Typography color="text.secondary">
+                  Explore essential financial terms and concepts. Each entry
+                  includes detailed definitions, formulas, and related terms to
+                  help you understand market dynamics better.
+                </Typography>
+              </Box>
+
               <Box>
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Your Bookmarked Terms
@@ -417,83 +495,83 @@ export const GlossaryPage = () => {
                     ))}
                 </Stack>
               </Box>
-            )}
 
-            <Box>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Getting Started
-              </Typography>
-              <Stack spacing={2}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    backgroundColor: "rgba(144, 202, 249, 0.04)",
-                    border: "1px solid rgba(144, 202, 249, 0.12)",
-                  }}
-                >
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <SearchIcon color="primary" />
-                    <Box>
-                      <Typography variant="body2" fontWeight={500}>
-                        Search Terms
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Use the search bar to find specific terms or browse
-                        through the list
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Paper>
+              <Box>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Getting Started
+                </Typography>
+                <Stack spacing={2}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      backgroundColor: "rgba(144, 202, 249, 0.04)",
+                      border: "1px solid rgba(144, 202, 249, 0.12)",
+                    }}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <SearchIcon color="primary" />
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          Search Terms
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Use the search bar to find specific terms or browse
+                          through the list
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
 
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    backgroundColor: "rgba(144, 202, 249, 0.04)",
-                    border: "1px solid rgba(144, 202, 249, 0.12)",
-                  }}
-                >
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <BookmarkIcon color="primary" />
-                    <Box>
-                      <Typography variant="body2" fontWeight={500}>
-                        Bookmark for Quick Access
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Save important terms for quick reference using the
-                        bookmark icon
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Paper>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      backgroundColor: "rgba(144, 202, 249, 0.04)",
+                      border: "1px solid rgba(144, 202, 249, 0.12)",
+                    }}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <BookmarkIcon color="primary" />
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          Bookmark for Quick Access
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Save important terms for quick reference using the
+                          bookmark icon
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
 
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    backgroundColor: "rgba(144, 202, 249, 0.04)",
-                    border: "1px solid rgba(144, 202, 249, 0.12)",
-                  }}
-                >
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <MenuBookIcon color="primary" />
-                    <Box>
-                      <Typography variant="body2" fontWeight={500}>
-                        Explore Related Terms
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Click on highlighted terms in definitions to discover
-                        connected concepts
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Paper>
-              </Stack>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      backgroundColor: "rgba(144, 202, 249, 0.04)",
+                      border: "1px solid rgba(144, 202, 249, 0.12)",
+                    }}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <MenuBookIcon color="primary" />
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          Explore Related Terms
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Click on highlighted terms in definitions to discover
+                          connected concepts
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                </Stack>
+              </Box>
             </Box>
-          </Box>
+          </Paper>
         )}
-      </Paper>
+      </Box>
     </Box>
   );
 };
