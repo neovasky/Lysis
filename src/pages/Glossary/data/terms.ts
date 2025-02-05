@@ -680,6 +680,195 @@ const rawTerms: GlossaryTerm[] = [
     relatedTerms: ["Statistical Analysis", "Confidence Level", "Data Analysis"],
     categories: ["fundamentals"],
   },
+
+  {
+    id: "33",
+    term: "Debt-to-EBITDA",
+    shortDefinition: "Leverage ratio measuring ability to pay off debt",
+    fullDefinition:
+      "A measure of a company's ability to pay off its debt using its operational earnings, indicating financial leverage and risk.",
+    linkedTerms: [
+      {
+        term: "EBITDA",
+        definition:
+          "Earnings before interest, taxes, depreciation, and amortization",
+      },
+      {
+        term: "leverage",
+        definition: "Use of borrowed money to increase potential returns",
+      },
+    ],
+    formula: "Debt-to-EBITDA = Total Debt / EBITDA",
+    formulaExplanation:
+      "Lower ratios indicate better ability to pay off debt using operational earnings.",
+    relatedTerms: ["Leverage Ratio", "Financial Risk", "Credit Analysis"],
+    categories: ["ratios", "fundamentals"],
+  },
+  {
+    id: "34",
+    term: "Operating Leverage",
+    shortDefinition: "Impact of fixed costs on operating income",
+    fullDefinition:
+      "The degree to which a firm uses fixed costs in its operations, affecting how changes in revenue impact operating income.",
+    linkedTerms: [
+      {
+        term: "fixed costs",
+        definition: "Costs that remain constant regardless of production level",
+      },
+      {
+        term: "operating income",
+        definition: "Profit from core business operations",
+      },
+    ],
+    formula:
+      "Degree of Operating Leverage = % Change in Operating Income / % Change in Sales",
+    formulaExplanation:
+      "Higher operating leverage means greater profit sensitivity to sales changes.",
+    relatedTerms: ["Financial Leverage", "Break-even Analysis", "Fixed Costs"],
+    categories: ["fundamentals", "accounting"],
+  },
+  {
+    id: "35",
+    term: "Free Cash Flow Yield",
+    shortDefinition: "Free cash flow relative to market value",
+    fullDefinition:
+      "A valuation metric comparing free cash flow per share to stock price, indicating cash generation efficiency.",
+    linkedTerms: [
+      {
+        term: "free cash flow",
+        definition: "Operating cash flow minus capital expenditures",
+      },
+      {
+        term: "market value",
+        definition: "Total value of a company's outstanding shares",
+      },
+    ],
+    formula: "FCF Yield = Free Cash Flow per Share / Stock Price",
+    formulaExplanation:
+      "Higher yields may indicate better value and cash generation ability.",
+    relatedTerms: ["Dividend Yield", "Cash Flow Analysis", "Valuation Metrics"],
+    categories: ["ratios", "fundamentals"],
+  },
+  {
+    id: "36",
+    term: "Fibonacci Retracement",
+    shortDefinition: "Technical analysis tool using Fibonacci ratios",
+    fullDefinition:
+      "A method in technical analysis that uses horizontal lines to indicate possible support and resistance levels based on Fibonacci ratios.",
+    linkedTerms: [
+      {
+        term: "support level",
+        definition: "Price level where downward trend tends to stall",
+      },
+      {
+        term: "resistance level",
+        definition: "Price level where upward trend tends to stall",
+      },
+    ],
+    formula: "Key Fibonacci Ratios: 23.6%, 38.2%, 50%, 61.8%, 78.6%",
+    formulaExplanation:
+      "Used to identify potential reversal points in price trends.",
+    relatedTerms: [
+      "Technical Analysis",
+      "Support and Resistance",
+      "Price Patterns",
+    ],
+    categories: ["market"],
+  },
+  {
+    id: "37",
+    term: "Moving Average Convergence Divergence (MACD)",
+    shortDefinition: "Trend-following momentum indicator",
+    fullDefinition:
+      "A technical indicator showing the relationship between two moving averages of an asset's price, used to identify momentum and trend direction.",
+    linkedTerms: [
+      {
+        term: "moving average",
+        definition: "Average price over a specific time period",
+      },
+      { term: "momentum", definition: "Speed or strength of price movement" },
+    ],
+    formula:
+      "MACD = 12-Period EMA - 26-Period EMA\nSignal Line = 9-Period EMA of MACD",
+    formulaExplanation:
+      "Helps identify trend changes and momentum shifts in price movement.",
+    relatedTerms: ["Technical Analysis", "Moving Averages", "Momentum Trading"],
+    categories: ["market"],
+  },
+  {
+    id: "38",
+    term: "Relative Strength Index (RSI)",
+    shortDefinition: "Momentum oscillator measuring price changes",
+    fullDefinition:
+      "A momentum oscillator that measures the speed and magnitude of recent price changes to evaluate overbought or oversold conditions.",
+    linkedTerms: [
+      {
+        term: "overbought",
+        definition:
+          "Condition where price has risen potentially too high too quickly",
+      },
+      {
+        term: "oversold",
+        definition:
+          "Condition where price has fallen potentially too low too quickly",
+      },
+    ],
+    formula: "RSI = 100 - (100 / (1 + RS))\nRS = Average Gain / Average Loss",
+    formulaExplanation:
+      "Values range from 0 to 100, with 70+ indicating overbought and 30- indicating oversold conditions.",
+    relatedTerms: [
+      "Technical Analysis",
+      "Momentum Indicators",
+      "Overbought/Oversold",
+    ],
+    categories: ["market"],
+  },
+  {
+    id: "39",
+    term: "Bollinger Bands",
+    shortDefinition: "Volatility channels around moving average",
+    fullDefinition:
+      "Technical analysis tool showing price channels based on standard deviations from a moving average, indicating volatility and potential price levels.",
+    linkedTerms: [
+      {
+        term: "standard deviation",
+        definition: "Statistical measure of market volatility",
+      },
+      {
+        term: "price channel",
+        definition: "Upper and lower boundaries of price movement",
+      },
+    ],
+    formula:
+      "Middle Band = 20-day SMA\nUpper Band = 20-day SMA + (20-day StdDev × 2)\nLower Band = 20-day SMA - (20-day StdDev × 2)",
+    formulaExplanation:
+      "Bands expand during high volatility and contract during low volatility.",
+    relatedTerms: ["Technical Analysis", "Moving Averages", "Volatility"],
+    categories: ["market"],
+  },
+  {
+    id: "40",
+    term: "Confirmation Bias",
+    shortDefinition: "Tendency to seek confirming information",
+    fullDefinition:
+      "The tendency to search for, interpret, and recall information in a way that confirms one's preexisting beliefs or hypotheses.",
+    linkedTerms: [
+      {
+        term: "cognitive bias",
+        definition: "Systematic error in thinking affecting decision-making",
+      },
+      {
+        term: "market psychology",
+        definition: "Study of investor behavior and emotions",
+      },
+    ],
+    relatedTerms: [
+      "Behavioral Finance",
+      "Investment Psychology",
+      "Decision Making",
+    ],
+    categories: ["market"],
+  },
 ];
 
 export const terms = sortTerms(rawTerms);
