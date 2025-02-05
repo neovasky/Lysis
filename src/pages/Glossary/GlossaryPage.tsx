@@ -1,3 +1,8 @@
+/**
+ * File: src/pages/Glossary/GlossaryPage.tsx
+ * Description: Main glossary page component
+ */
+
 import { useState, useCallback } from "react";
 import {
   Box,
@@ -11,6 +16,9 @@ import {
   Divider,
   IconButton,
   Stack,
+  Button,
+  Chip,
+  Collapse,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
@@ -23,22 +31,8 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CalculateIcon from "@mui/icons-material/Calculate";
 import ShowChartIcon from "@mui/icons-material/ShowChart";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
-import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
-import Collapse from "@mui/material/Collapse";
-
-interface GlossaryTerm {
-  id: string;
-  term: string;
-  shortDefinition: string;
-  fullDefinition: string;
-  linkedTerms?: { term: string; definition: string }[];
-  formula?: string;
-  formulaExplanation?: string;
-  relatedTerms?: string[];
-  bookmarked?: boolean;
-  categories?: string[];
-}
+import { terms } from "./data/terms";
+import { GlossaryTerm, Filter } from "./types";
 
 export const GlossaryPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,7 +43,7 @@ export const GlossaryPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
-  const availableFilters = [
+  const availableFilters: Filter[] = [
     {
       id: "bookmarked",
       label: "Bookmarked",
@@ -88,44 +82,6 @@ export const GlossaryPage = () => {
       return newFilters;
     });
   };
-
-  // Temporary data - will move to a proper data store
-  const [terms] = useState<GlossaryTerm[]>([
-    {
-      id: "1",
-      term: "P/E Ratio",
-      shortDefinition: "Price-to-Earnings Ratio",
-      fullDefinition:
-        "A valuation metric that compares a company's stock price to its earnings per share.",
-      linkedTerms: [{ term: "EPS", definition: "Earnings Per Share" }],
-      formula: "P/E = Stock Price / Earnings Per Share",
-      formulaExplanation:
-        "Measures how much investors are willing to pay for each dollar of a company's earnings.",
-      relatedTerms: ["EPS", "Market Value", "Stock Price"],
-    },
-    {
-      id: "2",
-      term: "EPS",
-      shortDefinition: "Earnings Per Share",
-      fullDefinition:
-        "A company's profit divided by the outstanding shares of its common stock.",
-      linkedTerms: [
-        {
-          term: "profit",
-          definition: "The financial gain made in a business operation",
-        },
-        {
-          term: "outstanding shares",
-          definition:
-            "The total number of shares currently held by all shareholders",
-        },
-      ],
-      formula: "EPS = (Net Income - Preferred Dividends) / Outstanding Shares",
-      formulaExplanation:
-        "Shows how much money a company makes for each share of its stock.",
-      relatedTerms: ["P/E Ratio", "Net Income", "Outstanding Shares"],
-    },
-  ]);
 
   const filteredTerms = terms.filter((term) => {
     // Search filter
@@ -196,7 +152,6 @@ export const GlossaryPage = () => {
           onClick={(e) => {
             const target = e.target as HTMLElement;
             if (target.classList.contains("linked-term")) {
-              // Handle term click - can be expanded to navigate to the term
               console.log("Term clicked:", target.textContent);
             }
           }}
