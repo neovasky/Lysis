@@ -869,6 +869,677 @@ const rawTerms: GlossaryTerm[] = [
     ],
     categories: ["market"],
   },
+
+  {
+    id: "41",
+    term: "Market Value",
+    shortDefinition: "Current total worth of a company in the market",
+    fullDefinition:
+      "The total value of a company's shares in the open market, reflecting what investors are currently willing to pay for the company.",
+    linkedTerms: [
+      {
+        term: "market cap",
+        definition: "Total market value of outstanding shares",
+      },
+      {
+        term: "stock price",
+        definition: "Current trading price of a single share",
+      },
+    ],
+    formula: "Market Value = Current Stock Price × Total Outstanding Shares",
+    formulaExplanation:
+      "Represents the current market's valuation of a company based on its stock price.",
+    relatedTerms: ["Book Value", "Intrinsic Value", "Enterprise Value"],
+    categories: ["market", "fundamentals"],
+  },
+
+  {
+    id: "42",
+    term: "Book Value",
+    shortDefinition: "Net asset value of a company",
+    fullDefinition:
+      "The total value of a company's assets minus its liabilities, representing the company's net worth according to its balance sheet.",
+    linkedTerms: [
+      {
+        term: "assets",
+        definition: "Resources owned by a company having economic value",
+      },
+      { term: "liabilities", definition: "Company's debts and obligations" },
+    ],
+    formula: "Book Value = Total Assets - Total Liabilities",
+    formulaExplanation: "Shows the accounting value of a company's equity.",
+    relatedTerms: ["Market Value", "Tangible Book Value", "P/B Ratio"],
+    categories: ["accounting", "fundamentals"],
+  },
+
+  {
+    id: "43",
+    term: "Net Income",
+    shortDefinition: "Company's total earnings or profit",
+    fullDefinition:
+      "The total amount of revenue left after deducting all expenses, taxes, and costs, representing a company's bottom line profitability.",
+    linkedTerms: [
+      { term: "revenue", definition: "Total income from sales and operations" },
+      {
+        term: "operating expenses",
+        definition: "Costs associated with running the business",
+      },
+    ],
+    formula: "Net Income = Total Revenue - Total Expenses",
+    formulaExplanation:
+      "Shows how much profit a company has generated after accounting for all costs and expenses.",
+    relatedTerms: ["Gross Profit", "Operating Income", "EPS"],
+    categories: ["accounting", "fundamentals"],
+  },
+
+  {
+    id: "44",
+    term: "Operating Income",
+    shortDefinition: "Profit from core business operations",
+    fullDefinition:
+      "Profit earned from a company's regular business operations before deducting interest and taxes.",
+    linkedTerms: [
+      { term: "revenue", definition: "Total income from sales and operations" },
+      {
+        term: "operating expenses",
+        definition: "Costs associated with running the business",
+      },
+    ],
+    formula: "Operating Income = Gross Profit - Operating Expenses",
+    formulaExplanation:
+      "Measures profitability from core business activities excluding financing and tax impacts.",
+    relatedTerms: ["EBIT", "Net Income", "Operating Margin"],
+    categories: ["accounting", "fundamentals"],
+  },
+  {
+    id: "45",
+    term: "Gross Profit",
+    shortDefinition: "Revenue minus cost of goods sold",
+    fullDefinition:
+      "The profit a company makes after deducting the costs associated with producing and selling its products.",
+    linkedTerms: [
+      { term: "revenue", definition: "Total income from sales" },
+      { term: "COGS", definition: "Direct costs of producing goods" },
+    ],
+    formula: "Gross Profit = Revenue - Cost of Goods Sold",
+    formulaExplanation:
+      "Shows profitability before accounting for operating expenses and overhead.",
+    relatedTerms: ["Gross Margin", "Operating Income", "Revenue"],
+    categories: ["accounting", "fundamentals"],
+  },
+
+  // Market Analysis Terms
+  {
+    id: "46",
+    term: "Alpha",
+    shortDefinition: "Excess return of investment relative to benchmark",
+    fullDefinition:
+      "The excess return of an investment relative to the return of a benchmark index.",
+    linkedTerms: [
+      {
+        term: "benchmark",
+        definition: "Standard against which performance is measured",
+      },
+      {
+        term: "excess return",
+        definition: "Return above what was expected based on risk",
+      },
+    ],
+    formula: "Alpha = Actual Return - Expected Return (based on Beta)",
+    formulaExplanation:
+      "Positive alpha indicates outperformance relative to risk-adjusted expectations.",
+    relatedTerms: ["Beta", "Risk-Adjusted Return", "Active Management"],
+    categories: ["market"],
+  },
+  {
+    id: "47",
+    term: "VIX",
+    shortDefinition: "Market's expectation of 30-day volatility",
+    fullDefinition:
+      "The CBOE Volatility Index, which measures the market's expectation of future volatility based on S&P 500 index options.",
+    linkedTerms: [
+      {
+        term: "volatility",
+        definition: "Degree of variation in trading price",
+      },
+      {
+        term: "options",
+        definition: "Contracts giving rights to buy or sell assets",
+      },
+    ],
+    formula: "VIX calculation based on S&P 500 options prices",
+    formulaExplanation:
+      "Higher VIX values indicate greater expected market volatility.",
+    relatedTerms: ["Volatility", "Market Risk", "Options"],
+    categories: ["market"],
+  },
+
+  // Technical Analysis Terms
+  {
+    id: "48",
+    term: "Support Level",
+    shortDefinition: "Price level where downward trend tends to stop",
+    fullDefinition:
+      "A price level where a downward trend tends to weaken due to increased buying pressure.",
+    linkedTerms: [
+      { term: "price level", definition: "Specific point where stock trades" },
+      { term: "buying pressure", definition: "Increased demand for buying" },
+    ],
+    relatedTerms: ["Resistance Level", "Technical Analysis", "Price Action"],
+    categories: ["market"],
+  },
+  {
+    id: "49",
+    term: "Resistance Level",
+    shortDefinition: "Price level where upward trend tends to stop",
+    fullDefinition:
+      "A price level where an upward trend tends to weaken due to increased selling pressure.",
+    linkedTerms: [
+      { term: "price level", definition: "Specific point where stock trades" },
+      { term: "selling pressure", definition: "Increased supply for selling" },
+    ],
+    relatedTerms: ["Support Level", "Technical Analysis", "Price Action"],
+    categories: ["market"],
+  },
+
+  // Financial Statement Terms
+  {
+    id: "50",
+    term: "Working Capital",
+    shortDefinition: "Current assets minus current liabilities",
+    fullDefinition:
+      "The difference between a company's current assets and current liabilities, representing operational liquidity.",
+    linkedTerms: [
+      {
+        term: "current assets",
+        definition: "Assets that can be converted to cash within a year",
+      },
+      { term: "current liabilities", definition: "Debts due within one year" },
+    ],
+    formula: "Working Capital = Current Assets - Current Liabilities",
+    formulaExplanation:
+      "Positive working capital indicates good short-term liquidity and ability to fund operations.",
+    relatedTerms: ["Current Ratio", "Quick Ratio", "Liquidity"],
+    categories: ["accounting", "fundamentals"],
+  },
+  {
+    id: "51",
+    term: "Capital Structure",
+    shortDefinition: "Mix of debt and equity financing",
+    fullDefinition:
+      "The way a company finances its operations and investments using different sources of funds.",
+    linkedTerms: [
+      {
+        term: "debt financing",
+        definition: "Borrowing money to fund operations",
+      },
+      {
+        term: "equity financing",
+        definition: "Raising funds by selling ownership shares",
+      },
+    ],
+    formula: "Debt-to-Equity Ratio = Total Debt / Total Equity",
+    formulaExplanation:
+      "Shows the proportion of debt to equity used to finance the company.",
+    relatedTerms: ["Debt-to-Equity", "Financial Leverage", "Cost of Capital"],
+    categories: ["fundamentals", "accounting"],
+  },
+
+  // Investment Terms
+  {
+    id: "52",
+    term: "Risk-Adjusted Return",
+    shortDefinition: "Return relative to amount of risk",
+    fullDefinition:
+      "A measure of investment return that accounts for the risk taken to achieve that return.",
+    linkedTerms: [
+      { term: "risk", definition: "Potential for loss or underperformance" },
+      { term: "return", definition: "Gain or loss on investment" },
+    ],
+    formula: "Sharpe Ratio = (Return - Risk-Free Rate) / Standard Deviation",
+    formulaExplanation:
+      "Higher ratios indicate better return per unit of risk.",
+    relatedTerms: ["Sharpe Ratio", "Alpha", "Risk Management"],
+    categories: ["market", "fundamentals"],
+  },
+  {
+    id: "53",
+    term: "Network Effect",
+    shortDefinition: "Value increases with number of users",
+    fullDefinition:
+      "A phenomenon where a product or service becomes more valuable as more people use it.",
+    linkedTerms: [
+      {
+        term: "competitive advantage",
+        definition: "Factors giving company edge over competitors",
+      },
+      {
+        term: "market share",
+        definition: "Company's sales as percentage of total market",
+      },
+    ],
+    relatedTerms: ["Economic Moat", "Switching Costs", "Brand Value"],
+    categories: ["fundamentals", "market"],
+  },
+
+  // Cost & Expense Terms
+  {
+    id: "54",
+    term: "Cost of Capital",
+    shortDefinition: "Required return for investment funding",
+    fullDefinition:
+      "The minimum return a company must earn on investments to satisfy its investors and creditors.",
+    linkedTerms: [
+      { term: "WACC", definition: "Weighted Average Cost of Capital" },
+      {
+        term: "required return",
+        definition: "Minimum return investors demand",
+      },
+    ],
+    formula: "WACC = (E/V × Re) + (D/V × Rd × (1-T))",
+    formulaExplanation:
+      "Weighted average of cost of equity and after-tax cost of debt.",
+    relatedTerms: ["WACC", "Capital Structure", "Required Return"],
+    categories: ["fundamentals", "accounting"],
+  },
+  {
+    id: "55",
+    term: "Operating Leverage",
+    shortDefinition: "Fixed costs impact on operating income",
+    fullDefinition:
+      "Measure of how revenue growth translates into operating income growth based on fixed cost structure.",
+    linkedTerms: [
+      {
+        term: "fixed costs",
+        definition: "Costs that don't vary with production",
+      },
+      {
+        term: "variable costs",
+        definition: "Costs that change with production level",
+      },
+    ],
+    formula: "DOL = % Change in Operating Income / % Change in Sales",
+    formulaExplanation:
+      "Higher operating leverage means greater profit sensitivity to sales changes.",
+    relatedTerms: ["Financial Leverage", "Break-even Point", "Fixed Costs"],
+    categories: ["fundamentals", "accounting"],
+  },
+
+  {
+    id: "56",
+    term: "Market Maker",
+    shortDefinition: "Provider of market liquidity",
+    fullDefinition:
+      "A firm that provides market liquidity by quoting both buy and sell prices for securities.",
+    linkedTerms: [
+      {
+        term: "liquidity",
+        definition:
+          "Ease of buying or selling without significant price impact",
+      },
+      {
+        term: "bid-ask spread",
+        definition: "Difference between buy and sell prices",
+      },
+    ],
+    relatedTerms: ["Liquidity", "Trading Volume", "Bid-Ask Spread"],
+    categories: ["market"],
+  },
+  {
+    id: "57",
+    term: "Trading Volume",
+    shortDefinition: "Number of shares traded",
+    fullDefinition:
+      "The total number of shares or contracts traded during a specified period.",
+    linkedTerms: [
+      { term: "volume", definition: "Number of shares changing hands" },
+      { term: "liquidity", definition: "Ease of trading without price impact" },
+    ],
+    relatedTerms: ["Liquidity", "Market Maker", "Price Action"],
+    categories: ["market"],
+  },
+
+  // Value Investing Terms
+  {
+    id: "58",
+    term: "Deep Value",
+    shortDefinition: "Extremely undervalued assets",
+    fullDefinition:
+      "Investment strategy focusing on stocks trading significantly below their intrinsic value.",
+    linkedTerms: [
+      {
+        term: "intrinsic value",
+        definition: "True or fundamental value of an asset",
+      },
+      {
+        term: "margin of safety",
+        definition: "Difference between value and price",
+      },
+    ],
+    relatedTerms: ["Net-Net Stocks", "Cigar Butt Investing", "Value Trap"],
+    categories: ["market", "fundamentals"],
+  },
+  {
+    id: "59",
+    term: "Net-Net Stocks",
+    shortDefinition: "Stocks below net current asset value",
+    fullDefinition:
+      "Companies trading below their net current asset value (current assets minus all liabilities).",
+    linkedTerms: [
+      {
+        term: "current assets",
+        definition: "Assets convertible to cash within one year",
+      },
+      { term: "NCAV", definition: "Net Current Asset Value" },
+    ],
+    formula: "NCAV = Current Assets - Total Liabilities",
+    formulaExplanation:
+      "Graham's method for finding extremely undervalued stocks.",
+    relatedTerms: ["Deep Value", "Book Value", "Graham Investing"],
+    categories: ["fundamentals", "market"],
+  },
+
+  // Financial Metrics
+  {
+    id: "60",
+    term: "Tangible Book Value",
+    shortDefinition: "Book value excluding intangible assets",
+    fullDefinition:
+      "Net asset value excluding intangible assets like goodwill, patents, and trademarks.",
+    linkedTerms: [
+      {
+        term: "intangible assets",
+        definition: "Non-physical assets like patents and goodwill",
+      },
+      {
+        term: "book value",
+        definition: "Net value of assets on balance sheet",
+      },
+    ],
+    formula:
+      "Tangible Book Value = Total Assets - Intangible Assets - Total Liabilities",
+    formulaExplanation: "Conservative measure of company's net asset value.",
+    relatedTerms: ["Book Value", "P/B Ratio", "Net Asset Value"],
+    categories: ["accounting", "fundamentals"],
+  },
+  {
+    id: "61",
+    term: "WACC",
+    shortDefinition: "Weighted Average Cost of Capital",
+    fullDefinition:
+      "Average rate a company pays to finance its assets, weighted by the proportion of debt and equity.",
+    linkedTerms: [
+      {
+        term: "cost of equity",
+        definition: "Required return for equity investors",
+      },
+      { term: "cost of debt", definition: "Interest rate on borrowed funds" },
+    ],
+    formula: "WACC = (E/V × Re) + (D/V × Rd × (1-T))",
+    formulaExplanation:
+      "Represents minimum return needed on investments to satisfy all capital providers.",
+    relatedTerms: ["Cost of Capital", "Capital Structure", "Required Return"],
+    categories: ["fundamentals", "accounting"],
+  },
+
+  // Risk Management
+  {
+    id: "62",
+    term: "Position Sizing",
+    shortDefinition: "Managing investment position amounts",
+    fullDefinition:
+      "The practice of determining how much to invest in each position to manage risk and optimize returns.",
+    linkedTerms: [
+      {
+        term: "risk management",
+        definition: "Practices to control investment risk",
+      },
+      {
+        term: "portfolio allocation",
+        definition: "Distribution of investments",
+      },
+    ],
+    relatedTerms: ["Risk Management", "Stop Loss", "Portfolio Diversification"],
+    categories: ["market", "fundamentals"],
+  },
+  {
+    id: "63",
+    term: "Stop Loss",
+    shortDefinition: "Order to limit potential losses",
+    fullDefinition:
+      "An order to sell a security when it reaches a specified price, designed to limit potential losses.",
+    linkedTerms: [
+      { term: "order", definition: "Instruction to buy or sell security" },
+      {
+        term: "risk management",
+        definition: "Methods to control potential losses",
+      },
+    ],
+    relatedTerms: ["Risk Management", "Position Sizing", "Trading Strategy"],
+    categories: ["market"],
+  },
+
+  // Add these to your existing terms array
+
+  // Enterprise Value and Related Terms
+  {
+    id: "64",
+    term: "Enterprise Value",
+    shortDefinition: "Total value of a company including debt",
+    fullDefinition:
+      "A measure of a company's total value, including market cap, debt, preferred stock, and minority interests, minus cash and cash equivalents.",
+    linkedTerms: [
+      {
+        term: "market capitalization",
+        definition: "Total value of outstanding shares",
+      },
+      {
+        term: "net debt",
+        definition: "Total debt minus cash and cash equivalents",
+      },
+    ],
+    formula:
+      "EV = Market Cap + Total Debt + Preferred Stock + Minority Interest - Cash & Equivalents",
+    formulaExplanation:
+      "Represents the theoretical takeover price of a company including all obligations.",
+    relatedTerms: ["Market Cap", "EV/EBITDA", "Net Debt"],
+    categories: ["fundamentals", "market"],
+  },
+  {
+    id: "65",
+    term: "Net Debt",
+    shortDefinition: "Total debt minus cash position",
+    fullDefinition:
+      "The total debt of a company minus its cash and cash equivalents, showing true debt burden.",
+    linkedTerms: [
+      {
+        term: "total debt",
+        definition: "Sum of all short and long-term debt obligations",
+      },
+      {
+        term: "cash equivalents",
+        definition: "Highly liquid short-term investments",
+      },
+    ],
+    formula: "Net Debt = Total Debt - Cash and Cash Equivalents",
+    formulaExplanation:
+      "Shows actual debt burden after considering available cash resources.",
+    relatedTerms: ["Enterprise Value", "Debt-to-Equity", "Financial Leverage"],
+    categories: ["fundamentals", "accounting"],
+  },
+
+  // Profitability Ratios
+  {
+    id: "66",
+    term: "Gross Margin",
+    shortDefinition: "Gross profit as percentage of revenue",
+    fullDefinition:
+      "The percentage of revenue remaining after accounting for cost of goods sold (COGS).",
+    linkedTerms: [
+      { term: "gross profit", definition: "Revenue minus cost of goods sold" },
+      {
+        term: "COGS",
+        definition: "Direct costs of producing goods or services",
+      },
+    ],
+    formula: "Gross Margin = (Revenue - COGS) / Revenue × 100",
+    formulaExplanation:
+      "Higher margins indicate better efficiency in producing goods or services.",
+    relatedTerms: ["Operating Margin", "Profit Margin", "COGS"],
+    categories: ["ratios", "fundamentals"],
+  },
+  {
+    id: "67",
+    term: "Operating Margin",
+    shortDefinition: "Operating income as percentage of revenue",
+    fullDefinition:
+      "The percentage of revenue remaining after all operating expenses are deducted.",
+    linkedTerms: [
+      {
+        term: "operating income",
+        definition: "Profit from core business operations",
+      },
+      {
+        term: "operating expenses",
+        definition: "Costs associated with running the business",
+      },
+    ],
+    formula: "Operating Margin = Operating Income / Revenue × 100",
+    formulaExplanation:
+      "Shows operational efficiency before interest and taxes.",
+    relatedTerms: ["Gross Margin", "Net Profit Margin", "EBIT Margin"],
+    categories: ["ratios", "fundamentals"],
+  },
+
+  // Efficiency Ratios
+  {
+    id: "68",
+    term: "Asset Turnover",
+    shortDefinition: "Revenue generated per dollar of assets",
+    fullDefinition:
+      "Measures how efficiently a company uses its assets to generate sales revenue.",
+    linkedTerms: [
+      {
+        term: "total assets",
+        definition: "All resources owned by the company",
+      },
+      {
+        term: "revenue",
+        definition: "Total income from sales before deductions",
+      },
+    ],
+    formula: "Asset Turnover = Revenue / Average Total Assets",
+    formulaExplanation:
+      "Higher ratio indicates more efficient use of assets to generate sales.",
+    relatedTerms: ["ROA", "Working Capital Turnover", "Efficiency Ratio"],
+    categories: ["ratios", "fundamentals"],
+  },
+  {
+    id: "69",
+    term: "Inventory Turnover",
+    shortDefinition: "How quickly inventory is sold",
+    fullDefinition:
+      "Measures how many times a company's inventory is sold and replaced over a period.",
+    linkedTerms: [
+      { term: "COGS", definition: "Cost of Goods Sold" },
+      {
+        term: "average inventory",
+        definition: "Mean inventory level over period",
+      },
+    ],
+    formula: "Inventory Turnover = COGS / Average Inventory",
+    formulaExplanation:
+      "Higher ratios indicate more efficient inventory management.",
+    relatedTerms: [
+      "Days Inventory Outstanding",
+      "Working Capital",
+      "Efficiency",
+    ],
+    categories: ["ratios", "accounting"],
+  },
+
+  // Coverage Ratios
+  {
+    id: "70",
+    term: "Interest Coverage Ratio",
+    shortDefinition: "Ability to pay interest on debt",
+    fullDefinition:
+      "Measures how easily a company can pay interest on its outstanding debt.",
+    linkedTerms: [
+      { term: "EBIT", definition: "Earnings Before Interest and Taxes" },
+      { term: "interest expense", definition: "Cost of borrowing money" },
+    ],
+    formula: "Interest Coverage Ratio = EBIT / Interest Expense",
+    formulaExplanation:
+      "Higher ratio indicates better ability to meet interest payments.",
+    relatedTerms: ["Debt Service Coverage", "Fixed Charge Coverage", "EBIT"],
+    categories: ["ratios", "accounting"],
+  },
+  {
+    id: "71",
+    term: "Debt Service Coverage Ratio",
+    shortDefinition: "Ability to service total debt",
+    fullDefinition:
+      "Measures company's ability to pay all debt obligations including principal and interest.",
+    linkedTerms: [
+      {
+        term: "operating income",
+        definition: "Profit from core business operations",
+      },
+      {
+        term: "debt service",
+        definition: "Total debt payments including principal and interest",
+      },
+    ],
+    formula: "DSCR = Net Operating Income / Total Debt Service",
+    formulaExplanation:
+      "Ratio above 1 indicates sufficient income to cover debt payments.",
+    relatedTerms: ["Interest Coverage", "Fixed Charge Coverage", "Solvency"],
+    categories: ["ratios", "accounting"],
+  },
+
+  // Valuation Ratios
+  {
+    id: "72",
+    term: "EV/Sales Ratio",
+    shortDefinition: "Enterprise value relative to revenue",
+    fullDefinition:
+      "Compares a company's enterprise value to its annual revenue.",
+    linkedTerms: [
+      {
+        term: "enterprise value",
+        definition: "Total company value including debt and excluding cash",
+      },
+      {
+        term: "revenue",
+        definition: "Total income from sales before deductions",
+      },
+    ],
+    formula: "EV/Sales = Enterprise Value / Annual Revenue",
+    formulaExplanation:
+      "Used to value companies with negative earnings or in high-growth phases.",
+    relatedTerms: ["EV/EBITDA", "P/S Ratio", "Valuation Multiples"],
+    categories: ["ratios", "market"],
+  },
+  {
+    id: "73",
+    term: "PEG Ratio",
+    shortDefinition: "P/E ratio relative to growth",
+    fullDefinition:
+      "Compares a company's P/E ratio to its expected earnings growth rate.",
+    linkedTerms: [
+      { term: "P/E ratio", definition: "Price to earnings ratio" },
+      {
+        term: "growth rate",
+        definition: "Expected annual increase in earnings",
+      },
+    ],
+    formula: "PEG = P/E Ratio / Annual EPS Growth Rate",
+    formulaExplanation:
+      "PEG < 1 might indicate undervaluation relative to growth prospects.",
+    relatedTerms: ["P/E Ratio", "Growth Rate", "GARP"],
+    categories: ["ratios", "market"],
+  },
 ];
 
 export const terms = sortTerms(rawTerms);

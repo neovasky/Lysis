@@ -23,6 +23,8 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import NotesIcon from "@mui/icons-material/Notes";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import MenuIcon from "@mui/icons-material/Menu";
+import SettingsIcon from "@mui/icons-material/Settings";
+import PersonIcon from "@mui/icons-material/Person";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 
@@ -41,6 +43,8 @@ export const Sidebar = () => {
     { text: "Files", icon: <FolderIcon />, path: "/files" },
     { text: "Calendar", icon: <CalendarMonthIcon />, path: "/calendar" },
     { text: "Research Notes", icon: <NotesIcon />, path: "/notes" },
+    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
+    { text: "Profile", icon: <PersonIcon />, path: "/profile" },
   ];
 
   return (
@@ -94,7 +98,6 @@ export const Sidebar = () => {
             "&:active": {
               backgroundColor: "rgba(144, 202, 249, 0.12)",
             },
-            // Remove focus effect after click
             "&:focus": {
               outline: "none",
             },
