@@ -1,8 +1,9 @@
 /**
  * File: src/pages/Profile/ProfilePage.tsx
- * Description: User profile page component
+ * Description: User profile page component using auth context
  */
 
+import { useState } from "react";
 import {
   Box,
   Paper,
@@ -12,6 +13,7 @@ import {
   Button,
   TextField,
   Divider,
+  Alert,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -19,41 +21,58 @@ import {
   Work as WorkIcon,
   Description as DescriptionIcon,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
-interface ProfileData {
-  name: string;
+interface ProfileFormData {
+  firstName: string;
+  lastName: string;
   email: string;
   company: string;
   bio: string;
 }
 
 export const ProfilePage = () => {
+  const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    company: "Investment Corp",
-    bio: "Passionate about market analysis and investment research.",
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<ProfileFormData>({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    email: user?.email || "",
+    company: "Investment Corp", // You might want to add this to your user type
+    bio: "Passionate about market analysis and investment research.", // You might want to add this to your user type
   });
 
   const handleEdit = () => {
     setIsEditing(!isEditing);
+    setError(null);
+    setSuccess(null);
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically save the data to your backend
-    console.log("Saving profile data:", profileData);
+  const handleSave = async () => {
+    try {
+      await updateProfile({
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        email: profileData.email,
+      });
+      setSuccess("Profile updated successfully");
+      setIsEditing(false);
+    } catch (err) {
+      setError("Failed to update profile. Please try again.");
+    }
   };
 
   const handleChange =
-    (field: keyof ProfileData) =>
+    (field: keyof ProfileFormData) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setProfileData((prev) => ({
         ...prev,
         [field]: event.target.value,
       }));
+      setError(null);
+      setSuccess(null);
     };
 
   return (
@@ -85,19 +104,32 @@ export const ProfilePage = () => {
                 fontSize: "2rem",
               }}
             >
-              {profileData.name.charAt(0)}
+              {`${profileData.firstName.charAt(0)}${profileData.lastName.charAt(
+                0
+              )}`}
             </Avatar>
+
             <Box sx={{ flex: 1 }}>
               {isEditing ? (
                 <Stack spacing={2}>
-                  <TextField
-                    label="Name"
-                    value={profileData.name}
-                    onChange={handleChange("name")}
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                  />
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      label="First Name"
+                      value={profileData.firstName}
+                      onChange={handleChange("firstName")}
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                    />
+                    <TextField
+                      label="Last Name"
+                      value={profileData.lastName}
+                      onChange={handleChange("lastName")}
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                    />
+                  </Stack>
                   <Button
                     variant="contained"
                     onClick={handleSave}
@@ -109,7 +141,7 @@ export const ProfilePage = () => {
               ) : (
                 <>
                   <Typography variant="h6" gutterBottom>
-                    {profileData.name}
+                    {`${profileData.firstName} ${profileData.lastName}`}
                   </Typography>
                   <Button
                     variant="outlined"
@@ -128,6 +160,18 @@ export const ProfilePage = () => {
               )}
             </Box>
           </Stack>
+
+          {error && (
+            <Alert severity="error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
+
+          {success && (
+            <Alert severity="success" onClose={() => setSuccess(null)}>
+              {success}
+            </Alert>
+          )}
 
           <Divider />
 
