@@ -11,6 +11,10 @@ import { GlossaryPage } from "./pages/Glossary/GlossaryPage";
 import { ProfilePage } from "./pages/Profile/ProfilePage";
 import { SettingsPage } from "./pages/Settings/SettingsPage";
 import { AuthPage } from "./pages/Auth/AuthPage";
+import { AlertsPage } from "./pages/Alerts/AlertsPage";
+import { FilesPage } from "./pages/Files/FilesPage";
+import { CalendarPage } from "./pages/Calendar/CalendarPage";
+import { NotesPage } from "./pages/Notes/NotesPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { theme } from "./theme/theme";
@@ -47,6 +51,10 @@ function App() {
             >
               <Route index element={<HomePage />} />
               <Route path="glossary" element={<GlossaryPage />} />
+              <Route path="alerts" element={<AlertsPage />} />
+              <Route path="files" element={<FilesPage />} />
+              <Route path="calendar" element={<CalendarPage />} />
+              <Route path="notes" element={<NotesPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>

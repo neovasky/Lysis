@@ -62,7 +62,7 @@ export const AuthPage = () => {
       await handleGoogleSignIn();
 
       // For now, let's mock a successful login since we don't have a backend
-      await login("google@example.com");
+      await login("google@example.com", "google-auth");
 
       // After successful login, redirect to home
       navigate("/", { replace: true });
