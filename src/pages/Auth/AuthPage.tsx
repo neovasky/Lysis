@@ -59,22 +59,13 @@ export const AuthPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const code = await handleGoogleSignIn();
-      console.log("Google auth code:", code);
+      await handleGoogleSignIn();
 
-      // Here you would:
-      // 1. Send this auth code to your backend
-      // const response = await fetch('/api/auth/google', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ code })
-      // });
-      // const data = await response.json();
+      // For now, let's mock a successful login since we don't have a backend
+      await login("google@example.com");
 
-      // 2. Set up user session with response
-      // login(data.user);
-
-      navigate("/");
+      // After successful login, redirect to home
+      navigate("/", { replace: true });
     } catch (err) {
       console.error("Google login error:", err);
       setError("Google login failed. Please try again.");

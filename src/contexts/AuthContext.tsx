@@ -65,16 +65,24 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     checkAuth();
   }, []);
 
-  const login = async (userEmail: string, userPassword: string) => {
+  const login = async (userEmail: string) => {
     try {
       setLoading(true);
-      // Implement API call to login endpoint
-      console.log("Logging in with:", userEmail, userPassword);
-      // On success:
-      // 1. Store token
-      // localStorage.setItem('auth_token', response.token);
-      // 2. Set user data
-      // setUser(response.user);
+      // Mock successful login
+      // In a real app, this would be an API call
+      const mockUser: User = {
+        id: "1",
+        email: userEmail,
+        firstName: "John",
+        lastName: "Doe",
+        createdAt: new Date(),
+      };
+
+      // Store mock token
+      localStorage.setItem("auth_token", "mock-token");
+
+      // Set user data
+      setUser(mockUser);
     } catch (error) {
       throw new Error("Login failed");
     } finally {
