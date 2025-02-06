@@ -6,113 +6,81 @@
 import { useState } from "react";
 import {
   Box,
-  Paper,
   Typography,
-  TextField,
   Button,
   Stack,
   Divider,
   Alert,
-  InputAdornment,
   IconButton,
+  InputBase,
+  InputAdornment,
 } from "@mui/material";
 import {
   Visibility,
   VisibilityOff,
   Google as GoogleIcon,
-  GitHub as GitHubIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { handleGoogleSignIn } from "../../utils/googleAuth";
 
 interface AuthFormData {
   email: string;
   password: string;
-  confirmPassword?: string;
-  firstName?: string;
-  lastName?: string;
 }
 
 export const AuthPage = () => {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<AuthFormData>({
     email: "",
     password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
   });
-
-  const handleChange =
-    (field: keyof AuthFormData) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: event.target.value,
-      }));
-      setError(null);
-    };
-
-  const validateForm = (): boolean => {
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all required fields");
-      return false;
-    }
-
-    if (!isLogin) {
-      if (!formData.firstName || !formData.lastName) {
-        setError("Please provide your full name");
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
-        return false;
-      }
-      if (formData.password.length < 8) {
-        setError("Password must be at least 8 characters long");
-        return false;
-      }
-    }
-
-    return true;
-  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validateForm() || loading) return;
+    if (loading) return;
 
     try {
       setLoading(true);
-      if (isLogin) {
-        await login(formData.email, formData.password);
-      } else {
-        await register({
-          email: formData.email,
-          password: formData.password,
-          firstName: formData.firstName || "",
-          lastName: formData.lastName || "",
-        });
-      }
+      await login(formData.email, formData.password);
       navigate("/");
     } catch (err) {
-      setError(
-        isLogin
-          ? "Login failed. Please try again."
-          : "Registration failed. Please try again."
-      );
+      setError("Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialAuth = (provider: "google" | "github") => {
-    // Implement social auth logic here
-    console.log(`Authenticating with ${provider}`);
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const code = await handleGoogleSignIn();
+      console.log("Google auth code:", code);
+
+      // Here you would:
+      // 1. Send this auth code to your backend
+      // const response = await fetch('/api/auth/google', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ code })
+      // });
+      // const data = await response.json();
+
+      // 2. Set up user session with response
+      // login(data.user);
+
+      navigate("/");
+    } catch (err) {
+      console.error("Google login error:", err);
+      setError("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,177 +90,173 @@ export const AuthPage = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "background.default",
+        bgcolor: "#1e1e1e",
       }}
     >
-      <Paper
+      <Stack
+        spacing={3}
         sx={{
           width: "100%",
-          maxWidth: "400px",
-          p: 4,
-          mx: 2,
+          maxWidth: "320px",
+          p: 2,
         }}
-        elevation={4}
       >
-        <Stack spacing={3}>
-          {/* Header */}
-          <Box sx={{ textAlign: "center" }}>
-            <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
-              {isLogin ? "Welcome Back" : "Create Account"}
-            </Typography>
-            <Typography color="text.secondary">
-              {isLogin
-                ? "Sign in to access your investment workspace"
-                : "Start your investment journey with Lysis"}
-            </Typography>
-          </Box>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+            Welcome Back
+          </Typography>
+          <Typography color="text.secondary">
+            Sign in to access your investment workspace
+          </Typography>
+        </Box>
 
-          {/* Social Auth */}
-          <Stack spacing={2}>
-            <Button
-              variant="outlined"
-              fullWidth
-              startIcon={<GoogleIcon />}
-              onClick={() => handleSocialAuth("google")}
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<GoogleIcon />}
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          sx={{
+            color: "white",
+            textTransform: "uppercase",
+            borderColor: "rgba(255, 255, 255, 0.12)",
+            py: 1,
+            "&:hover": {
+              borderColor: "rgba(255, 255, 255, 0.2)",
+            },
+          }}
+        >
+          Continue with Google
+        </Button>
+
+        <Box sx={{ position: "relative" }}>
+          <Divider
+            sx={{
+              "&::before, &::after": {
+                borderColor: "rgba(255, 255, 255, 0.12)",
+              },
+            }}
+          >
+            <Typography color="text.secondary" sx={{ px: 1 }}>
+              or
+            </Typography>
+          </Divider>
+        </Box>
+
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={2.5}>
+            <Box
               sx={{
-                height: 44,
-                borderColor: "rgba(144, 202, 249, 0.12)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
                 "&:hover": {
-                  borderColor: "rgba(144, 202, 249, 0.24)",
+                  borderColor: "rgba(255, 255, 255, 0.2)",
                 },
               }}
             >
-              Continue with Google
-            </Button>
-            <Button
-              variant="outlined"
-              fullWidth
-              startIcon={<GitHubIcon />}
-              onClick={() => handleSocialAuth("github")}
+              <InputBase
+                fullWidth
+                placeholder="Email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                disabled={loading}
+                sx={{
+                  py: 1,
+                  color: "white",
+                  "&::placeholder": {
+                    color: "text.secondary",
+                  },
+                }}
+              />
+            </Box>
+
+            <Box
               sx={{
-                height: 44,
-                borderColor: "rgba(144, 202, 249, 0.12)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
                 "&:hover": {
-                  borderColor: "rgba(144, 202, 249, 0.24)",
+                  borderColor: "rgba(255, 255, 255, 0.2)",
                 },
               }}
             >
-              Continue with GitHub
+              <InputBase
+                fullWidth
+                placeholder="Password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                disabled={loading}
+                endAdornment={
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      size="small"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                }
+                sx={{
+                  py: 1,
+                  color: "white",
+                  "&::placeholder": {
+                    color: "text.secondary",
+                  },
+                }}
+              />
+            </Box>
+
+            {error && (
+              <Alert severity="error" sx={{ borderRadius: 1 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              disabled={loading}
+              sx={{
+                bgcolor: "#90caf9",
+                color: "black",
+                py: 1,
+                textTransform: "uppercase",
+                "&:hover": {
+                  bgcolor: "#82b7e3",
+                },
+              }}
+            >
+              Sign In
             </Button>
           </Stack>
+        </form>
 
-          <Divider>
-            <Typography color="text.secondary">or</Typography>
-          </Divider>
-
-          {/* Auth Form */}
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={3}>
-              {!isLogin && (
-                <Stack direction="row" spacing={2}>
-                  <TextField
-                    label="First Name"
-                    fullWidth
-                    value={formData.firstName}
-                    onChange={handleChange("firstName")}
-                    disabled={loading}
-                  />
-                  <TextField
-                    label="Last Name"
-                    fullWidth
-                    value={formData.lastName}
-                    onChange={handleChange("lastName")}
-                    disabled={loading}
-                  />
-                </Stack>
-              )}
-
-              <TextField
-                label="Email"
-                type="email"
-                fullWidth
-                value={formData.email}
-                onChange={handleChange("email")}
-                disabled={loading}
-              />
-
-              <TextField
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                fullWidth
-                value={formData.password}
-                onChange={handleChange("password")}
-                disabled={loading}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              {!isLogin && (
-                <TextField
-                  label="Confirm Password"
-                  type={showPassword ? "text" : "password"}
-                  fullWidth
-                  value={formData.confirmPassword}
-                  onChange={handleChange("confirmPassword")}
-                  disabled={loading}
-                />
-              )}
-
-              {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                  {error}
-                </Alert>
-              )}
-
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                size="large"
-                disabled={loading}
-              >
-                {isLogin ? "Sign In" : "Create Account"}
-              </Button>
-            </Stack>
-          </form>
-
-          {/* Toggle Auth Mode */}
-          <Box sx={{ textAlign: "center" }}>
-            <Typography color="text.secondary">
-              {isLogin
-                ? "Don't have an account? "
-                : "Already have an account? "}
-              <Button
-                color="primary"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError(null);
-                  setFormData({
-                    email: "",
-                    password: "",
-                    confirmPassword: "",
-                    firstName: "",
-                    lastName: "",
-                  });
-                }}
-                disabled={loading}
-              >
-                {isLogin ? "Sign Up" : "Sign In"}
-              </Button>
-            </Typography>
-          </Box>
-        </Stack>
-      </Paper>
+        <Box sx={{ textAlign: "center" }}>
+          <Typography color="text.secondary">
+            Don't have an account?{" "}
+            <Button
+              color="primary"
+              onClick={() => navigate("/auth/signup")}
+              disabled={loading}
+              sx={{
+                textTransform: "uppercase",
+                color: "#90caf9",
+                "&:hover": {
+                  bgcolor: "transparent",
+                  textDecoration: "underline",
+                },
+              }}
+            >
+              Sign up
+            </Button>
+          </Typography>
+        </Box>
+      </Stack>
     </Box>
   );
 };
