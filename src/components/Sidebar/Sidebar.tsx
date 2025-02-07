@@ -27,6 +27,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
@@ -43,6 +44,7 @@ export const Sidebar = () => {
   const menuItems = [
     { text: "Dashboard", icon: <HomeIcon />, path: "/" },
     { text: "Glossary", icon: <MenuBookIcon />, path: "/glossary" },
+    { text: "Analysis", icon: <AssessmentIcon />, path: "/analysis" },
     { text: "Alerts", icon: <NotificationsIcon />, path: "/alerts" },
     { text: "Files", icon: <FolderIcon />, path: "/files" },
     { text: "Calendar", icon: <CalendarMonthIcon />, path: "/calendar" },

@@ -15,6 +15,7 @@ import { AlertsPage } from "./pages/Alerts/AlertsPage";
 import { FilesPage } from "./pages/Files/FilesPage";
 import { CalendarPage } from "./pages/Calendar/CalendarPage";
 import { NotesPage } from "./pages/Notes/NotesPage";
+import { AnalysisPage } from "./pages/Analysis/AnalysisPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { theme } from "./theme/theme";
@@ -51,6 +52,7 @@ function App() {
             >
               <Route index element={<HomePage />} />
               <Route path="glossary" element={<GlossaryPage />} />
+              <Route path="analysis" element={<AnalysisPage />} />
               <Route path="alerts" element={<AlertsPage />} />
               <Route path="files" element={<FilesPage />} />
               <Route path="calendar" element={<CalendarPage />} />
