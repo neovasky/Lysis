@@ -9,7 +9,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
   Typography,
   Box,
   IconButton,
@@ -70,75 +69,93 @@ export const Sidebar = () => {
           transition: "width 0.2s ease-in-out",
           boxSizing: "border-box",
           overflowX: "hidden",
+          backgroundColor: "#1a1a1a",
         },
       }}
     >
-      <Toolbar
+      {/* Logo and Collapse Button */}
+      <Box
         sx={{
-          px: 1,
-          minHeight: 64,
+          p: 2,
           display: "flex",
-          justifyContent: isOpen ? "space-between" : "center",
           alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
         {isOpen ? (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar
-              sx={{
-                bgcolor: "primary.main",
-                width: 32,
-                height: 32,
-                fontSize: "0.875rem",
-                cursor: "pointer",
-              }}
-              onClick={() => navigate("/profile")}
-            >
-              {user?.firstName?.[0]}
-              {user?.lastName?.[0]}
-            </Avatar>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-              onClick={() => navigate("/profile")}
-            >
-              {user?.firstName} {user?.lastName}
-            </Typography>
-          </Box>
-        ) : (
-          <Avatar
+          <Typography
+            variant="h6"
             sx={{
-              bgcolor: "primary.main",
-              width: 32,
-              height: 32,
-              fontSize: "0.875rem",
-              cursor: "pointer",
+              background: "linear-gradient(45deg, #90caf9 30%, #ce93d8 90%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              fontWeight: 600,
             }}
-            onClick={() => navigate("/profile")}
           >
-            {user?.firstName?.[0]}
-            {user?.lastName?.[0]}
-          </Avatar>
+            Lysis
+          </Typography>
+        ) : (
+          <div /> // Empty div for spacing
         )}
         <IconButton
           onClick={() => setIsOpen(!isOpen)}
           sx={{
-            width: 40,
-            height: 40,
-            backgroundColor: "rgba(144, 202, 249, 0.04)",
+            minWidth: 0,
+            p: 1,
+            bgcolor: "rgba(144, 202, 249, 0.04)",
             "&:hover": {
-              backgroundColor: "rgba(144, 202, 249, 0.08)",
+              bgcolor: "rgba(144, 202, 249, 0.08)",
             },
           }}
         >
           {isOpen ? <ChevronLeftIcon /> : <MenuIcon />}
         </IconButton>
-      </Toolbar>
+      </Box>
 
-      <List sx={{ px: 1, py: 2 }}>
+      {/* Profile Section */}
+      <Box sx={{ px: 2, py: 1.5 }}>
+        <Box
+          onClick={() => navigate("/profile")}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            cursor: "pointer",
+            "&:hover": {
+              "& .MuiTypography-root": {
+                color: "primary.main",
+              },
+            },
+          }}
+        >
+          <Avatar
+            sx={{
+              width: 32,
+              height: 32,
+              bgcolor: "primary.main",
+              fontSize: "0.875rem",
+            }}
+          >
+            {user?.firstName?.[0]}
+            {user?.lastName?.[0]}
+          </Avatar>
+          {isOpen && (
+            <Typography
+              variant="subtitle2"
+              sx={{
+                transition: "color 0.2s",
+              }}
+            >
+              {user?.firstName} {user?.lastName}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      <Divider sx={{ my: 1 }} />
+
+      {/* Navigation Items */}
+      <List sx={{ px: 1, py: 1 }}>
         {menuItems.map((item) => (
           <Tooltip
             key={item.text}
@@ -149,13 +166,14 @@ export const Sidebar = () => {
               onClick={() => navigate(item.path)}
               selected={location.pathname === item.path}
               sx={{
+                minHeight: 44,
+                borderRadius: 1,
                 mb: 0.5,
                 justifyContent: isOpen ? "initial" : "center",
-                minHeight: 48,
                 "&.Mui-selected": {
-                  backgroundColor: "rgba(144, 202, 249, 0.08)",
+                  bgcolor: "rgba(144, 202, 249, 0.08)",
                   "&:hover": {
-                    backgroundColor: "rgba(144, 202, 249, 0.12)",
+                    bgcolor: "rgba(144, 202, 249, 0.12)",
                   },
                 },
               }}
@@ -171,15 +189,12 @@ export const Sidebar = () => {
               </ListItemIcon>
               <ListItemText
                 primary={item.text}
+                primaryTypographyProps={{
+                  fontSize: "0.875rem",
+                }}
                 sx={{
                   opacity: isOpen ? 1 : 0,
-                  transition: "opacity 0.2s ease-in-out",
-                  whiteSpace: "nowrap",
                   visibility: isOpen ? "visible" : "hidden",
-                }}
-                primaryTypographyProps={{
-                  fontSize: "0.9rem",
-                  fontWeight: location.pathname === item.path ? 600 : 400,
                 }}
               />
             </ListItemButton>
@@ -187,82 +202,71 @@ export const Sidebar = () => {
         ))}
       </List>
 
-      <Divider sx={{ mx: 1 }} />
-
-      <List sx={{ px: 1, py: 2 }}>
-        <ListItemButton
-          onClick={() => navigate("/settings")}
-          selected={location.pathname === "/settings"}
-          sx={{
-            mb: 0.5,
-            justifyContent: isOpen ? "initial" : "center",
-            minHeight: 48,
-            "&.Mui-selected": {
-              backgroundColor: "rgba(144, 202, 249, 0.08)",
-              "&:hover": {
-                backgroundColor: "rgba(144, 202, 249, 0.12)",
-              },
-            },
-          }}
-        >
-          <ListItemIcon
+      {/* Bottom Section */}
+      <Box sx={{ mt: "auto" }}>
+        <Divider />
+        <List sx={{ px: 1, py: 1 }}>
+          <ListItemButton
+            onClick={() => navigate("/settings")}
+            selected={location.pathname === "/settings"}
             sx={{
-              minWidth: 0,
-              mr: isOpen ? 2 : "auto",
-              justifyContent: "center",
+              minHeight: 44,
+              borderRadius: 1,
+              mb: 0.5,
+              justifyContent: isOpen ? "initial" : "center",
             }}
           >
-            <SettingsIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Settings"
-            sx={{
-              opacity: isOpen ? 1 : 0,
-              transition: "opacity 0.2s ease-in-out",
-              whiteSpace: "nowrap",
-              visibility: isOpen ? "visible" : "hidden",
-            }}
-            primaryTypographyProps={{
-              fontSize: "0.9rem",
-              fontWeight: location.pathname === "/settings" ? 600 : 400,
-            }}
-          />
-        </ListItemButton>
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: isOpen ? 2 : "auto",
+                justifyContent: "center",
+              }}
+            >
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Settings"
+              primaryTypographyProps={{
+                fontSize: "0.875rem",
+              }}
+              sx={{
+                opacity: isOpen ? 1 : 0,
+                visibility: isOpen ? "visible" : "hidden",
+              }}
+            />
+          </ListItemButton>
 
-        <ListItemButton
-          onClick={handleLogout}
-          sx={{
-            mb: 0.5,
-            justifyContent: isOpen ? "initial" : "center",
-            minHeight: 48,
-            "&:hover": {
-              backgroundColor: "rgba(144, 202, 249, 0.08)",
-            },
-          }}
-        >
-          <ListItemIcon
+          <ListItemButton
+            onClick={handleLogout}
             sx={{
-              minWidth: 0,
-              mr: isOpen ? 2 : "auto",
-              justifyContent: "center",
+              minHeight: 44,
+              borderRadius: 1,
+              justifyContent: isOpen ? "initial" : "center",
             }}
           >
-            <LogoutIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Logout"
-            sx={{
-              opacity: isOpen ? 1 : 0,
-              transition: "opacity 0.2s ease-in-out",
-              whiteSpace: "nowrap",
-              visibility: isOpen ? "visible" : "hidden",
-            }}
-            primaryTypographyProps={{
-              fontSize: "0.9rem",
-            }}
-          />
-        </ListItemButton>
-      </List>
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: isOpen ? 2 : "auto",
+                justifyContent: "center",
+              }}
+            >
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Logout"
+              primaryTypographyProps={{
+                fontSize: "0.875rem",
+              }}
+              sx={{
+                opacity: isOpen ? 1 : 0,
+                visibility: isOpen ? "visible" : "hidden",
+              }}
+            />
+          </ListItemButton>
+        </List>
+      </Box>
     </Drawer>
   );
 };
