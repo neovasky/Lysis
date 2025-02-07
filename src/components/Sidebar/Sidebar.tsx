@@ -15,19 +15,18 @@ import {
   IconButton,
   Tooltip,
   Divider,
+  Avatar,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
-import NotificationsIcon from "@mui/icons-material/Notifications";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 import FolderIcon from "@mui/icons-material/Folder";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import NotesIcon from "@mui/icons-material/Notes";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import MenuIcon from "@mui/icons-material/Menu";
 import SettingsIcon from "@mui/icons-material/Settings";
-import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
-import AssessmentIcon from "@mui/icons-material/Assessment";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
@@ -39,21 +38,15 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const menuItems = [
     { text: "Dashboard", icon: <HomeIcon />, path: "/" },
     { text: "Glossary", icon: <MenuBookIcon />, path: "/glossary" },
     { text: "Analysis", icon: <AssessmentIcon />, path: "/analysis" },
-    { text: "Alerts", icon: <NotificationsIcon />, path: "/alerts" },
     { text: "Files", icon: <FolderIcon />, path: "/files" },
     { text: "Calendar", icon: <CalendarMonthIcon />, path: "/calendar" },
     { text: "Research Notes", icon: <NotesIcon />, path: "/notes" },
-  ];
-
-  const settingsItems = [
-    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
-    { text: "Profile", icon: <PersonIcon />, path: "/profile" },
   ];
 
   const handleLogout = async () => {
@@ -89,20 +82,46 @@ export const Sidebar = () => {
           alignItems: "center",
         }}
       >
-        {isOpen && (
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography
-              variant="h6"
+        {isOpen ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar
               sx={{
-                fontWeight: 600,
-                background: "linear-gradient(45deg, #90caf9 30%, #ce93d8 90%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
+                bgcolor: "primary.main",
+                width: 32,
+                height: 32,
+                fontSize: "0.875rem",
+                cursor: "pointer",
               }}
+              onClick={() => navigate("/profile")}
             >
-              Lysis
+              {user?.firstName?.[0]}
+              {user?.lastName?.[0]}
+            </Avatar>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+              onClick={() => navigate("/profile")}
+            >
+              {user?.firstName} {user?.lastName}
             </Typography>
           </Box>
+        ) : (
+          <Avatar
+            sx={{
+              bgcolor: "primary.main",
+              width: 32,
+              height: 32,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+            }}
+            onClick={() => navigate("/profile")}
+          >
+            {user?.firstName?.[0]}
+            {user?.lastName?.[0]}
+          </Avatar>
         )}
         <IconButton
           onClick={() => setIsOpen(!isOpen)}
@@ -171,88 +190,78 @@ export const Sidebar = () => {
       <Divider sx={{ mx: 1 }} />
 
       <List sx={{ px: 1, py: 2 }}>
-        {settingsItems.map((item) => (
-          <Tooltip
-            key={item.text}
-            title={!isOpen ? item.text : ""}
-            placement="right"
-          >
-            <ListItemButton
-              onClick={() => navigate(item.path)}
-              selected={location.pathname === item.path}
-              sx={{
-                mb: 0.5,
-                justifyContent: isOpen ? "initial" : "center",
-                minHeight: 48,
-                "&.Mui-selected": {
-                  backgroundColor: "rgba(144, 202, 249, 0.08)",
-                  "&:hover": {
-                    backgroundColor: "rgba(144, 202, 249, 0.12)",
-                  },
-                },
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: isOpen ? 2 : "auto",
-                  justifyContent: "center",
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                sx={{
-                  opacity: isOpen ? 1 : 0,
-                  transition: "opacity 0.2s ease-in-out",
-                  whiteSpace: "nowrap",
-                  visibility: isOpen ? "visible" : "hidden",
-                }}
-                primaryTypographyProps={{
-                  fontSize: "0.9rem",
-                  fontWeight: location.pathname === item.path ? 600 : 400,
-                }}
-              />
-            </ListItemButton>
-          </Tooltip>
-        ))}
-
-        <Tooltip title={!isOpen ? "Logout" : ""} placement="right">
-          <ListItemButton
-            onClick={handleLogout}
-            sx={{
-              mb: 0.5,
-              justifyContent: isOpen ? "initial" : "center",
-              minHeight: 48,
+        <ListItemButton
+          onClick={() => navigate("/settings")}
+          selected={location.pathname === "/settings"}
+          sx={{
+            mb: 0.5,
+            justifyContent: isOpen ? "initial" : "center",
+            minHeight: 48,
+            "&.Mui-selected": {
+              backgroundColor: "rgba(144, 202, 249, 0.08)",
               "&:hover": {
-                backgroundColor: "rgba(144, 202, 249, 0.08)",
+                backgroundColor: "rgba(144, 202, 249, 0.12)",
               },
+            },
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: 0,
+              mr: isOpen ? 2 : "auto",
+              justifyContent: "center",
             }}
           >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: isOpen ? 2 : "auto",
-                justifyContent: "center",
-              }}
-            >
-              <LogoutIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary="Logout"
-              sx={{
-                opacity: isOpen ? 1 : 0,
-                transition: "opacity 0.2s ease-in-out",
-                whiteSpace: "nowrap",
-                visibility: isOpen ? "visible" : "hidden",
-              }}
-              primaryTypographyProps={{
-                fontSize: "0.9rem",
-              }}
-            />
-          </ListItemButton>
-        </Tooltip>
+            <SettingsIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="Settings"
+            sx={{
+              opacity: isOpen ? 1 : 0,
+              transition: "opacity 0.2s ease-in-out",
+              whiteSpace: "nowrap",
+              visibility: isOpen ? "visible" : "hidden",
+            }}
+            primaryTypographyProps={{
+              fontSize: "0.9rem",
+              fontWeight: location.pathname === "/settings" ? 600 : 400,
+            }}
+          />
+        </ListItemButton>
+
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{
+            mb: 0.5,
+            justifyContent: isOpen ? "initial" : "center",
+            minHeight: 48,
+            "&:hover": {
+              backgroundColor: "rgba(144, 202, 249, 0.08)",
+            },
+          }}
+        >
+          <ListItemIcon
+            sx={{
+              minWidth: 0,
+              mr: isOpen ? 2 : "auto",
+              justifyContent: "center",
+            }}
+          >
+            <LogoutIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="Logout"
+            sx={{
+              opacity: isOpen ? 1 : 0,
+              transition: "opacity 0.2s ease-in-out",
+              whiteSpace: "nowrap",
+              visibility: isOpen ? "visible" : "hidden",
+            }}
+            primaryTypographyProps={{
+              fontSize: "0.9rem",
+            }}
+          />
+        </ListItemButton>
       </List>
     </Drawer>
   );
