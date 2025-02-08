@@ -3,7 +3,7 @@
  * Description: Main application layout with sidebar and top bar
  */
 
-import { Box } from "@mui/material";
+import { Box, Container } from "@radix-ui/themes";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar/Sidebar";
 import { TopBar } from "../components/TopBar/TopBar";
@@ -16,32 +16,35 @@ export const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        backgroundColor: "var(--color-pageBackground)",
+      }}
+    >
       <TopBar
         isSidebarOpen={isSidebarOpen}
         onSidebarToggle={setIsSidebarOpen}
       />
       <Sidebar isOpen={isSidebarOpen} />
       <Box
-        component="main"
-        sx={{
+        style={{
           flexGrow: 1,
-          p: 3,
           width: `calc(100% - ${
             isSidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH
           }px)`,
           marginLeft: `${isSidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH}px`,
-          transition: (theme) =>
-            theme.transitions.create(["margin", "width"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
-          mt: "64px",
-          minHeight: "100vh",
-          backgroundColor: "background.default",
+          transition: "margin 0.2s ease-in-out, width 0.2s ease-in-out",
+          marginTop: "64px",
+          minHeight: "calc(100vh - 64px)",
+          backgroundColor: "var(--color-pageBackground)",
+          overflow: "hidden",
         }}
       >
-        <Outlet />
+        <Container p="4" size="4">
+          <Outlet />
+        </Container>
       </Box>
     </Box>
   );

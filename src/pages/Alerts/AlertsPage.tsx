@@ -1,21 +1,35 @@
 /**
  * File: src/pages/Alerts/AlertsPage.tsx
- * Description: Alerts page component (placeholder)
+ * Description: Alerts page component using Radix UI Themes
  */
 
-import { Box, Paper, Typography } from "@mui/material";
+import { Container, Card, Heading, Text } from "@radix-ui/themes";
+import { styled } from "@stitches/react";
+
+// Styled wrapper for page padding
+const PageWrapper = styled("div", {
+  padding: "24px",
+});
 
 export const AlertsPage = () => {
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom fontWeight={600}>
-          Alerts
-        </Typography>
-        <Typography color="text.secondary">
-          This feature is coming soon.
-        </Typography>
-      </Paper>
-    </Box>
+    <PageWrapper>
+      <Container>
+        <Card
+          size="2"
+          style={{
+            backgroundColor: "var(--gray-2)",
+            marginBottom: "24px",
+          }}
+        >
+          <Heading as="h1" size="6" weight="bold" mb="2">
+            Alerts
+          </Heading>
+          <Text color="gray" size="3">
+            This feature is coming soon.
+          </Text>
+        </Card>
+      </Container>
+    </PageWrapper>
   );
 };

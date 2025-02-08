@@ -3,9 +3,9 @@
  * Description: Top application bar with notifications
  */
 
-import { AppBar, Toolbar, Typography, Stack, Box } from "@mui/material";
+import { Flex, Box, Text, IconButton } from "@radix-ui/themes";
 import { NotificationsMenu } from "../NotificationsMenu/NotificationsMenu";
-import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
+import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 
 interface TopBarProps {
   isSidebarOpen: boolean;
@@ -14,56 +14,45 @@ interface TopBarProps {
 
 export const TopBar = ({ isSidebarOpen, onSidebarToggle }: TopBarProps) => {
   return (
-    <AppBar
-      position="fixed"
-      sx={{
-        backgroundColor: "background.paper",
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        boxShadow: "none",
-        zIndex: (theme) => theme.zIndex.drawer + 1,
+    <Box
+      style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        left: 0,
+        height: "64px",
+        backgroundColor: "var(--color-panelSolid)",
+        borderBottom: "1px solid var(--color-borderCard)",
+        zIndex: 1200,
       }}
     >
-      <Toolbar>
-        <Box
-          onClick={() => onSidebarToggle(!isSidebarOpen)}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 28,
-            height: 28,
-            cursor: "pointer",
-            borderRadius: "4px",
-            mr: 2,
-            color: "text.secondary",
-            "&:hover": {
-              bgcolor: "rgba(144, 202, 249, 0.08)",
-              color: "text.primary",
-            },
-          }}
-        >
-          <ViewSidebarOutlinedIcon sx={{ width: 20, height: 20 }} />
-        </Box>
+      <Flex align="center" justify="between" px="4" style={{ height: "100%" }}>
+        <Flex align="center" gap="4">
+          <IconButton
+            size="2"
+            variant="ghost"
+            onClick={() => onSidebarToggle(!isSidebarOpen)}
+          >
+            <HamburgerMenuIcon width={20} height={20} />
+          </IconButton>
+          <Text
+            size="5"
+            weight="bold"
+            style={{
+              background:
+                "linear-gradient(45deg, var(--accent-9) 30%, var(--accent-8) 90%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Lysis
+          </Text>
+        </Flex>
 
-        <Typography
-          variant="h6"
-          component="div"
-          sx={{
-            flexGrow: 1,
-            background: "linear-gradient(45deg, #90caf9 30%, #ce93d8 90%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            fontWeight: 600,
-          }}
-        >
-          Lysis
-        </Typography>
-
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Flex align="center" gap="2">
           <NotificationsMenu />
-        </Stack>
-      </Toolbar>
-    </AppBar>
+        </Flex>
+      </Flex>
+    </Box>
   );
 };

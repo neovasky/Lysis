@@ -3,7 +3,7 @@
  * Description: Root application component with routing and theme setup
  */
 
-import { ThemeProvider } from "@mui/material";
+import { ThemeProvider } from "./theme/ThemeProvider";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { HomePage } from "./pages/Home/HomePage";
@@ -18,14 +18,14 @@ import { NotesPage } from "./pages/Notes/NotesPage";
 import { AnalysisPage } from "./pages/Analysis/AnalysisPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
-import { theme } from "./theme/theme";
+import { ThemeMode, ThemeAccent } from "./theme/types";
+import "@radix-ui/themes/styles.css";
 
-// Protected Route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // You might want to replace this with a proper loading component
+    return <div>Loading...</div>;
   }
 
   if (!user) {
@@ -36,8 +36,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  const getInitialTheme = (): ThemeMode => {
+    const savedMode = localStorage.getItem("theme-mode") as ThemeMode | null;
+    if (savedMode === "light" || savedMode === "dark") {
+      return savedMode;
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  };
+
+  const getInitialAccent = (): ThemeAccent => {
+    const savedAccent = localStorage.getItem(
+      "theme-accent"
+    ) as ThemeAccent | null;
+    return savedAccent || "blue";
+  };
+
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider
+      defaultMode={getInitialTheme()}
+      defaultAccent={getInitialAccent()}
+    >
       <AuthProvider>
         <BrowserRouter>
           <Routes>

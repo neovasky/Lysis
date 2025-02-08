@@ -1,31 +1,22 @@
 /**
  * File: src/components/Sidebar/Sidebar.tsx
- * Description: Main navigation sidebar component with auth integration
+ * Description: Main navigation sidebar component
  */
 
-import {
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Box,
-  Tooltip,
-  Divider,
-  Avatar,
-  Typography,
-  Badge,
-} from "@mui/material";
-import HomeIcon from "@mui/icons-material/Home";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import FolderIcon from "@mui/icons-material/Folder";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import NotesIcon from "@mui/icons-material/Notes";
-import SettingsIcon from "@mui/icons-material/Settings";
-import PersonIcon from "@mui/icons-material/Person";
+import { Box, Flex, Text, Avatar } from "@radix-ui/themes";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import {
+  HomeIcon,
+  ReaderIcon,
+  BarChartIcon,
+  FileIcon,
+  CalendarIcon,
+  FileTextIcon,
+  GearIcon,
+  PersonIcon,
+} from "@radix-ui/react-icons";
+import { useState } from "react";
 
 const DRAWER_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
@@ -48,23 +39,24 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const menuSections: MenuSection[] = [
     {
       title: "MAIN NAVIGATION",
       items: [
         { text: "Dashboard", icon: <HomeIcon />, path: "/" },
-        { text: "Glossary", icon: <MenuBookIcon />, path: "/glossary" },
-        { text: "Analysis", icon: <AssessmentIcon />, path: "/analysis" },
+        { text: "Glossary", icon: <ReaderIcon />, path: "/glossary" },
+        { text: "Analysis", icon: <BarChartIcon />, path: "/analysis" },
       ],
     },
     {
       title: "RESOURCES",
       items: [
-        { text: "Files", icon: <FolderIcon />, path: "/files", badge: 3 },
+        { text: "Files", icon: <FileIcon />, path: "/files", badge: 3 },
         {
           text: "Calendar",
-          icon: <CalendarMonthIcon />,
+          icon: <CalendarIcon />,
           path: "/calendar",
           badge: 2,
         },
@@ -75,7 +67,7 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
       items: [
         {
           text: "Research Notes",
-          icon: <NotesIcon />,
+          icon: <FileTextIcon />,
           path: "/notes",
           badge: 5,
         },
@@ -83,189 +75,148 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
     },
   ];
 
-  const renderMenuItem = (item: MenuSection["items"][0]) => (
-    <Tooltip key={item.text} title={!isOpen ? item.text : ""} placement="right">
-      <ListItemButton
+  const SidebarItem = ({ item }: { item: MenuSection["items"][0] }) => {
+    const isActive = location.pathname === item.path;
+    const isHovered = hoveredItem === item.path;
+
+    return (
+      <Flex
+        align="center"
+        gap="3"
+        p="2"
         onClick={() => navigate(item.path)}
-        selected={location.pathname === item.path}
-        sx={{
-          minHeight: 44,
-          borderRadius: 1,
-          mb: 0.5,
-          justifyContent: isOpen ? "initial" : "center",
-          px: 2.5,
-          "&.Mui-selected": {
-            bgcolor: "rgba(144, 202, 249, 0.08)",
-            "&:hover": {
-              bgcolor: "rgba(144, 202, 249, 0.12)",
-            },
-          },
+        onMouseEnter={() => setHoveredItem(item.path)}
+        onMouseLeave={() => setHoveredItem(null)}
+        style={{
+          cursor: "pointer",
+          borderRadius: "var(--radius-3)",
+          backgroundColor: isActive
+            ? "var(--accent-3)"
+            : isHovered
+            ? "var(--accent-2)"
+            : "transparent",
+          transition: "background-color 0.2s ease",
         }}
       >
-        <ListItemIcon
-          sx={{
-            minWidth: 0,
-            mr: isOpen ? 2 : 0,
-            justifyContent: "center",
-          }}
-        >
-          {item.badge ? (
-            <Badge badgeContent={item.badge} color="primary">
-              {item.icon}
-            </Badge>
-          ) : (
-            item.icon
-          )}
-        </ListItemIcon>
-        <ListItemText
-          primary={item.text}
-          primaryTypographyProps={{
-            fontSize: "0.875rem",
-          }}
-          sx={{
-            opacity: isOpen ? 1 : 0,
-            visibility: isOpen ? "visible" : "hidden",
-          }}
-        />
-      </ListItemButton>
-    </Tooltip>
-  );
+        <Box style={{ color: isActive ? "var(--accent-9)" : "var(--gray-11)" }}>
+          {item.icon}
+        </Box>
+        {isOpen && (
+          <Text
+            size="2"
+            weight={isActive ? "bold" : "regular"}
+            style={{
+              color: isActive ? "var(--accent-9)" : "var(--gray-11)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {item.text}
+          </Text>
+        )}
+        {item.badge && isOpen && (
+          <Box
+            style={{
+              marginLeft: "auto",
+              backgroundColor: "var(--accent-9)",
+              color: "white",
+              padding: "2px 8px",
+              borderRadius: "9999px",
+              fontSize: "12px",
+            }}
+          >
+            {item.badge}
+          </Box>
+        )}
+      </Flex>
+    );
+  };
 
   return (
-    <Drawer
-      variant="permanent"
-      sx={{
+    <Box
+      style={{
+        position: "fixed",
+        top: "64px",
+        left: 0,
+        bottom: 0,
         width: isOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-        flexShrink: 0,
-        whiteSpace: "nowrap",
-        "& .MuiDrawer-paper": {
-          width: isOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-          backgroundColor: "#1a1a1a",
-          borderRight: "none",
-          boxSizing: "border-box",
-          overflowX: "hidden",
-          transition: (theme) =>
-            theme.transitions.create("width", {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-          pt: "64px", // Match TopBar height
-        },
+        backgroundColor: "var(--color-panelSolid)",
+        borderRight: "1px solid var(--color-borderCard)",
+        transition: "width 0.2s ease",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
       }}
     >
-      {/* Navigation start padding */}
-      <Box sx={{ height: 16 }} />
-
-      {/* Navigation Items */}
-      <Box sx={{ px: 1 }}>
-        {menuSections.map((section, index) => (
-          <Box key={section.title} sx={{ mb: 3 }}>
-            {isOpen && (
-              <Typography
-                variant="overline"
-                sx={{
-                  px: 3,
-                  py: 1,
-                  color: "text.secondary",
-                  fontSize: "0.65rem",
-                  fontWeight: 500,
-                  letterSpacing: "0.1em",
-                }}
-              >
-                {section.title}
-              </Typography>
-            )}
-            <List>{section.items.map(renderMenuItem)}</List>
-            {index < menuSections.length - 1 && isOpen && (
-              <Divider sx={{ my: 1 }} />
-            )}
-          </Box>
-        ))}
-      </Box>
-
-      {/* Bottom Section */}
-      <Box sx={{ mt: "auto" }}>
-        <Divider />
-        <List sx={{ px: 1 }}>
-          <ListItemButton
-            onClick={() => navigate("/settings")}
-            selected={location.pathname === "/settings"}
-            sx={{
-              minHeight: 44,
-              borderRadius: 1,
-              mb: 0.5,
-              justifyContent: isOpen ? "initial" : "center",
-              px: 2.5,
-            }}
-          >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: isOpen ? 2 : 0,
-                justifyContent: "center",
-              }}
-            >
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary="Settings"
-              primaryTypographyProps={{
-                fontSize: "0.875rem",
-              }}
-              sx={{
-                opacity: isOpen ? 1 : 0,
-                visibility: isOpen ? "visible" : "hidden",
-              }}
-            />
-          </ListItemButton>
-
-          <ListItemButton
-            onClick={() => navigate("/profile")}
-            selected={location.pathname === "/profile"}
-            sx={{
-              minHeight: 44,
-              borderRadius: 1,
-              justifyContent: isOpen ? "initial" : "center",
-              px: 2.5,
-              mb: 0.5,
-            }}
-          >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: isOpen ? 2 : 0,
-                justifyContent: "center",
-              }}
-            >
-              {isOpen ? (
-                <Avatar
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    fontSize: "0.75rem",
-                    bgcolor: "primary.main",
+      <Box
+        style={{
+          flex: 1,
+          overflow: "auto",
+          padding: "16px",
+        }}
+      >
+        <Flex direction="column" gap="5">
+          {menuSections.map((section) => (
+            <Box key={section.title}>
+              {isOpen && (
+                <Text
+                  size="1"
+                  weight="bold"
+                  style={{
+                    color: "var(--gray-11)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    marginBottom: "8px",
                   }}
                 >
-                  {user?.firstName?.[0]}
-                  {user?.lastName?.[0]}
-                </Avatar>
+                  {section.title}
+                </Text>
+              )}
+              <Flex direction="column" gap="1">
+                {section.items.map((item) => (
+                  <SidebarItem key={item.path} item={item} />
+                ))}
+              </Flex>
+            </Box>
+          ))}
+        </Flex>
+      </Box>
+
+      <Box
+        style={{
+          padding: "16px",
+          borderTop: "1px solid var(--color-borderCard)",
+        }}
+      >
+        <Flex direction="column" gap="1">
+          <SidebarItem
+            item={{
+              text: "Settings",
+              icon: <GearIcon />,
+              path: "/settings",
+            }}
+          />
+          <SidebarItem
+            item={{
+              text: user ? `${user.firstName} ${user.lastName}` : "Profile",
+              icon: isOpen ? (
+                <Avatar
+                  size="1"
+                  src=""
+                  fallback={user?.firstName?.[0] || "U"}
+                  style={{
+                    backgroundColor: "var(--accent-9)",
+                  }}
+                />
               ) : (
                 <PersonIcon />
-              )}
-            </ListItemIcon>
-            <ListItemText
-              primary={`${user?.firstName} ${user?.lastName}`}
-              primaryTypographyProps={{
-                fontSize: "0.875rem",
-              }}
-              sx={{
-                opacity: isOpen ? 1 : 0,
-                visibility: isOpen ? "visible" : "hidden",
-              }}
-            />
-          </ListItemButton>
-        </List>
+              ),
+              path: "/profile",
+            }}
+          />
+        </Flex>
       </Box>
-    </Drawer>
+    </Box>
   );
 };
