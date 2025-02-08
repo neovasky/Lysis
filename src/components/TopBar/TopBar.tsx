@@ -3,10 +3,16 @@
  * Description: Top application bar with notifications
  */
 
-import { AppBar, Toolbar, Typography, Stack } from "@mui/material";
+import { AppBar, Toolbar, Typography, Stack, Box } from "@mui/material";
 import { NotificationsMenu } from "../NotificationsMenu/NotificationsMenu";
+import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
 
-export const TopBar = () => {
+interface TopBarProps {
+  isSidebarOpen: boolean;
+  onSidebarToggle: (isOpen: boolean) => void;
+}
+
+export const TopBar = ({ isSidebarOpen, onSidebarToggle }: TopBarProps) => {
   return (
     <AppBar
       position="fixed"
@@ -19,6 +25,27 @@ export const TopBar = () => {
       }}
     >
       <Toolbar>
+        <Box
+          onClick={() => onSidebarToggle(!isSidebarOpen)}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 28,
+            height: 28,
+            cursor: "pointer",
+            borderRadius: "4px",
+            mr: 2,
+            color: "text.secondary",
+            "&:hover": {
+              bgcolor: "rgba(144, 202, 249, 0.08)",
+              color: "text.primary",
+            },
+          }}
+        >
+          <ViewSidebarOutlinedIcon sx={{ width: 20, height: 20 }} />
+        </Box>
+
         <Typography
           variant="h6"
           component="div"

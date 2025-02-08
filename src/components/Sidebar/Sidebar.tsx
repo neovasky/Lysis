@@ -9,12 +9,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Typography,
   Box,
-  IconButton,
   Tooltip,
   Divider,
   Avatar,
+  Typography,
+  Badge,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -22,190 +22,171 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import FolderIcon from "@mui/icons-material/Folder";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import NotesIcon from "@mui/icons-material/Notes";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import MenuIcon from "@mui/icons-material/Menu";
 import SettingsIcon from "@mui/icons-material/Settings";
-import LogoutIcon from "@mui/icons-material/Logout";
+import PersonIcon from "@mui/icons-material/Person";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 
 const DRAWER_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
 
-export const Sidebar = () => {
+interface SidebarProps {
+  isOpen: boolean;
+}
+
+interface MenuSection {
+  title: string;
+  items: {
+    text: string;
+    icon: JSX.Element;
+    path: string;
+    badge?: number;
+  }[];
+}
+
+export const Sidebar = ({ isOpen }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isOpen, setIsOpen] = useState(true);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  const menuItems = [
-    { text: "Dashboard", icon: <HomeIcon />, path: "/" },
-    { text: "Glossary", icon: <MenuBookIcon />, path: "/glossary" },
-    { text: "Analysis", icon: <AssessmentIcon />, path: "/analysis" },
-    { text: "Files", icon: <FolderIcon />, path: "/files" },
-    { text: "Calendar", icon: <CalendarMonthIcon />, path: "/calendar" },
-    { text: "Research Notes", icon: <NotesIcon />, path: "/notes" },
+  const menuSections: MenuSection[] = [
+    {
+      title: "MAIN NAVIGATION",
+      items: [
+        { text: "Dashboard", icon: <HomeIcon />, path: "/" },
+        { text: "Glossary", icon: <MenuBookIcon />, path: "/glossary" },
+        { text: "Analysis", icon: <AssessmentIcon />, path: "/analysis" },
+      ],
+    },
+    {
+      title: "RESOURCES",
+      items: [
+        { text: "Files", icon: <FolderIcon />, path: "/files", badge: 3 },
+        {
+          text: "Calendar",
+          icon: <CalendarMonthIcon />,
+          path: "/calendar",
+          badge: 2,
+        },
+      ],
+    },
+    {
+      title: "RESEARCH",
+      items: [
+        {
+          text: "Research Notes",
+          icon: <NotesIcon />,
+          path: "/notes",
+          badge: 5,
+        },
+      ],
+    },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/auth");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
+  const renderMenuItem = (item: MenuSection["items"][0]) => (
+    <Tooltip key={item.text} title={!isOpen ? item.text : ""} placement="right">
+      <ListItemButton
+        onClick={() => navigate(item.path)}
+        selected={location.pathname === item.path}
+        sx={{
+          minHeight: 44,
+          borderRadius: 1,
+          mb: 0.5,
+          justifyContent: isOpen ? "initial" : "center",
+          px: 2.5,
+          "&.Mui-selected": {
+            bgcolor: "rgba(144, 202, 249, 0.08)",
+            "&:hover": {
+              bgcolor: "rgba(144, 202, 249, 0.12)",
+            },
+          },
+        }}
+      >
+        <ListItemIcon
+          sx={{
+            minWidth: 0,
+            mr: isOpen ? 2 : 0,
+            justifyContent: "center",
+          }}
+        >
+          {item.badge ? (
+            <Badge badgeContent={item.badge} color="primary">
+              {item.icon}
+            </Badge>
+          ) : (
+            item.icon
+          )}
+        </ListItemIcon>
+        <ListItemText
+          primary={item.text}
+          primaryTypographyProps={{
+            fontSize: "0.875rem",
+          }}
+          sx={{
+            opacity: isOpen ? 1 : 0,
+            visibility: isOpen ? "visible" : "hidden",
+          }}
+        />
+      </ListItemButton>
+    </Tooltip>
+  );
 
   return (
     <Drawer
       variant="permanent"
       sx={{
         width: isOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-        transition: "width 0.2s ease-in-out",
         flexShrink: 0,
+        whiteSpace: "nowrap",
         "& .MuiDrawer-paper": {
           width: isOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH,
-          transition: "width 0.2s ease-in-out",
+          backgroundColor: "#1a1a1a",
+          borderRight: "none",
           boxSizing: "border-box",
           overflowX: "hidden",
-          backgroundColor: "#1a1a1a",
+          transition: (theme) =>
+            theme.transitions.create("width", {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+          pt: "64px", // Match TopBar height
         },
       }}
     >
-      {/* Logo and Collapse Button */}
-      <Box
-        sx={{
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        {isOpen ? (
-          <Typography
-            variant="h6"
-            sx={{
-              background: "linear-gradient(45deg, #90caf9 30%, #ce93d8 90%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              fontWeight: 600,
-            }}
-          >
-            Lysis
-          </Typography>
-        ) : (
-          <div /> // Empty div for spacing
-        )}
-        <IconButton
-          onClick={() => setIsOpen(!isOpen)}
-          sx={{
-            minWidth: 0,
-            p: 1,
-            bgcolor: "rgba(144, 202, 249, 0.04)",
-            "&:hover": {
-              bgcolor: "rgba(144, 202, 249, 0.08)",
-            },
-          }}
-        >
-          {isOpen ? <ChevronLeftIcon /> : <MenuIcon />}
-        </IconButton>
-      </Box>
-
-      {/* Profile Section */}
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <Box
-          onClick={() => navigate("/profile")}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            cursor: "pointer",
-            "&:hover": {
-              "& .MuiTypography-root": {
-                color: "primary.main",
-              },
-            },
-          }}
-        >
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: "primary.main",
-              fontSize: "0.875rem",
-            }}
-          >
-            {user?.firstName?.[0]}
-            {user?.lastName?.[0]}
-          </Avatar>
-          {isOpen && (
-            <Typography
-              variant="subtitle2"
-              sx={{
-                transition: "color 0.2s",
-              }}
-            >
-              {user?.firstName} {user?.lastName}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-
-      <Divider sx={{ my: 1 }} />
+      {/* Navigation start padding */}
+      <Box sx={{ height: 16 }} />
 
       {/* Navigation Items */}
-      <List sx={{ px: 1, py: 1 }}>
-        {menuItems.map((item) => (
-          <Tooltip
-            key={item.text}
-            title={!isOpen ? item.text : ""}
-            placement="right"
-          >
-            <ListItemButton
-              onClick={() => navigate(item.path)}
-              selected={location.pathname === item.path}
-              sx={{
-                minHeight: 44,
-                borderRadius: 1,
-                mb: 0.5,
-                justifyContent: isOpen ? "initial" : "center",
-                "&.Mui-selected": {
-                  bgcolor: "rgba(144, 202, 249, 0.08)",
-                  "&:hover": {
-                    bgcolor: "rgba(144, 202, 249, 0.12)",
-                  },
-                },
-              }}
-            >
-              <ListItemIcon
+      <Box sx={{ px: 1 }}>
+        {menuSections.map((section, index) => (
+          <Box key={section.title} sx={{ mb: 3 }}>
+            {isOpen && (
+              <Typography
+                variant="overline"
                 sx={{
-                  minWidth: 0,
-                  mr: isOpen ? 2 : "auto",
-                  justifyContent: "center",
+                  px: 3,
+                  py: 1,
+                  color: "text.secondary",
+                  fontSize: "0.65rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
                 }}
               >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                primaryTypographyProps={{
-                  fontSize: "0.875rem",
-                }}
-                sx={{
-                  opacity: isOpen ? 1 : 0,
-                  visibility: isOpen ? "visible" : "hidden",
-                }}
-              />
-            </ListItemButton>
-          </Tooltip>
+                {section.title}
+              </Typography>
+            )}
+            <List>{section.items.map(renderMenuItem)}</List>
+            {index < menuSections.length - 1 && isOpen && (
+              <Divider sx={{ my: 1 }} />
+            )}
+          </Box>
         ))}
-      </List>
+      </Box>
 
       {/* Bottom Section */}
       <Box sx={{ mt: "auto" }}>
         <Divider />
-        <List sx={{ px: 1, py: 1 }}>
+        <List sx={{ px: 1 }}>
           <ListItemButton
             onClick={() => navigate("/settings")}
             selected={location.pathname === "/settings"}
@@ -214,12 +195,13 @@ export const Sidebar = () => {
               borderRadius: 1,
               mb: 0.5,
               justifyContent: isOpen ? "initial" : "center",
+              px: 2.5,
             }}
           >
             <ListItemIcon
               sx={{
                 minWidth: 0,
-                mr: isOpen ? 2 : "auto",
+                mr: isOpen ? 2 : 0,
                 justifyContent: "center",
               }}
             >
@@ -238,24 +220,41 @@ export const Sidebar = () => {
           </ListItemButton>
 
           <ListItemButton
-            onClick={handleLogout}
+            onClick={() => navigate("/profile")}
+            selected={location.pathname === "/profile"}
             sx={{
               minHeight: 44,
               borderRadius: 1,
               justifyContent: isOpen ? "initial" : "center",
+              px: 2.5,
+              mb: 0.5,
             }}
           >
             <ListItemIcon
               sx={{
                 minWidth: 0,
-                mr: isOpen ? 2 : "auto",
+                mr: isOpen ? 2 : 0,
                 justifyContent: "center",
               }}
             >
-              <LogoutIcon />
+              {isOpen ? (
+                <Avatar
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    fontSize: "0.75rem",
+                    bgcolor: "primary.main",
+                  }}
+                >
+                  {user?.firstName?.[0]}
+                  {user?.lastName?.[0]}
+                </Avatar>
+              ) : (
+                <PersonIcon />
+              )}
             </ListItemIcon>
             <ListItemText
-              primary="Logout"
+              primary={`${user?.firstName} ${user?.lastName}`}
               primaryTypographyProps={{
                 fontSize: "0.875rem",
               }}
