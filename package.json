@@ -12,6 +12,7 @@
     "package": "electron-builder build --dir",
     "make": "electron-builder build"
   },
+  "main": "dist-electron/main/main.js",
   "build": {
     "appId": "com.lysis.app",
     "directories": {
@@ -81,6 +82,5 @@
     "vite": "^5.1.6",
     "vite-plugin-electron": "^0.28.6",
     "vite-plugin-electron-renderer": "^0.14.5"
-  },
-  "main": "dist-electron/main.js"
+  }
 }

@@ -10,6 +10,24 @@ const FILE_CHANNELS = {
   DELETE_FILE: "file:delete",
   GET_FILE_INFO: "file:info"
 };
+electron.contextBridge.exposeInMainWorld("electron", {
+  ipcRenderer: {
+    on: (channel, func) => {
+      const subscription = (_event, ...args) => func(args);
+      electron.ipcRenderer.on(channel, subscription);
+      return () => electron.ipcRenderer.removeListener(channel, subscription);
+    },
+    once: (channel, func) => {
+      electron.ipcRenderer.once(
+        channel,
+        (_event, ...args) => func(args)
+      );
+    },
+    send: (channel, message) => {
+      electron.ipcRenderer.send(channel, message);
+    }
+  }
+});
 electron.contextBridge.exposeInMainWorld("fileAPI", {
   selectFile: (options) => electron.ipcRenderer.invoke(FILE_CHANNELS.SELECT_FILE, options),
   readFile: (path) => electron.ipcRenderer.invoke(FILE_CHANNELS.READ_FILE, path),

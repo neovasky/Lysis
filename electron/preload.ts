@@ -3,8 +3,38 @@
  * Description: Preload script to expose APIs to renderer process
  */
 
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 import { FILE_CHANNELS } from "./handlers/fileHandlers";
+
+// Define valid channel types
+type ValidChannels = "main-process-message" | keyof typeof FILE_CHANNELS;
+
+// Define IPC message types
+type IpcMessage = {
+  type: string;
+  payload?: unknown;
+};
+
+// Expose protected IPC methods to renderer
+contextBridge.exposeInMainWorld("electron", {
+  ipcRenderer: {
+    on: (channel: ValidChannels, func: (data: unknown) => void) => {
+      const subscription = (_event: IpcRendererEvent, ...args: unknown[]) =>
+        func(args);
+      ipcRenderer.on(channel, subscription);
+      return () => ipcRenderer.removeListener(channel, subscription);
+    },
+    once: (channel: ValidChannels, func: (data: unknown) => void) => {
+      ipcRenderer.once(
+        channel,
+        (_event: IpcRendererEvent, ...args: unknown[]) => func(args)
+      );
+    },
+    send: (channel: ValidChannels, message: IpcMessage) => {
+      ipcRenderer.send(channel, message);
+    },
+  },
+});
 
 // Define the API type
 export interface FileAPI {
@@ -64,6 +94,16 @@ contextBridge.exposeInMainWorld("fileAPI", {
 // Add the API type to the window object
 declare global {
   interface Window {
+    electron: {
+      ipcRenderer: {
+        send: (channel: ValidChannels, message: IpcMessage) => void;
+        on: (
+          channel: ValidChannels,
+          func: (data: unknown) => void
+        ) => () => void;
+        once: (channel: ValidChannels, func: (data: unknown) => void) => void;
+      };
+    };
     fileAPI: FileAPI;
   }
 }

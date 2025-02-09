@@ -101,32 +101,45 @@ function setupFileHandlers() {
 }
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-process.env.DIST_ELECTRON = path.join(__dirname, "..");
+process.env.DIST_ELECTRON = path.join(__dirname);
 process.env.DIST = path.join(process.env.DIST_ELECTRON, "../dist");
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST_ELECTRON, "../public");
 let mainWindow = null;
 setupFileHandlers();
 async function createWindow() {
-  const preloadPath = app.isPackaged ? path.join(__dirname, "../preload/index.js") : path.join(__dirname, "../electron/preload.js");
+  const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: preloadPath,
+      preload: path.join(__dirname, "../preload/preload.js"),
+      // Updated path
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      webSecurity: true,
+      sandbox: false
     }
   });
-  if (!app.isPackaged) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  mainWindow.webContents.session.webRequest.onHeadersReceived(
+    (details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "Content-Security-Policy": [
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+          ]
+        }
+      });
+    }
+  );
+  if (VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(VITE_DEV_SERVER_URL);
+    if (process.env.ELECTRON_DEBUG === "1") {
+      mainWindow.webContents.openDevTools();
+    }
   } else {
     mainWindow.loadFile(path.join(process.env.DIST, "index.html"));
   }
-  mainWindow.webContents.on("before-input-event", (event, input) => {
-    if ((input.control || input.meta) && input.shift && input.key.toLowerCase() === "i") {
-      event.preventDefault();
-    }
-  });
 }
 app.whenReady().then(createWindow);
 app.on("window-all-closed", () => {
@@ -138,5 +151,8 @@ app.on("activate", () => {
   if (mainWindow === null) {
     createWindow();
   }
+});
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled rejection:", error);
 });
 //# sourceMappingURL=main.js.map
