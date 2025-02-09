@@ -107,21 +107,26 @@ process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.
 let mainWindow = null;
 setupFileHandlers();
 async function createWindow() {
+  const preloadPath = app.isPackaged ? path.join(__dirname, "../preload/index.js") : path.join(__dirname, "../electron/preload.js");
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, "../preload/index.js"),
+      preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true
     }
   });
   if (!app.isPackaged) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(process.env.DIST, "index.html"));
   }
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    if ((input.control || input.meta) && input.shift && input.key.toLowerCase() === "i") {
+      event.preventDefault();
+    }
+  });
 }
 app.whenReady().then(createWindow);
 app.on("window-all-closed", () => {
@@ -134,3 +139,4 @@ app.on("activate", () => {
     createWindow();
   }
 });
+//# sourceMappingURL=main.js.map

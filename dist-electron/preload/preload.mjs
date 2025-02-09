@@ -18,3 +18,4 @@ electron.contextBridge.exposeInMainWorld("fileAPI", {
   deleteFile: (path) => electron.ipcRenderer.invoke(FILE_CHANNELS.DELETE_FILE, path),
   getFileInfo: (path) => electron.ipcRenderer.invoke(FILE_CHANNELS.GET_FILE_INFO, path)
 });
+//# sourceMappingURL=preload.mjs.map

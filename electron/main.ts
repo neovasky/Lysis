@@ -1,27 +1,16 @@
-/**
- * File: electron/main.ts
- * Description: Main process entry point
- */
-
 import { app, BrowserWindow } from "electron";
-import path from "path";
+import * as path from "path";
+import { fileURLToPath } from "url";
 import { setupFileHandlers } from "./handlers/fileHandlers";
 
-// The built directory structure
-//
-// ├─┬ dist-electron
-// │ ├─┬ main
-// │ │ └── index.js
-// │ ├─┬ preload
-// │ │ └── index.js
-// │ ├─┬ renderer
-// │ │ └── index.html
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 process.env.DIST_ELECTRON = path.join(__dirname, "..");
 process.env.DIST = path.join(process.env.DIST_ELECTRON, "../dist");
-process.env.PUBLIC = process.env.VITE_DEV_SERVER_URL
-  ? path.join(process.env.DIST_ELECTRON, "../public")
-  : process.env.DIST;
+process.env.VITE_PUBLIC = app.isPackaged
+  ? process.env.DIST
+  : path.join(process.env.DIST_ELECTRON, "../public");
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -29,28 +18,38 @@ let mainWindow: BrowserWindow | null = null;
 setupFileHandlers();
 
 async function createWindow() {
+  // Choose preload path based on whether the app is packaged
+  const preloadPath = app.isPackaged
+    ? path.join(__dirname, "../preload/index.js")
+    : path.join(__dirname, "../electron/preload.js"); // or preload.ts if you have a way to run it directly
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, "../preload/index.js"),
+      preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
 
   // Load the app
-  if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
+  if (!app.isPackaged) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL!);
   } else {
-    // Ensure DIST exists and is a string
-    const distPath = process.env.DIST;
-    if (!distPath) {
-      throw new Error("DIST path is not defined");
-    }
-    mainWindow.loadFile(path.join(distPath, "index.html"));
+    mainWindow.loadFile(path.join(process.env.DIST!, "index.html"));
   }
+
+  // Prevent opening DevTools with keyboard shortcuts
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    if (
+      (input.control || input.meta) &&
+      input.shift &&
+      input.key.toLowerCase() === "i"
+    ) {
+      event.preventDefault();
+    }
+  });
 }
 
 app.whenReady().then(createWindow);
