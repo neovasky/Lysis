@@ -1,24 +1,39 @@
 /**
  * File: src/types/window.d.ts
- * Description: Type definitions for window object extensions
+ * Description: Type definitions for window APIs
  */
 
-interface FileStats {
+interface FileInfo {
+  name: string;
+  path: string;
   size: number;
-  mtimeMs: number;
-  ctimeMs: number;
-  birthtimeMs: number;
+  lastModified: Date;
+  type: string;
 }
 
-interface FileSystem {
-  readFile(path: string, options?: { encoding?: string }): Promise<ArrayBuffer>;
-  writeFile(path: string, data: ArrayBuffer): Promise<void>;
-  stat(path: string): Promise<FileStats>;
+interface FileAPI {
+  selectFile: (options?: { multiple?: boolean }) => Promise<string[]>;
+  readFile: (path: string) => Promise<{
+    content: Buffer;
+    name: string;
+    path: string;
+    size: number;
+    lastModified: Date;
+  }>;
+  writeFile: (options: { filePath: string; content: Buffer }) => Promise<{
+    name: string;
+    path: string;
+    size: number;
+    lastModified: Date;
+  }>;
+  getFiles: (dirPath: string) => Promise<FileInfo[]>;
+  deleteFile: (path: string) => Promise<boolean>;
+  getFileInfo: (path: string) => Promise<FileInfo>;
 }
 
 declare global {
   interface Window {
-    fs: FileSystem;
+    fileAPI: FileAPI;
   }
 }
 

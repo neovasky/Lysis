@@ -23,7 +23,7 @@ export class FileService {
    */
   async getFileMetadata(path: string): Promise<FileMetadata> {
     try {
-      const stats = await window.fs.stat(path);
+      const info = await window.fileAPI.getFileInfo(path);
       const name = path.split("/").pop() || "";
       const type = this.getFileType(name);
 
@@ -32,8 +32,8 @@ export class FileService {
         name,
         type,
         path,
-        lastModified: stats.mtimeMs,
-        size: stats.size,
+        lastModified: info.lastModified.getTime(),
+        size: info.size,
         tags: [],
       };
     } catch (error) {
@@ -44,11 +44,35 @@ export class FileService {
   /**
    * Read file content
    */
-  async readFile(path: string): Promise<ArrayBuffer> {
+  async readFile(path: string): Promise<Buffer> {
     try {
-      return await window.fs.readFile(path);
+      const result = await window.fileAPI.readFile(path);
+      return result.content;
     } catch (error) {
       throw new Error(`Failed to read file: ${error}`);
+    }
+  }
+
+  /**
+   * Write file content
+   */
+  async writeFile(path: string, content: Buffer): Promise<FileMetadata> {
+    try {
+      const result = await window.fileAPI.writeFile({
+        filePath: path,
+        content,
+      });
+      return {
+        id: this.generateFileId(),
+        name: result.name,
+        path: result.path,
+        type: this.getFileType(result.name),
+        size: result.size,
+        lastModified: result.lastModified.getTime(),
+        tags: [],
+      };
+    } catch (error) {
+      throw new Error(`Failed to write file: ${error}`);
     }
   }
 
@@ -64,7 +88,7 @@ export class FileService {
       // Copy file to versions directory
       const versionPath = this.generateVersionPath(fileId);
       const content = await this.readFile(path);
-      await window.fs.writeFile(versionPath, content);
+      await this.writeFile(versionPath, content);
 
       return {
         id: this.generateFileId(),
@@ -89,7 +113,7 @@ export class FileService {
 
     const watcher = async () => {
       try {
-        await window.fs.stat(path);
+        await window.fileAPI.getFileInfo(path); // Just check if file exists
         onChange();
         // Recursive watch
         setTimeout(watcher, 1000);
@@ -152,7 +176,7 @@ export class FileService {
   /**
    * Extract text content from a PDF file
    */
-  async extractPdfText(buffer: ArrayBuffer): Promise<string> {
+  async extractPdfText(buffer: Buffer): Promise<string> {
     try {
       // This is a placeholder. We'll need to implement PDF text extraction
       // using a library like pdf.js

@@ -1,24 +1,69 @@
-import { ipcRenderer, contextBridge } from 'electron'
+/**
+ * File: electron/preload.ts
+ * Description: Preload script to expose APIs to renderer process
+ */
 
-// --------- Expose some API to the Renderer process ---------
-contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
-  },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
-  },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
-  },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
-  },
+import { contextBridge, ipcRenderer } from "electron";
+import { FILE_CHANNELS } from "./handlers/fileHandlers";
 
-  // You can expose other APTs you need here.
-  // ...
-})
+// Define the API type
+export interface FileAPI {
+  selectFile: (options?: { multiple?: boolean }) => Promise<string[]>;
+  readFile: (path: string) => Promise<{
+    content: Buffer;
+    name: string;
+    path: string;
+    size: number;
+    lastModified: Date;
+  }>;
+  writeFile: (options: { filePath: string; content: Buffer }) => Promise<{
+    name: string;
+    path: string;
+    size: number;
+    lastModified: Date;
+  }>;
+  getFiles: (dirPath: string) => Promise<
+    Array<{
+      name: string;
+      path: string;
+      size: number;
+      lastModified: Date;
+      type: string;
+    }>
+  >;
+  deleteFile: (path: string) => Promise<boolean>;
+  getFileInfo: (path: string) => Promise<{
+    name: string;
+    path: string;
+    size: number;
+    lastModified: Date;
+    type: string;
+  }>;
+}
+
+// Expose the file API to the renderer process
+contextBridge.exposeInMainWorld("fileAPI", {
+  selectFile: (options?: { multiple?: boolean }) =>
+    ipcRenderer.invoke(FILE_CHANNELS.SELECT_FILE, options),
+
+  readFile: (path: string) => ipcRenderer.invoke(FILE_CHANNELS.READ_FILE, path),
+
+  writeFile: (options: { filePath: string; content: Buffer }) =>
+    ipcRenderer.invoke(FILE_CHANNELS.WRITE_FILE, options),
+
+  getFiles: (dirPath: string) =>
+    ipcRenderer.invoke(FILE_CHANNELS.GET_FILES, dirPath),
+
+  deleteFile: (path: string) =>
+    ipcRenderer.invoke(FILE_CHANNELS.DELETE_FILE, path),
+
+  getFileInfo: (path: string) =>
+    ipcRenderer.invoke(FILE_CHANNELS.GET_FILE_INFO, path),
+} as FileAPI);
+
+// Add the API type to the window object
+declare global {
+  interface Window {
+    fileAPI: FileAPI;
+  }
+}
