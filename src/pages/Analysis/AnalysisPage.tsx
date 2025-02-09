@@ -6,30 +6,20 @@
 import { useState } from "react";
 import {
   Box,
-  Paper,
-  Typography,
-  Grid,
+  Card,
+  Text,
+  Flex,
   Button,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Stack,
-  Menu,
-  MenuItem,
-} from "@mui/material";
+  DropdownMenu,
+  Heading,
+} from "@radix-ui/themes";
 import {
-  Add as AddIcon,
-  MoreVert as MoreVertIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-} from "@mui/icons-material";
+  PlusIcon,
+  DotsVerticalIcon,
+  Pencil1Icon,
+  TrashIcon,
+} from "@radix-ui/react-icons";
 import { useAuth } from "../../hooks/useAuth";
 
 interface WatchlistItem {
@@ -50,7 +40,6 @@ interface AnalysisList {
 }
 
 export const AnalysisPage = () => {
-  // Suppress hooks usage warning while keeping the hook for future use
   useAuth();
 
   const [watchlists, setWatchlists] = useState<WatchlistItem[]>([]);
@@ -60,8 +49,6 @@ export const AnalysisPage = () => {
     "watchlist"
   );
   const [newListName, setNewListName] = useState("");
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedList, setSelectedList] = useState<string | null>(null);
 
   const handleCreateList = () => {
     const newList = {
@@ -89,190 +76,147 @@ export const AnalysisPage = () => {
     } else {
       setAnalysisLists((prev) => prev.filter((list) => list.id !== id));
     }
-    setAnchorEl(null);
   };
 
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, id: string) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedList(id);
-  };
+  const ListCard = ({
+    list,
+    type,
+  }: {
+    list: WatchlistItem | AnalysisList;
+    type: "watchlist" | "analysis";
+  }) => (
+    <Card variant="surface" style={{ marginBottom: "8px" }}>
+      <Flex justify="between" align="center">
+        <Box>
+          <Text weight="bold">{list.name}</Text>
+          <Text size="1" color="gray">
+            {list.stocks.length} stocks
+          </Text>
+        </Box>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <Button variant="ghost" size="1">
+              <DotsVerticalIcon />
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            <DropdownMenu.Item>
+              <Flex gap="2" align="center">
+                <Pencil1Icon />
+                Edit
+              </Flex>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              color="red"
+              onClick={() => handleDeleteList(list.id, type)}
+            >
+              <Flex gap="2" align="center">
+                <TrashIcon />
+                Delete
+              </Flex>
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </Flex>
+    </Card>
+  );
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box style={{ padding: "24px" }}>
       {/* Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom fontWeight={600}>
+      <Card size="3" style={{ marginBottom: "24px" }}>
+        <Heading size="5" weight="bold" mb="2">
           Analysis
-        </Typography>
-        <Typography color="text.secondary">
+        </Heading>
+        <Text color="gray" size="2">
           Manage your watchlists and analysis lists
-        </Typography>
-      </Paper>
+        </Text>
+      </Card>
 
       {/* Main Content */}
-      <Grid container spacing={3}>
+      <Flex gap="4">
         {/* Watchlists Section */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
+        <Card size="3" style={{ flex: 1 }}>
+          <Flex justify="between" align="center" mb="4">
+            <Heading size="4">Watchlists</Heading>
+            <Button
+              onClick={() => {
+                setListType("watchlist");
+                setOpenNewListDialog(true);
+              }}
             >
-              <Typography variant="h6">Watchlists</Typography>
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => {
-                  setListType("watchlist");
-                  setOpenNewListDialog(true);
-                }}
-                sx={{
-                  borderColor: "rgba(144, 202, 249, 0.12)",
-                  "&:hover": {
-                    borderColor: "rgba(144, 202, 249, 0.24)",
-                  },
-                }}
-              >
-                New Watchlist
-              </Button>
-            </Stack>
+              <PlusIcon />
+              New Watchlist
+            </Button>
+          </Flex>
 
-            <List>
-              {watchlists.map((list) => (
-                <ListItem
-                  key={list.id}
-                  sx={{
-                    backgroundColor: "rgba(144, 202, 249, 0.04)",
-                    borderRadius: 1,
-                    mb: 1,
-                  }}
-                >
-                  <ListItemText
-                    primary={list.name}
-                    secondary={`${list.stocks.length} stocks`}
-                  />
-                  <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      onClick={(e) => handleOpenMenu(e, list.id)}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
+          {watchlists.map((list) => (
+            <ListCard key={list.id} list={list} type="watchlist" />
+          ))}
+        </Card>
 
         {/* Analysis Lists Section */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
+        <Card size="3" style={{ flex: 1 }}>
+          <Flex justify="between" align="center" mb="4">
+            <Heading size="4">Analysis Lists</Heading>
+            <Button
+              onClick={() => {
+                setListType("analysis");
+                setOpenNewListDialog(true);
+              }}
             >
-              <Typography variant="h6">Analysis Lists</Typography>
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => {
-                  setListType("analysis");
-                  setOpenNewListDialog(true);
-                }}
-                sx={{
-                  borderColor: "rgba(144, 202, 249, 0.12)",
-                  "&:hover": {
-                    borderColor: "rgba(144, 202, 249, 0.24)",
-                  },
-                }}
-              >
-                New Analysis List
-              </Button>
-            </Stack>
+              <PlusIcon />
+              New Analysis List
+            </Button>
+          </Flex>
 
-            <List>
-              {analysisLists.map((list) => (
-                <ListItem
-                  key={list.id}
-                  sx={{
-                    backgroundColor: "rgba(144, 202, 249, 0.04)",
-                    borderRadius: 1,
-                    mb: 1,
-                  }}
-                >
-                  <ListItemText
-                    primary={list.name}
-                    secondary={`${list.stocks.length} stocks`}
-                  />
-                  <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      onClick={(e) => handleOpenMenu(e, list.id)}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
-      </Grid>
+          {analysisLists.map((list) => (
+            <ListCard key={list.id} list={list} type="analysis" />
+          ))}
+        </Card>
+      </Flex>
 
       {/* New List Dialog */}
-      <Dialog
-        open={openNewListDialog}
-        onClose={() => setOpenNewListDialog(false)}
-      >
-        <DialogTitle>
-          Create New {listType === "watchlist" ? "Watchlist" : "Analysis List"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="List Name"
-            fullWidth
-            value={newListName}
-            onChange={(e) => setNewListName(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenNewListDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateList} disabled={!newListName.trim()}>
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <Dialog.Root open={openNewListDialog} onOpenChange={setOpenNewListDialog}>
+        <Dialog.Content>
+          <Dialog.Title>
+            Create New{" "}
+            {listType === "watchlist" ? "Watchlist" : "Analysis List"}
+          </Dialog.Title>
 
-      {/* List Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
-        <MenuItem onClick={() => setAnchorEl(null)}>
-          <EditIcon sx={{ mr: 1 }} /> Edit
-        </MenuItem>
-        <MenuItem
-          onClick={() =>
-            handleDeleteList(
-              selectedList!,
-              watchlists.find((w) => w.id === selectedList)
-                ? "watchlist"
-                : "analysis"
-            )
-          }
-          sx={{ color: "error.main" }}
-        >
-          <DeleteIcon sx={{ mr: 1 }} /> Delete
-        </MenuItem>
-      </Menu>
+          <Box my="4">
+            <input
+              className="rt-TextFieldInput"
+              placeholder="List Name"
+              value={newListName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setNewListName(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "1px solid var(--gray-5)",
+                borderRadius: "6px",
+                backgroundColor: "var(--color-panel)",
+                color: "var(--gray-12)",
+              }}
+            />
+          </Box>
+
+          <Flex gap="3" justify="end">
+            <Dialog.Close>
+              <Button variant="soft" color="gray">
+                Cancel
+              </Button>
+            </Dialog.Close>
+            <Dialog.Close>
+              <Button onClick={handleCreateList} disabled={!newListName.trim()}>
+                Create
+              </Button>
+            </Dialog.Close>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
     </Box>
   );
 };

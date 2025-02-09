@@ -1,36 +1,28 @@
 /**
  * File: src/pages/Settings/SettingsPage.tsx
- * Description: Application settings configuration page
+ * Description: Application settings configuration page using Radix UI
  */
 
 import { useState } from "react";
 import {
   Box,
-  Paper,
-  Typography,
-  Switch,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  Select,
-  MenuItem,
-  FormControl,
-  Stack,
-  Alert,
-  Snackbar,
+  Card,
+  Text,
+  Heading,
+  Flex,
   Button,
-} from "@mui/material";
+  Switch,
+  Select,
+} from "@radix-ui/themes";
 import {
-  Notifications as NotificationsIcon,
-  DarkMode as DarkModeIcon,
-  Language as LanguageIcon,
-  Storage as StorageIcon,
-  CloudSync as CloudSyncIcon,
-  Backup as BackupIcon,
-  DeleteOutline as DeleteOutlineIcon,
-} from "@mui/icons-material";
+  BellIcon,
+  MoonIcon,
+  GlobeIcon,
+  ArchiveIcon,
+  ArrowUpIcon,
+  ClipboardIcon,
+  TrashIcon,
+} from "@radix-ui/react-icons";
 
 interface SettingsState {
   notifications: boolean;
@@ -75,21 +67,21 @@ export const SettingsPage = () => {
   const settingsList: Setting[] = [
     {
       id: "notifications",
-      icon: <NotificationsIcon />,
+      icon: <BellIcon width="20" height="20" />,
       title: "Notifications",
       description: "Enable alerts for market events and updates",
       type: "switch",
     },
     {
       id: "darkMode",
-      icon: <DarkModeIcon />,
+      icon: <MoonIcon width="20" height="20" />,
       title: "Dark Mode",
       description: "Use dark theme across the application",
       type: "switch",
     },
     {
       id: "language",
-      icon: <LanguageIcon />,
+      icon: <GlobeIcon width="20" height="20" />,
       title: "Language",
       description: "Select your preferred language",
       type: "select",
@@ -101,14 +93,14 @@ export const SettingsPage = () => {
     },
     {
       id: "autoBackup",
-      icon: <BackupIcon />,
+      icon: <ArchiveIcon width="20" height="20" />,
       title: "Auto Backup",
       description: "Automatically backup your data daily",
       type: "switch",
     },
     {
       id: "cloudSync",
-      icon: <CloudSyncIcon />,
+      icon: <ArrowUpIcon width="20" height="20" />,
       title: "Cloud Sync",
       description: "Keep your data synchronized across devices",
       type: "switch",
@@ -124,6 +116,7 @@ export const SettingsPage = () => {
       [setting]: value,
     }));
     setShowSaveSuccess(true);
+    setTimeout(() => setShowSaveSuccess(false), 3000);
   };
 
   const handleDataExport = () => {
@@ -140,120 +133,118 @@ export const SettingsPage = () => {
     if (setting.type === "switch") {
       return (
         <Switch
-          edge="end"
           checked={settings[setting.id] as boolean}
-          onChange={(e) => handleSettingChange(setting.id, e.target.checked)}
+          onCheckedChange={(checked) =>
+            handleSettingChange(setting.id, checked)
+          }
         />
       );
     }
 
     return (
-      <FormControl size="small" sx={{ minWidth: 120 }}>
-        <Select
-          value={settings[setting.id] as string}
-          onChange={(e) => handleSettingChange(setting.id, e.target.value)}
-          sx={{ backgroundColor: "rgba(144, 202, 249, 0.04)" }}
-        >
+      <Select.Root
+        value={settings[setting.id] as string}
+        onValueChange={(value) => handleSettingChange(setting.id, value)}
+      >
+        <Select.Trigger />
+        <Select.Content>
           {setting.options.map((option) => (
-            <MenuItem key={option.value} value={option.value}>
+            <Select.Item key={option.value} value={option.value}>
               {option.label}
-            </MenuItem>
+            </Select.Item>
           ))}
-        </Select>
-      </FormControl>
+        </Select.Content>
+      </Select.Root>
     );
   };
 
+  const SettingRow = ({ setting }: { setting: Setting }) => (
+    <Box>
+      <Flex justify="between" align="center" py="3">
+        <Flex gap="3" align="start">
+          <Box style={{ color: "var(--accent-9)" }}>{setting.icon}</Box>
+          <Box>
+            <Text weight="bold">{setting.title}</Text>
+            <Text size="2" color="gray">
+              {setting.description}
+            </Text>
+          </Box>
+        </Flex>
+        {renderSettingControl(setting)}
+      </Flex>
+    </Box>
+  );
+
   return (
-    <Box sx={{ p: 3 }}>
+    <Box style={{ padding: "24px" }}>
       {/* Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom fontWeight={600}>
+      <Card size="3" style={{ marginBottom: "24px" }}>
+        <Heading size="5" weight="bold" mb="2">
           Settings
-        </Typography>
-        <Typography color="text.secondary">
+        </Heading>
+        <Text color="gray" size="2">
           Customize your application preferences
-        </Typography>
-      </Paper>
+        </Text>
+      </Card>
 
       {/* Settings List */}
-      <Paper sx={{ mb: 3 }}>
-        <List>
+      <Card size="3" style={{ marginBottom: "24px" }}>
+        <Flex direction="column" gap="3">
           {settingsList.map((setting, index) => (
             <Box key={setting.id}>
-              <ListItem sx={{ py: 2 }}>
-                <ListItemIcon>{setting.icon}</ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Typography variant="subtitle1" fontWeight={500}>
-                      {setting.title}
-                    </Typography>
-                  }
-                  secondary={setting.description}
-                />
-                {renderSettingControl(setting)}
-              </ListItem>
-              {index < settingsList.length - 1 && <Divider />}
+              <SettingRow setting={setting} />
+              {index < settingsList.length - 1 && (
+                <Box style={{ height: "1px", background: "var(--gray-5)" }} />
+              )}
             </Box>
           ))}
-        </List>
-      </Paper>
+        </Flex>
+      </Card>
 
       {/* Data Management */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Card size="3">
+        <Heading size="4" mb="4">
           Data Management
-        </Typography>
-        <Stack spacing={2}>
+        </Heading>
+        <Flex direction="column" gap="4">
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            <Text size="2" color="gray" mb="2">
               Export your data
-            </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<StorageIcon />}
-              onClick={handleDataExport}
-              sx={{
-                borderColor: "rgba(144, 202, 249, 0.12)",
-                "&:hover": {
-                  borderColor: "rgba(144, 202, 249, 0.24)",
-                },
-              }}
-            >
+            </Text>
+            <Button variant="soft" onClick={handleDataExport}>
+              <ClipboardIcon />
               Export Data
             </Button>
           </Box>
           <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            <Text size="2" color="gray" mb="2">
               Delete all data
-            </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteOutlineIcon />}
-              onClick={handleDataDelete}
-            >
+            </Text>
+            <Button variant="soft" color="red" onClick={handleDataDelete}>
+              <TrashIcon />
               Delete All Data
             </Button>
           </Box>
-        </Stack>
-      </Paper>
+        </Flex>
+      </Card>
 
-      {/* Success Notification */}
-      <Snackbar
-        open={showSaveSuccess}
-        autoHideDuration={3000}
-        onClose={() => setShowSaveSuccess(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setShowSaveSuccess(false)}
-          severity="success"
-          sx={{ width: "100%" }}
+      {/* Success Toast */}
+      {showSaveSuccess && (
+        <Box
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: "var(--green-3)",
+            padding: "12px 24px",
+            borderRadius: "6px",
+            border: "1px solid var(--green-6)",
+          }}
         >
-          Settings saved successfully
-        </Alert>
-      </Snackbar>
+          <Text color="green">Settings saved successfully</Text>
+        </Box>
+      )}
     </Box>
   );
 };

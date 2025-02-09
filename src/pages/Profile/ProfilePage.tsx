@@ -1,26 +1,26 @@
 /**
  * File: src/pages/Profile/ProfilePage.tsx
- * Description: User profile page component using auth context
+ * Description: User profile page component using Radix UI
  */
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
-  Paper,
-  Typography,
+  Card,
+  Flex,
+  Text,
+  Heading,
   Avatar,
-  Stack,
   Button,
-  TextField,
-  Divider,
-  Alert,
-} from "@mui/material";
+} from "@radix-ui/themes";
 import {
-  Edit as EditIcon,
-  Email as EmailIcon,
-  Work as WorkIcon,
-  Description as DescriptionIcon,
-} from "@mui/icons-material";
+  EnvelopeClosedIcon,
+  PersonIcon,
+  FileTextIcon,
+  Pencil1Icon,
+  ExitIcon,
+} from "@radix-ui/react-icons";
 import { useAuth } from "../../hooks/useAuth";
 
 interface ProfileFormData {
@@ -32,7 +32,8 @@ interface ProfileFormData {
 }
 
 export const ProfilePage = () => {
-  const { user, updateProfile } = useAuth();
+  const navigate = useNavigate();
+  const { user, updateProfile, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -40,8 +41,8 @@ export const ProfilePage = () => {
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     email: user?.email || "",
-    company: "Investment Corp", // You might want to add this to your user type
-    bio: "Passionate about market analysis and investment research.", // You might want to add this to your user type
+    company: "Investment Corp",
+    bio: "Passionate about market analysis and investment research.",
   });
 
   const handleEdit = () => {
@@ -66,181 +67,235 @@ export const ProfilePage = () => {
 
   const handleChange =
     (field: keyof ProfileFormData) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       setProfileData((prev) => ({
         ...prev,
-        [field]: event.target.value,
+        [field]: e.target.value,
       }));
       setError(null);
       setSuccess(null);
     };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/auth");
+    } catch (err) {
+      setError("Failed to logout. Please try again.");
+    }
+  };
+
   return (
-    <Box sx={{ p: 3 }}>
+    <Box style={{ padding: "24px" }}>
       {/* Header */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom fontWeight={600}>
+      <Card size="3" style={{ marginBottom: "24px" }}>
+        <Heading size="6" weight="bold" mb="2">
           Profile
-        </Typography>
-        <Typography color="text.secondary">
+        </Heading>
+        <Text color="gray" size="2">
           Manage your personal information and preferences
-        </Typography>
-      </Paper>
+        </Text>
+      </Card>
 
       {/* Profile Content */}
-      <Paper sx={{ p: 3 }}>
-        <Stack spacing={4}>
+      <Card size="3" style={{ marginBottom: "24px" }}>
+        <Flex direction="column" gap="6">
           {/* Profile Header */}
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={3}
-            alignItems={{ xs: "center", sm: "flex-start" }}
+          <Flex
+            direction={{ initial: "column", sm: "row" }}
+            gap="4"
+            align={{ initial: "center", sm: "start" }}
           >
             <Avatar
-              sx={{
-                width: 100,
-                height: 100,
-                bgcolor: "primary.main",
-                fontSize: "2rem",
-              }}
-            >
-              {`${profileData.firstName.charAt(0)}${profileData.lastName.charAt(
-                0
-              )}`}
-            </Avatar>
+              size="7"
+              fallback={`${profileData.firstName[0]}${profileData.lastName[0]}`}
+              radius="full"
+            />
 
-            <Box sx={{ flex: 1 }}>
+            <Box style={{ flex: 1 }}>
               {isEditing ? (
-                <Stack spacing={2}>
-                  <Stack direction="row" spacing={2}>
-                    <TextField
-                      label="First Name"
+                <Flex direction="column" gap="3">
+                  <Flex gap="3">
+                    <input
+                      placeholder="First Name"
                       value={profileData.firstName}
                       onChange={handleChange("firstName")}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
+                      className="rt-TextFieldInput"
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        border: "1px solid var(--gray-5)",
+                        borderRadius: "6px",
+                        backgroundColor: "var(--color-panel)",
+                        color: "var(--gray-12)",
+                      }}
                     />
-                    <TextField
-                      label="Last Name"
+                    <input
+                      placeholder="Last Name"
                       value={profileData.lastName}
                       onChange={handleChange("lastName")}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
+                      className="rt-TextFieldInput"
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        border: "1px solid var(--gray-5)",
+                        borderRadius: "6px",
+                        backgroundColor: "var(--color-panel)",
+                        color: "var(--gray-12)",
+                      }}
                     />
-                  </Stack>
-                  <Button
-                    variant="contained"
-                    onClick={handleSave}
-                    sx={{ alignSelf: "flex-start" }}
-                  >
-                    Save Changes
-                  </Button>
-                </Stack>
+                  </Flex>
+                  <Button onClick={handleSave}>Save Changes</Button>
+                </Flex>
               ) : (
                 <>
-                  <Typography variant="h6" gutterBottom>
+                  <Heading size="5" mb="2">
                     {`${profileData.firstName} ${profileData.lastName}`}
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={handleEdit}
-                    sx={{
-                      borderColor: "rgba(144, 202, 249, 0.12)",
-                      "&:hover": {
-                        borderColor: "rgba(144, 202, 249, 0.24)",
-                      },
-                    }}
-                  >
+                  </Heading>
+                  <Button variant="soft" onClick={handleEdit}>
+                    <Pencil1Icon width="16" height="16" />
                     Edit Profile
                   </Button>
                 </>
               )}
             </Box>
-          </Stack>
+          </Flex>
 
           {error && (
-            <Alert severity="error" onClose={() => setError(null)}>
-              {error}
-            </Alert>
+            <Box
+              style={{
+                padding: "12px",
+                borderRadius: "6px",
+                backgroundColor: "var(--red-3)",
+                border: "1px solid var(--red-6)",
+              }}
+            >
+              <Text color="red" size="2">
+                {error}
+              </Text>
+            </Box>
           )}
 
           {success && (
-            <Alert severity="success" onClose={() => setSuccess(null)}>
-              {success}
-            </Alert>
+            <Box
+              style={{
+                padding: "12px",
+                borderRadius: "6px",
+                backgroundColor: "var(--green-3)",
+                border: "1px solid var(--green-6)",
+              }}
+            >
+              <Text color="green" size="2">
+                {success}
+              </Text>
+            </Box>
           )}
 
-          <Divider />
+          <Box style={{ height: "1px", background: "var(--gray-5)" }} />
 
           {/* Profile Details */}
-          <Stack spacing={3}>
+          <Flex direction="column" gap="4">
             <Box>
-              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                <EmailIcon color="primary" />
-                <Typography variant="subtitle2" color="text.secondary">
+              <Flex align="center" gap="2" mb="2">
+                <EnvelopeClosedIcon width="16" height="16" />
+                <Text size="2" color="gray">
                   Email
-                </Typography>
-              </Stack>
+                </Text>
+              </Flex>
               {isEditing ? (
-                <TextField
+                <input
                   value={profileData.email}
                   onChange={handleChange("email")}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
+                  className="rt-TextFieldInput"
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid var(--gray-5)",
+                    borderRadius: "6px",
+                    backgroundColor: "var(--color-panel)",
+                    color: "var(--gray-12)",
+                  }}
                 />
               ) : (
-                <Typography>{profileData.email}</Typography>
+                <Text>{profileData.email}</Text>
               )}
             </Box>
 
             <Box>
-              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                <WorkIcon color="primary" />
-                <Typography variant="subtitle2" color="text.secondary">
+              <Flex align="center" gap="2" mb="2">
+                <PersonIcon width="16" height="16" />
+                <Text size="2" color="gray">
                   Company
-                </Typography>
-              </Stack>
+                </Text>
+              </Flex>
               {isEditing ? (
-                <TextField
+                <input
                   value={profileData.company}
                   onChange={handleChange("company")}
-                  fullWidth
-                  variant="outlined"
-                  size="small"
+                  className="rt-TextFieldInput"
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid var(--gray-5)",
+                    borderRadius: "6px",
+                    backgroundColor: "var(--color-panel)",
+                    color: "var(--gray-12)",
+                  }}
                 />
               ) : (
-                <Typography>{profileData.company}</Typography>
+                <Text>{profileData.company}</Text>
               )}
             </Box>
 
             <Box>
-              <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                <DescriptionIcon color="primary" />
-                <Typography variant="subtitle2" color="text.secondary">
+              <Flex align="center" gap="2" mb="2">
+                <FileTextIcon width="16" height="16" />
+                <Text size="2" color="gray">
                   Bio
-                </Typography>
-              </Stack>
+                </Text>
+              </Flex>
               {isEditing ? (
-                <TextField
+                <input
                   value={profileData.bio}
                   onChange={handleChange("bio")}
-                  fullWidth
-                  multiline
-                  rows={4}
-                  variant="outlined"
-                  size="small"
+                  className="rt-TextFieldInput"
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid var(--gray-5)",
+                    borderRadius: "6px",
+                    backgroundColor: "var(--color-panel)",
+                    color: "var(--gray-12)",
+                  }}
                 />
               ) : (
-                <Typography>{profileData.bio}</Typography>
+                <Text>{profileData.bio}</Text>
               )}
             </Box>
-          </Stack>
-        </Stack>
-      </Paper>
+          </Flex>
+        </Flex>
+      </Card>
+
+      {/* Logout Section */}
+      <Card size="3">
+        <Flex direction="column" gap="2">
+          <Heading size="3" weight="medium">
+            Account
+          </Heading>
+          <Text size="2" color="gray">
+            Sign out of your account
+          </Text>
+          <Button
+            variant="soft"
+            color="red"
+            onClick={handleLogout}
+            style={{ width: "fit-content" }}
+          >
+            <ExitIcon />
+            Logout
+          </Button>
+        </Flex>
+      </Card>
     </Box>
   );
 };

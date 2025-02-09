@@ -1,21 +1,21 @@
 /**
  * File: src/pages/Notes/NotesPage.tsx
- * Description: Research notes page component (placeholder)
+ * Description: Research notes page component using Radix UI
  */
 
-import { Box, Paper, Typography } from "@mui/material";
+import { Card, Text, Heading, Box } from "@radix-ui/themes";
 
 export const NotesPage = () => {
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom fontWeight={600}>
+    <Box>
+      <Card size="3" style={{ marginBottom: "24px" }}>
+        <Heading size="6" weight="bold" mb="2">
           Research Notes
-        </Typography>
-        <Typography color="text.secondary">
+        </Heading>
+        <Text color="gray" size="2">
           This feature is coming soon.
-        </Typography>
-      </Paper>
+        </Text>
+      </Card>
     </Box>
   );
 };

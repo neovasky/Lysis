@@ -1,26 +1,12 @@
 /**
  * File: src/pages/Auth/AuthPage.tsx
- * Description: Authentication page component
+ * Description: Authentication page component using Radix UI
  */
 
 import { useState } from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  Stack,
-  Divider,
-  Alert,
-  IconButton,
-  InputBase,
-  InputAdornment,
-} from "@mui/material";
-import {
-  Visibility,
-  VisibilityOff,
-  Google as GoogleIcon,
-} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { Box, Card, Text, Heading, Flex, Button } from "@radix-ui/themes";
+import { EyeOpenIcon, EyeClosedIcon } from "@radix-ui/react-icons";
 import { useAuth } from "../../hooks/useAuth";
 import { handleGoogleSignIn } from "../../utils/googleAuth";
 
@@ -60,11 +46,7 @@ export const AuthPage = () => {
       setLoading(true);
       setError(null);
       await handleGoogleSignIn();
-
-      // For now, let's mock a successful login since we don't have a backend
       await login("google@example.com", "google-auth");
-
-      // After successful login, redirect to home
       navigate("/", { replace: true });
     } catch (err) {
       console.error("Google login error:", err);
@@ -75,179 +57,188 @@ export const AuthPage = () => {
   };
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         minHeight: "100vh",
+        width: "100vw",
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
-        bgcolor: "#1e1e1e",
+        backgroundColor: "var(--color-pageBackground)",
+        paddingBottom: "25vh", // This will match your screenshot's vertical alignment
       }}
     >
-      <Stack
-        spacing={3}
-        sx={{
+      <Box
+        style={{
           width: "100%",
-          maxWidth: "320px",
-          p: 2,
+          display: "flex",
+          justifyContent: "center",
         }}
       >
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-            Welcome Back
-          </Typography>
-          <Typography color="text.secondary">
-            Sign in to access your investment workspace
-          </Typography>
-        </Box>
-
-        <Button
-          variant="outlined"
-          fullWidth
-          startIcon={<GoogleIcon />}
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          sx={{
-            color: "white",
-            textTransform: "uppercase",
-            borderColor: "rgba(255, 255, 255, 0.12)",
-            py: 1,
-            "&:hover": {
-              borderColor: "rgba(255, 255, 255, 0.2)",
-            },
+        <Card
+          size="3"
+          style={{
+            width: "380px", // Increased width for better proportions
+            padding: "24px",
+            backgroundColor: "var(--gray-2)",
           }}
         >
-          Continue with Google
-        </Button>
+          <form onSubmit={handleSubmit}>
+            <Flex direction="column" gap="4">
+              <Box mb="2">
+                <Heading size="6" weight="bold" mb="1">
+                  Welcome Back
+                </Heading>
+                <Text color="gray" size="2">
+                  Sign in to access your investment workspace
+                </Text>
+              </Box>
 
-        <Box sx={{ position: "relative" }}>
-          <Divider
-            sx={{
-              "&::before, &::after": {
-                borderColor: "rgba(255, 255, 255, 0.12)",
-              },
-            }}
-          >
-            <Typography color="text.secondary" sx={{ px: 1 }}>
-              or
-            </Typography>
-          </Divider>
-        </Box>
-
-        <form onSubmit={handleSubmit}>
-          <Stack spacing={2.5}>
-            <Box
-              sx={{
-                borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
-                "&:hover": {
-                  borderColor: "rgba(255, 255, 255, 0.2)",
-                },
-              }}
-            >
-              <InputBase
-                fullWidth
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+              <Button
+                size="3"
+                variant="surface"
+                onClick={handleGoogleLogin}
                 disabled={loading}
-                sx={{
-                  py: 1,
-                  color: "white",
-                  "&::placeholder": {
-                    color: "text.secondary",
-                  },
-                }}
-              />
-            </Box>
+                style={{ width: "100%" }}
+              >
+                Continue with Google
+              </Button>
 
-            <Box
-              sx={{
-                borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
-                "&:hover": {
-                  borderColor: "rgba(255, 255, 255, 0.2)",
-                },
-              }}
-            >
-              <InputBase
-                fullWidth
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+              <Flex align="center" gap="3">
+                <Box
+                  style={{
+                    height: "1px",
+                    flex: 1,
+                    background: "var(--gray-5)",
+                  }}
+                />
+                <Text size="2" color="gray">
+                  or
+                </Text>
+                <Box
+                  style={{
+                    height: "1px",
+                    flex: 1,
+                    background: "var(--gray-5)",
+                  }}
+                />
+              </Flex>
+
+              <Box>
+                <Text size="2" mb="1" weight="medium">
+                  Email
+                </Text>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  disabled={loading}
+                  className="rt-TextFieldInput"
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid var(--gray-5)",
+                    borderRadius: "6px",
+                    backgroundColor: "var(--gray-3)",
+                    color: "var(--gray-12)",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Text size="2" mb="1" weight="medium">
+                  Password
+                </Text>
+                <Box style={{ position: "relative" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                    disabled={loading}
+                    className="rt-TextFieldInput"
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      paddingRight: "44px",
+                      border: "1px solid var(--gray-5)",
+                      borderRadius: "6px",
+                      backgroundColor: "var(--gray-3)",
+                      color: "var(--gray-12)",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="1"
+                    onClick={() => setShowPassword(!showPassword)}
+                    type="button"
+                    style={{
+                      position: "absolute",
+                      right: "8px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      padding: "4px",
+                      margin: 0,
+                      height: "24px",
+                      minWidth: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {showPassword ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                  </Button>
+                </Box>
+              </Box>
+
+              {error && (
+                <Box
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    backgroundColor: "var(--red-3)",
+                    border: "1px solid var(--red-6)",
+                  }}
+                >
+                  <Text color="red" size="2">
+                    {error}
+                  </Text>
+                </Box>
+              )}
+
+              <Button
+                type="submit"
                 disabled={loading}
-                endAdornment={
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
-                      sx={{ color: "text.secondary" }}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                }
-                sx={{
-                  py: 1,
-                  color: "white",
-                  "&::placeholder": {
-                    color: "text.secondary",
-                  },
-                }}
-              />
-            </Box>
+                size="2"
+                style={{ width: "100%" }}
+              >
+                Sign In
+              </Button>
 
-            {error && (
-              <Alert severity="error" sx={{ borderRadius: 1 }}>
-                {error}
-              </Alert>
-            )}
-
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              disabled={loading}
-              sx={{
-                bgcolor: "#90caf9",
-                color: "black",
-                py: 1,
-                textTransform: "uppercase",
-                "&:hover": {
-                  bgcolor: "#82b7e3",
-                },
-              }}
-            >
-              Sign In
-            </Button>
-          </Stack>
-        </form>
-
-        <Box sx={{ textAlign: "center" }}>
-          <Typography color="text.secondary">
-            Don't have an account?{" "}
-            <Button
-              color="primary"
-              onClick={() => navigate("/auth/signup")}
-              disabled={loading}
-              sx={{
-                textTransform: "uppercase",
-                color: "#90caf9",
-                "&:hover": {
-                  bgcolor: "transparent",
-                  textDecoration: "underline",
-                },
-              }}
-            >
-              Sign up
-            </Button>
-          </Typography>
-        </Box>
-      </Stack>
-    </Box>
+              <Flex align="center" justify="center" gap="2">
+                <Text size="2" color="gray">
+                  Don't have an account?
+                </Text>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/auth/signup")}
+                  disabled={loading}
+                >
+                  Sign up
+                </Button>
+              </Flex>
+            </Flex>
+          </form>
+        </Card>
+      </Box>
+    </div>
   );
 };

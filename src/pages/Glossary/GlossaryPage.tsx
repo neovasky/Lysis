@@ -1,38 +1,27 @@
 /**
  * File: src/pages/Glossary/GlossaryPage.tsx
- * Description: Main glossary page component
+ * Description: Main glossary page component (converted from MUI to Radix UI)
  */
 
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useState, useCallback, useEffect } from "react";
 import {
   Box,
-  Paper,
-  TextField,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Typography,
-  Divider,
-  IconButton,
-  Stack,
+  Card,
+  Text,
+  Heading,
+  Flex,
   Button,
-  Chip,
-  Collapse,
-} from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
-import BookmarkIcon from "@mui/icons-material/Bookmark";
-import CloseIcon from "@mui/icons-material/Close";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import ClearAllIcon from "@mui/icons-material/ClearAll";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import CalculateIcon from "@mui/icons-material/Calculate";
-import ShowChartIcon from "@mui/icons-material/ShowChart";
-import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+  IconButton,
+  ScrollArea,
+} from "@radix-ui/themes";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Cross2Icon,
+  MagnifyingGlassIcon,
+  BookmarkIcon,
+  ReaderIcon,
+} from "@radix-ui/react-icons";
 import { terms } from "./data/terms";
 import { GlossaryTerm, Filter } from "./types";
 
@@ -47,31 +36,32 @@ export const GlossaryPage = () => {
   const [openTerms, setOpenTerms] = useState<GlossaryTerm[]>([]);
   const [activeTermIndex, setActiveTermIndex] = useState<number>(0);
 
+  // Define available filters with Radix icons (using ReaderIcon as a placeholder)
   const availableFilters: Filter[] = [
     {
       id: "bookmarked",
       label: "Bookmarked",
-      icon: <BookmarkIcon fontSize="small" />,
+      icon: <BookmarkIcon style={{ fontSize: "16px" }} />,
     },
     {
       id: "ratios",
       label: "Financial Ratios",
-      icon: <CalculateIcon fontSize="small" />,
+      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
     },
     {
       id: "market",
       label: "Market Analysis",
-      icon: <ShowChartIcon fontSize="small" />,
+      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
     },
     {
       id: "fundamentals",
       label: "Fundamentals",
-      icon: <TrendingUpIcon fontSize="small" />,
+      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
     },
     {
       id: "accounting",
       label: "Accounting",
-      icon: <AccountBalanceIcon fontSize="small" />,
+      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
     },
   ];
 
@@ -93,12 +83,10 @@ export const GlossaryPage = () => {
       term.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
       term.shortDefinition.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // If no filters are active, show all terms that match search
     if (activeFilters.size === 0) {
       return matchesSearch;
     }
 
-    // Check if term matches any active filters
     const matchesBookmark = activeFilters.has("bookmarked")
       ? bookmarkedTerms.has(term.id)
       : false;
@@ -137,7 +125,6 @@ export const GlossaryPage = () => {
     });
   };
 
-  // Wrap handleRelatedTermClick in useCallback to ensure a stable reference.
   const handleRelatedTermClick = useCallback((termName: string) => {
     const relatedTerm = terms.find(
       (t) => t.term.toLowerCase() === termName.toLowerCase()
@@ -150,19 +137,20 @@ export const GlossaryPage = () => {
 
   const renderLinkedDefinition = useCallback(
     (text: string, linkedTerms?: { term: string; definition: string }[]) => {
-      if (!linkedTerms) return text;
+      if (!linkedTerms) return <Text>{text}</Text>;
 
       let result = text;
       linkedTerms.forEach(({ term, definition }) => {
         const regex = new RegExp(`\\b${term}\\b`, "gi");
         result = result.replace(
           regex,
-          `<span class="linked-term" title="${definition}" style="color: #90caf9; cursor: pointer;">${term}</span>`
+          `<span class="linked-term" title="${definition}" style="color: var(--accent-9); cursor: pointer;">${term}</span>`
         );
       });
 
       return (
-        <Typography
+        <Text
+          as="span"
           dangerouslySetInnerHTML={{ __html: result }}
           onClick={(e) => {
             const target = e.target as HTMLElement;
@@ -182,7 +170,6 @@ export const GlossaryPage = () => {
     setActiveTermIndex(0);
   };
 
-  // Use an effect to handle selectedTerm changes and open the term.
   useEffect(() => {
     if (selectedTerm) {
       handleTermSelect(selectedTerm);
@@ -190,7 +177,6 @@ export const GlossaryPage = () => {
     }
   }, [selectedTerm]);
 
-  // Modified handleCloseTerm to remove the active term from openTerms.
   const handleCloseTerm = () => {
     setOpenTerms((prev) => {
       const newTerms = [...prev];
@@ -205,373 +191,404 @@ export const GlossaryPage = () => {
   };
 
   return (
-    <Box sx={{ display: "flex", gap: 2, height: "calc(100vh - 100px)" }}>
+    <Flex style={{ gap: "16px", height: "calc(100vh - 100px)" }}>
       {/* Terms List Section */}
-      <Paper
-        sx={{
-          width: 320,
+      <Card
+        style={{
+          width: "320px",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
         }}
       >
-        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField
-            fullWidth
-            placeholder="Search terms..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />
-              ),
+        <Flex style={{ padding: "16px", flexDirection: "column", gap: "16px" }}>
+          {/* Search Field */}
+          <Flex
+            style={{
+              alignItems: "center",
+              border: "1px solid var(--gray-5)",
+              borderRadius: "4px",
+              padding: "8px",
             }}
-            variant="outlined"
-            size="small"
-          />
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setShowFilters(!showFilters)}
-              startIcon={<FilterListIcon />}
-              sx={{
-                borderColor: "rgba(144, 202, 249, 0.12)",
-                "&:hover": {
-                  borderColor: "rgba(144, 202, 249, 0.24)",
-                },
-                height: 36,
+          >
+            <MagnifyingGlassIcon
+              style={{ marginRight: "8px", color: "var(--gray-12)" }}
+            />
+            <input
+              placeholder="Search terms..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                border: "none",
+                outline: "none",
+                backgroundColor: "transparent",
+                color: "var(--gray-12)",
               }}
+            />
+          </Flex>
+
+          {/* Filters Buttons */}
+          <Flex style={{ gap: "8px" }}>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              style={{ height: "36px" }}
             >
-              Filters {activeFilters.size > 0 && `(${activeFilters.size})`}
+              <ReaderIcon style={{ marginRight: "4px" }} />
+              Filters {activeFilters.size > 0 ? `(${activeFilters.size})` : ""}
             </Button>
             {activeFilters.size > 0 && (
               <Button
-                size="small"
-                startIcon={<ClearAllIcon />}
                 onClick={() => {
                   setActiveFilters(new Set());
                   setShowFilters(false);
                 }}
-                sx={{ height: 36 }}
+                style={{ height: "36px" }}
               >
                 Clear
               </Button>
             )}
-          </Box>
-          <Collapse in={showFilters}>
-            <Paper
-              variant="outlined"
-              sx={{
-                mt: 1,
-                p: 2,
-                backgroundColor: "rgba(144, 202, 249, 0.04)",
-                border: "1px solid rgba(144, 202, 249, 0.12)",
+          </Flex>
+
+          {/* Filters Collapse */}
+          {showFilters && (
+            <Card
+              variant="classic"
+              style={{
+                marginTop: "8px",
+                padding: "16px",
+                backgroundColor: "rgba(144,202,249,0.04)",
+                border: "1px solid var(--gray-5)",
               }}
             >
-              <Stack spacing={2}>
-                <Typography variant="subtitle2" color="text.secondary">
+              <Flex style={{ flexDirection: "column", gap: "16px" }}>
+                <Text size="2" style={{ color: "var(--gray-12)" }}>
                   Select filters
-                </Typography>
-                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                </Text>
+                <Flex style={{ flexWrap: "wrap", gap: "8px" }}>
                   {availableFilters.map((filter) => (
-                    <Chip
+                    <Button
                       key={filter.id}
-                      label={filter.label}
-                      icon={filter.icon}
                       onClick={() => toggleFilter(filter.id)}
                       variant={
-                        activeFilters.has(filter.id) ? "filled" : "outlined"
+                        activeFilters.has(filter.id) ? "solid" : "outline"
                       }
-                      color={
-                        activeFilters.has(filter.id) ? "primary" : "default"
-                      }
-                      sx={{
-                        borderColor: "rgba(144, 202, 249, 0.12)",
-                        "&:hover": {
-                          backgroundColor: activeFilters.has(filter.id)
-                            ? undefined
-                            : "rgba(144, 202, 249, 0.08)",
-                        },
+                      style={{
+                        borderColor: "var(--gray-5)",
+                        backgroundColor: activeFilters.has(filter.id)
+                          ? "var(--accent-9)"
+                          : undefined,
                       }}
-                    />
+                    >
+                      {filter.icon}
+                      {filter.label}
+                    </Button>
                   ))}
-                </Stack>
-              </Stack>
-            </Paper>
-          </Collapse>
-        </Box>
-        <Divider />
-        <List sx={{ overflow: "auto", flex: 1 }}>
+                </Flex>
+              </Flex>
+            </Card>
+          )}
+        </Flex>
+
+        {/* Terms List */}
+        <ScrollArea style={{ flex: 1 }}>
           {filteredTerms.map((term) => (
-            <ListItem
+            <Flex
               key={term.id}
-              disablePadding
-              secondaryAction={
-                <IconButton
-                  edge="end"
-                  onClick={() => toggleBookmark(term.id)}
-                  sx={{ mr: 1 }}
-                >
-                  {bookmarkedTerms.has(term.id) ? (
-                    <BookmarkIcon color="primary" />
-                  ) : (
-                    <BookmarkBorderIcon />
-                  )}
-                </IconButton>
-              }
+              style={{
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "8px",
+                borderBottom: "1px solid var(--gray-5)",
+              }}
             >
-              <ListItemButton onClick={() => handleTermSelect(term)}>
-                <ListItemText
-                  primary={term.term}
-                  secondary={term.shortDefinition}
-                  primaryTypographyProps={{ fontWeight: 500 }}
-                />
-              </ListItemButton>
-            </ListItem>
+              <div
+                onClick={() => handleTermSelect(term)}
+                style={{ cursor: "pointer", flex: 1 }}
+              >
+                <Heading size="5">{term.term}</Heading>
+                <Text size="2" style={{ color: "var(--gray-12)" }}>
+                  {term.shortDefinition}
+                </Text>
+              </div>
+              <IconButton
+                onClick={() => toggleBookmark(term.id)}
+                style={{ marginRight: "8px" }}
+              >
+                {bookmarkedTerms.has(term.id) ? (
+                  <BookmarkIcon style={{ color: "var(--accent-9)" }} />
+                ) : (
+                  <BookmarkIcon />
+                )}
+              </IconButton>
+            </Flex>
           ))}
-        </List>
-      </Paper>
+        </ScrollArea>
+      </Card>
 
       {/* Term Details Section */}
-      <Box sx={{ flex: 1, display: "flex", gap: 2, overflowX: "auto", p: 1 }}>
+      <Flex
+        style={{ flex: 1, gap: "16px", overflowX: "auto", padding: "16px" }}
+      >
         {openTerms.length > 0 ? (
-          <Paper
-            sx={{
+          <Card
+            style={{
               flex: 1,
-              p: 3,
+              padding: "24px",
               minWidth: "400px",
               maxWidth: "600px",
               overflow: "auto",
               position: "relative",
             }}
           >
-            <Stack spacing={3}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <IconButton
-                    onClick={() =>
-                      activeTermIndex > 0 &&
-                      setActiveTermIndex(activeTermIndex - 1)
-                    }
-                    disabled={activeTermIndex === 0}
-                  >
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  <Typography variant="h5" fontWeight={600}>
-                    {openTerms[activeTermIndex].term}
-                  </Typography>
-                  <IconButton
-                    onClick={() =>
-                      activeTermIndex < openTerms.length - 1 &&
-                      setActiveTermIndex(activeTermIndex + 1)
-                    }
-                    disabled={activeTermIndex === openTerms.length - 1}
-                  >
-                    <ChevronRightIcon />
-                  </IconButton>
-                </Box>
-                <IconButton onClick={handleCloseTerm}>
-                  <CloseIcon />
-                </IconButton>
-              </Box>
-
-              <Box>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  Definition
-                </Typography>
-                {renderLinkedDefinition(
-                  openTerms[activeTermIndex].fullDefinition,
-                  openTerms[activeTermIndex].linkedTerms
-                )}
-              </Box>
-
-              {openTerms[activeTermIndex].formula && (
-                <Box>
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    Formula
-                  </Typography>
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      backgroundColor: "rgba(144, 202, 249, 0.04)",
-                      border: "1px solid rgba(144, 202, 249, 0.12)",
-                    }}
-                  >
-                    <Typography fontFamily="monospace" fontSize="1.1rem">
-                      {openTerms[activeTermIndex].formula}
-                    </Typography>
-                  </Paper>
-                  <Typography sx={{ mt: 1 }} color="text.secondary">
-                    {openTerms[activeTermIndex].formulaExplanation}
-                  </Typography>
-                </Box>
-              )}
-
-              {openTerms[activeTermIndex].relatedTerms && (
-                <Box>
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    Related Terms
-                  </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {openTerms[activeTermIndex].relatedTerms.map(
-                      (relatedTerm) => (
-                        <Paper
-                          key={relatedTerm}
-                          variant="outlined"
-                          onClick={() => handleRelatedTermClick(relatedTerm)}
-                          sx={{
-                            px: 1.5,
-                            py: 0.5,
-                            cursor: "pointer",
-                            "&:hover": {
-                              backgroundColor: "rgba(144, 202, 249, 0.08)",
-                            },
-                          }}
-                        >
-                          <Typography variant="body2">{relatedTerm}</Typography>
-                        </Paper>
-                      )
-                    )}
-                  </Stack>
-                </Box>
-              )}
-            </Stack>
-          </Paper>
-        ) : (
-          <Paper sx={{ flex: 1, p: 3, overflow: "auto" }}>
-            {/* Welcome Screen Content */}
-            <Box
-              sx={{
-                height: "100%",
+            <Flex
+              style={{
                 display: "flex",
-                flexDirection: "column",
-                gap: 4,
-                p: 4,
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
               }}
             >
-              <Box>
-                <Typography variant="h5" sx={{ mb: 2 }}>
-                  Financial Glossary
-                </Typography>
-                <Typography color="text.secondary">
+              <Flex
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <IconButton
+                  onClick={() => {
+                    if (activeTermIndex > 0)
+                      setActiveTermIndex(activeTermIndex - 1);
+                  }}
+                  disabled={activeTermIndex === 0}
+                >
+                  <ChevronLeftIcon />
+                </IconButton>
+                <Heading size="4">{openTerms[activeTermIndex].term}</Heading>
+                <IconButton
+                  onClick={() => {
+                    if (activeTermIndex < openTerms.length - 1)
+                      setActiveTermIndex(activeTermIndex + 1);
+                  }}
+                  disabled={activeTermIndex === openTerms.length - 1}
+                >
+                  <ChevronRightIcon />
+                </IconButton>
+              </Flex>
+              <IconButton onClick={handleCloseTerm}>
+                <Cross2Icon />
+              </IconButton>
+            </Flex>
+
+            {/* Definition Section */}
+            <Box style={{ marginBottom: "16px" }}>
+              <Heading
+                size="3"
+                style={{ marginBottom: "8px", color: "var(--gray-12)" }}
+              >
+                Definition
+              </Heading>
+              {renderLinkedDefinition(
+                openTerms[activeTermIndex].fullDefinition,
+                openTerms[activeTermIndex].linkedTerms
+              )}
+            </Box>
+
+            {/* Formula Section */}
+            {openTerms[activeTermIndex].formula && (
+              <Box style={{ marginBottom: "16px" }}>
+                <Heading
+                  size="3"
+                  style={{ marginBottom: "8px", color: "var(--gray-12)" }}
+                >
+                  Formula
+                </Heading>
+                <Card
+                  variant="surface"
+                  style={{
+                    padding: "16px",
+                    backgroundColor: "rgba(144,202,249,0.04)",
+                    border: "1px solid var(--gray-5)",
+                  }}
+                >
+                  <Text
+                    as="p"
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "1.1rem",
+                      whiteSpace: "pre",
+                      color: "var(--gray-12)",
+                    }}
+                  >
+                    {openTerms[activeTermIndex].formula}
+                  </Text>
+                </Card>
+                <Text style={{ marginTop: "8px", color: "var(--gray-12)" }}>
+                  {openTerms[activeTermIndex].formulaExplanation}
+                </Text>
+              </Box>
+            )}
+
+            {/* Related Terms Section */}
+            {openTerms[activeTermIndex].relatedTerms && (
+              <Box style={{ marginBottom: "16px" }}>
+                <Heading
+                  size="3"
+                  style={{ marginBottom: "8px", color: "var(--gray-12)" }}
+                >
+                  Related Terms
+                </Heading>
+                <Flex style={{ flexWrap: "wrap", gap: "8px" }}>
+                  {openTerms[activeTermIndex].relatedTerms.map(
+                    (relatedTerm) => (
+                      <Card
+                        key={relatedTerm}
+                        variant="classic"
+                        onClick={() => handleRelatedTermClick(relatedTerm)}
+                        style={{
+                          padding: "4px 8px",
+                          cursor: "pointer",
+                          border: "1px solid var(--gray-5)",
+                        }}
+                      >
+                        <Text size="2" style={{ color: "var(--gray-12)" }}>
+                          {relatedTerm}
+                        </Text>
+                      </Card>
+                    )
+                  )}
+                </Flex>
+              </Box>
+            )}
+          </Card>
+        ) : (
+          // Welcome Screen Content
+          <Card style={{ flex: 1, padding: "24px", overflow: "auto" }}>
+            <Flex
+              style={{
+                flexDirection: "column",
+                gap: "32px",
+                height: "100%",
+                padding: "32px",
+              }}
+            >
+              <Flex style={{ flexDirection: "column", gap: "16px" }}>
+                <Heading size="4">Financial Glossary</Heading>
+                <Text style={{ color: "var(--gray-12)" }}>
                   Explore essential financial terms and concepts. Each entry
                   includes detailed definitions, formulas, and related terms to
                   help you understand market dynamics better.
-                </Typography>
-              </Box>
+                </Text>
+              </Flex>
 
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Your Bookmarked Terms
-                </Typography>
-                <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+              <Flex style={{ flexDirection: "column", gap: "16px" }}>
+                <Heading size="3">Your Bookmarked Terms</Heading>
+                <Flex style={{ flexWrap: "wrap", gap: "12px" }}>
                   {terms
                     .filter((term) => bookmarkedTerms.has(term.id))
                     .map((term) => (
-                      <Paper
+                      <Card
                         key={term.id}
+                        variant="classic"
                         onClick={() => setSelectedTerm(term)}
-                        sx={{
-                          px: 2,
-                          py: 1,
+                        style={{
+                          padding: "8px 16px",
                           cursor: "pointer",
-                          backgroundColor: "rgba(144, 202, 249, 0.04)",
-                          border: "1px solid rgba(144, 202, 249, 0.12)",
-                          "&:hover": {
-                            backgroundColor: "rgba(144, 202, 249, 0.08)",
-                          },
+                          backgroundColor: "rgba(144,202,249,0.04)",
+                          border: "1px solid var(--gray-5)",
                         }}
                       >
-                        <Typography variant="body2">{term.term}</Typography>
-                      </Paper>
+                        <Text size="2" style={{ color: "var(--gray-12)" }}>
+                          {term.term}
+                        </Text>
+                      </Card>
                     ))}
-                </Stack>
-              </Box>
+                </Flex>
+              </Flex>
 
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Getting Started
-                </Typography>
-                <Stack spacing={2}>
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      backgroundColor: "rgba(144, 202, 249, 0.04)",
-                      border: "1px solid rgba(144, 202, 249, 0.12)",
+              <Flex style={{ flexDirection: "column", gap: "16px" }}>
+                <Heading size="3">Getting Started</Heading>
+                <Flex style={{ flexDirection: "column", gap: "16px" }}>
+                  <Card
+                    variant="classic"
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "rgba(144,202,249,0.04)",
+                      border: "1px solid var(--gray-5)",
                     }}
                   >
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <SearchIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
+                    <Flex style={{ alignItems: "center", gap: "16px" }}>
+                      <MagnifyingGlassIcon
+                        style={{ color: "var(--accent-9)" }}
+                      />
+                      <Flex style={{ flexDirection: "column" }}>
+                        <Text
+                          size="2"
+                          style={{ fontWeight: 500, color: "var(--gray-12)" }}
+                        >
                           Search Terms
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </Text>
+                        <Text size="2" style={{ color: "var(--gray-12)" }}>
                           Use the search bar to find specific terms or browse
                           through the list
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Paper>
+                        </Text>
+                      </Flex>
+                    </Flex>
+                  </Card>
 
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      backgroundColor: "rgba(144, 202, 249, 0.04)",
-                      border: "1px solid rgba(144, 202, 249, 0.12)",
+                  <Card
+                    variant="classic"
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "rgba(144,202,249,0.04)",
+                      border: "1px solid var(--gray-5)",
                     }}
                   >
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <BookmarkIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
+                    <Flex style={{ alignItems: "center", gap: "16px" }}>
+                      <BookmarkIcon style={{ color: "var(--accent-9)" }} />
+                      <Flex style={{ flexDirection: "column" }}>
+                        <Text
+                          size="2"
+                          style={{ fontWeight: 500, color: "var(--gray-12)" }}
+                        >
                           Bookmark for Quick Access
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </Text>
+                        <Text size="2" style={{ color: "var(--gray-12)" }}>
                           Save important terms for quick reference using the
                           bookmark icon
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Paper>
+                        </Text>
+                      </Flex>
+                    </Flex>
+                  </Card>
 
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      backgroundColor: "rgba(144, 202, 249, 0.04)",
-                      border: "1px solid rgba(144, 202, 249, 0.12)",
+                  <Card
+                    variant="classic"
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "rgba(144,202,249,0.04)",
+                      border: "1px solid var(--gray-5)",
                     }}
                   >
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <MenuBookIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
+                    <Flex style={{ alignItems: "center", gap: "16px" }}>
+                      <ReaderIcon style={{ color: "var(--accent-9)" }} />
+                      <Flex style={{ flexDirection: "column" }}>
+                        <Text
+                          size="2"
+                          style={{ fontWeight: 500, color: "var(--gray-12)" }}
+                        >
                           Explore Related Terms
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        </Text>
+                        <Text size="2" style={{ color: "var(--gray-12)" }}>
                           Click on highlighted terms in definitions to discover
                           connected concepts
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                </Stack>
-              </Box>
-            </Box>
-          </Paper>
+                        </Text>
+                      </Flex>
+                    </Flex>
+                  </Card>
+                </Flex>
+              </Flex>
+            </Flex>
+          </Card>
         )}
-      </Box>
-    </Box>
+      </Flex>
+    </Flex>
   );
 };

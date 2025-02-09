@@ -5,7 +5,7 @@
 
 import { Flex, Box, Text, IconButton } from "@radix-ui/themes";
 import { NotificationsMenu } from "../NotificationsMenu/NotificationsMenu";
-import { HamburgerMenuIcon } from "@radix-ui/react-icons";
+import { ViewVerticalIcon } from "@radix-ui/react-icons";
 
 interface TopBarProps {
   isSidebarOpen: boolean;
@@ -33,7 +33,7 @@ export const TopBar = ({ isSidebarOpen, onSidebarToggle }: TopBarProps) => {
             variant="ghost"
             onClick={() => onSidebarToggle(!isSidebarOpen)}
           >
-            <HamburgerMenuIcon width={20} height={20} />
+            <ViewVerticalIcon width={20} height={20} />
           </IconButton>
           <Text
             size="5"
