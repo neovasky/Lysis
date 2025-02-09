@@ -24,6 +24,7 @@
     "date-fns": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^7.1.5",
     "styled-components": "^6.1.15"
   },

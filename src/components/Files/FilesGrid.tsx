@@ -8,8 +8,8 @@ import {
   DotsVerticalIcon,
   FileIcon,
   FileTextIcon,
-  ExcelIcon,
-  ComponentIcon,
+  TableIcon, // Changed from ExcelIcon
+  Component1Icon, // Changed from ComponentIcon
 } from "@radix-ui/react-icons";
 import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
@@ -25,9 +25,9 @@ export const FilesGrid = ({ files }: FilesGridProps) => {
       case "pdf":
         return <FileTextIcon width="24" height="24" />;
       case "excel":
-        return <ExcelIcon width="24" height="24" />;
+        return <TableIcon width="24" height="24" />;
       case "word":
-        return <ComponentIcon width="24" height="24" />;
+        return <Component1Icon width="24" height="24" />;
       default:
         return <FileIcon width="24" height="24" />;
     }

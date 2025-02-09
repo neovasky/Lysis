@@ -25,9 +25,9 @@ export const FilesLayout = () => {
       <Card size="3" mb="4">
         <Flex justify="between" align="center">
           <Box>
-            <Heading size="5" weight="bold" mb="2">
+            <Text size="5" weight="bold" mb="2">
               Files
-            </Heading>
+            </Text>
             <Text color="gray" size="2">
               {files.length} files
             </Text>
