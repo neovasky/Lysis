@@ -1,10 +1,7 @@
-/**
- * File: electron/preload.ts
- * Description: Preload script to expose APIs to renderer process
- */
-
+// File: electron/preload.ts
 import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
 import { FILE_CHANNELS } from "./handlers/fileHandlers";
+import type { FileAPI } from "../src/types/window";
 
 // Define valid channel types
 type ValidChannels = "main-process-message" | keyof typeof FILE_CHANNELS;
@@ -36,41 +33,6 @@ contextBridge.exposeInMainWorld("electron", {
   },
 });
 
-// Define the API type
-export interface FileAPI {
-  selectFile: (options?: { multiple?: boolean }) => Promise<string[]>;
-  readFile: (path: string) => Promise<{
-    content: Buffer;
-    name: string;
-    path: string;
-    size: number;
-    lastModified: Date;
-  }>;
-  writeFile: (options: { filePath: string; content: Buffer }) => Promise<{
-    name: string;
-    path: string;
-    size: number;
-    lastModified: Date;
-  }>;
-  getFiles: (dirPath: string) => Promise<
-    Array<{
-      name: string;
-      path: string;
-      size: number;
-      lastModified: Date;
-      type: string;
-    }>
-  >;
-  deleteFile: (path: string) => Promise<boolean>;
-  getFileInfo: (path: string) => Promise<{
-    name: string;
-    path: string;
-    size: number;
-    lastModified: Date;
-    type: string;
-  }>;
-}
-
 // Expose the file API to the renderer process
 contextBridge.exposeInMainWorld("fileAPI", {
   selectFile: (options?: { multiple?: boolean }) =>
@@ -89,21 +51,16 @@ contextBridge.exposeInMainWorld("fileAPI", {
 
   getFileInfo: (path: string) =>
     ipcRenderer.invoke(FILE_CHANNELS.GET_FILE_INFO, path),
-} as FileAPI);
 
-// Add the API type to the window object
-declare global {
-  interface Window {
-    electron: {
-      ipcRenderer: {
-        send: (channel: ValidChannels, message: IpcMessage) => void;
-        on: (
-          channel: ValidChannels,
-          func: (data: unknown) => void
-        ) => () => void;
-        once: (channel: ValidChannels, func: (data: unknown) => void) => void;
-      };
-    };
-    fileAPI: FileAPI;
-  }
-}
+  renameFile: (oldPath: string, newPath: string) =>
+    ipcRenderer.invoke(FILE_CHANNELS.RENAME_FILE, { oldPath, newPath }),
+
+  createDirectory: (path: string) =>
+    ipcRenderer.invoke(FILE_CHANNELS.CREATE_DIRECTORY, path),
+
+  moveFile: (options: { sourcePath: string; targetPath: string }) =>
+    ipcRenderer.invoke(FILE_CHANNELS.MOVE_FILE, options),
+
+  copyFile: (options: { sourcePath: string; targetPath: string }) =>
+    ipcRenderer.invoke(FILE_CHANNELS.COPY_FILE, options),
+} as FileAPI);

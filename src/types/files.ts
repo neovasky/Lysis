@@ -1,4 +1,7 @@
-// File: src/types/window.d.ts
+/**
+ * File: src/types/files.ts
+ * Description: Shared type definitions for file operations
+ */
 
 export interface FileInfo {
   name: string;
@@ -10,7 +13,7 @@ export interface FileInfo {
   hash: string | null;
 }
 
-export interface FileAPI {
+export interface FileOperations {
   selectFile: (options?: { multiple?: boolean }) => Promise<string[]>;
   readFile: (path: string) => Promise<{
     content: Buffer;
@@ -39,21 +42,3 @@ export interface FileAPI {
     targetPath: string;
   }) => Promise<FileInfo>;
 }
-
-declare global {
-  interface Window {
-    fileAPI: FileAPI;
-    electron: {
-      ipcRenderer: {
-        send: (
-          channel: string,
-          message: { type: string; payload?: unknown }
-        ) => void;
-        on: (channel: string, func: (data: unknown) => void) => () => void;
-        once: (channel: string, func: (data: unknown) => void) => void;
-      };
-    };
-  }
-}
-
-export {};

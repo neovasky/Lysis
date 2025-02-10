@@ -3,11 +3,21 @@
  * Description: Service for handling file operations and monitoring
  */
 
-import { FileMetadata, FileType, FileVersion } from "../store/slices/fileSlice";
+import { FileMetadata, FileType } from "../store/slices/fileSlice";
+import { FileInfo } from "../types/files";
+
+interface FileSelection {
+  multiple?: boolean;
+  directory?: boolean;
+  filters?: Array<{
+    name: string;
+    extensions: string[];
+  }>;
+}
 
 export class FileService {
   private static instance: FileService;
-  private fileWatchers: Map<string, () => void> = new Map();
+  private lastKnownHashes: Map<string, string> = new Map();
 
   private constructor() {}
 
@@ -19,24 +29,26 @@ export class FileService {
   }
 
   /**
+   * Open file selection dialog
+   */
+  async selectFiles(options?: FileSelection): Promise<string[]> {
+    try {
+      return await window.fileAPI.selectFile(options);
+    } catch (error) {
+      console.error("File selection error:", error);
+      throw new Error("Failed to select files");
+    }
+  }
+
+  /**
    * Get file metadata from a file path
    */
   async getFileMetadata(path: string): Promise<FileMetadata> {
     try {
       const info = await window.fileAPI.getFileInfo(path);
-      const name = path.split("/").pop() || "";
-      const type = this.getFileType(name);
-
-      return {
-        id: this.generateFileId(),
-        name,
-        type,
-        path,
-        lastModified: info.lastModified.getTime(),
-        size: info.size,
-        tags: [],
-      };
+      return this.convertToFileMetadata(info);
     } catch (error) {
+      console.error("Failed to get file metadata:", error);
       throw new Error(`Failed to get file metadata: ${error}`);
     }
   }
@@ -44,11 +56,18 @@ export class FileService {
   /**
    * Read file content
    */
-  async readFile(path: string): Promise<Buffer> {
+  async readFile(
+    path: string
+  ): Promise<{ content: Buffer; metadata: FileMetadata }> {
     try {
       const result = await window.fileAPI.readFile(path);
-      return result.content;
+      const info = await window.fileAPI.getFileInfo(path);
+      return {
+        content: result.content,
+        metadata: this.convertToFileMetadata(info),
+      };
     } catch (error) {
+      console.error("File read error:", error);
       throw new Error(`Failed to read file: ${error}`);
     }
   }
@@ -58,156 +77,158 @@ export class FileService {
    */
   async writeFile(path: string, content: Buffer): Promise<FileMetadata> {
     try {
-      const result = await window.fileAPI.writeFile({
-        filePath: path,
-        content,
-      });
-      return {
-        id: this.generateFileId(),
-        name: result.name,
-        path: result.path,
-        type: this.getFileType(result.name),
-        size: result.size,
-        lastModified: result.lastModified.getTime(),
-        tags: [],
-      };
+      await window.fileAPI.writeFile({ filePath: path, content });
+      return this.getFileMetadata(path);
     } catch (error) {
+      console.error("File write error:", error);
       throw new Error(`Failed to write file: ${error}`);
     }
   }
 
   /**
-   * Create a new version of a file
+   * Get all files in a directory
    */
-  async createVersion(
-    fileId: string,
-    path: string,
-    changes: string
-  ): Promise<FileVersion> {
+  async getFiles(dirPath: string): Promise<FileMetadata[]> {
     try {
-      // Copy file to versions directory
-      const versionPath = this.generateVersionPath(fileId);
-      const content = await this.readFile(path);
-      await this.writeFile(versionPath, content);
-
-      return {
-        id: this.generateFileId(),
-        fileId,
-        version: Date.now(),
-        path: versionPath,
-        createdAt: Date.now(),
-        changes,
-      };
+      const files = await window.fileAPI.getFiles(dirPath);
+      return files.map((file) => this.convertToFileMetadata(file));
     } catch (error) {
-      throw new Error(`Failed to create version: ${error}`);
+      console.error("Failed to get files:", error);
+      throw new Error(`Failed to get files: ${error}`);
     }
   }
 
   /**
-   * Start watching a file for changes
+   * Delete a file or directory
    */
-  watchFile(path: string, onChange: () => void): void {
-    if (this.fileWatchers.has(path)) {
-      return;
+  async deleteFile(path: string): Promise<boolean> {
+    try {
+      const result = await window.fileAPI.deleteFile(path);
+      this.lastKnownHashes.delete(path);
+      return result;
+    } catch (error) {
+      console.error("File deletion error:", error);
+      throw new Error(`Failed to delete file: ${error}`);
     }
+  }
 
-    const watcher = async () => {
-      try {
-        await window.fileAPI.getFileInfo(path); // Just check if file exists
-        onChange();
-        // Recursive watch
-        setTimeout(watcher, 1000);
-      } catch (error) {
-        console.error(`Error watching file: ${error}`);
-        this.unwatchFile(path);
+  /**
+   * Rename a file or directory
+   */
+  async renameFile(oldPath: string, newPath: string): Promise<FileMetadata> {
+    try {
+      await window.fileAPI.renameFile(oldPath, newPath);
+      return this.getFileMetadata(newPath);
+    } catch (error) {
+      console.error("File rename error:", error);
+      throw new Error(`Failed to rename file: ${error}`);
+    }
+  }
+
+  /**
+   * Create a new directory
+   */
+  async createDirectory(path: string): Promise<FileMetadata> {
+    try {
+      await window.fileAPI.createDirectory(path);
+      return this.getFileMetadata(path);
+    } catch (error) {
+      console.error("Directory creation error:", error);
+      throw new Error(`Failed to create directory: ${error}`);
+    }
+  }
+
+  /**
+   * Move a file or directory
+   */
+  async moveFile(
+    sourcePath: string,
+    targetPath: string
+  ): Promise<FileMetadata> {
+    try {
+      await window.fileAPI.moveFile({ sourcePath, targetPath });
+      this.lastKnownHashes.delete(sourcePath);
+      return this.getFileMetadata(targetPath);
+    } catch (error) {
+      console.error("File move error:", error);
+      throw new Error(`Failed to move file: ${error}`);
+    }
+  }
+
+  /**
+   * Copy a file
+   */
+  async copyFile(
+    sourcePath: string,
+    targetPath: string
+  ): Promise<FileMetadata> {
+    try {
+      await window.fileAPI.copyFile({ sourcePath, targetPath });
+      return this.getFileMetadata(targetPath);
+    } catch (error) {
+      console.error("File copy error:", error);
+      throw new Error(`Failed to copy file: ${error}`);
+    }
+  }
+
+  /**
+   * Check if a file has been modified externally
+   */
+  async checkFileModified(path: string): Promise<boolean> {
+    try {
+      const info = await window.fileAPI.getFileInfo(path);
+      const currentHash = info.hash;
+      const lastKnownHash = this.lastKnownHashes.get(path);
+
+      if (lastKnownHash && currentHash && currentHash !== lastKnownHash) {
+        return true;
       }
-    };
 
-    this.fileWatchers.set(path, watcher);
-    watcher();
-  }
-
-  /**
-   * Stop watching a file
-   */
-  unwatchFile(path: string): void {
-    if (this.fileWatchers.has(path)) {
-      this.fileWatchers.delete(path);
+      if (currentHash) {
+        this.lastKnownHashes.set(path, currentHash);
+      }
+      return false;
+    } catch (error) {
+      console.error("File check error:", error);
+      return false;
     }
   }
 
   /**
-   * Get the type of file from its name
+   * Convert FileInfo to FileMetadata
    */
-  private getFileType(filename: string): FileType {
-    const extension = filename.split(".").pop()?.toLowerCase() || "";
-    switch (extension) {
+  private convertToFileMetadata(info: FileInfo): FileMetadata {
+    const fileType = this.getFileTypeEnum(info.type);
+    if (info.hash) {
+      this.lastKnownHashes.set(info.path, info.hash);
+    }
+
+    return {
+      id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: info.name,
+      path: info.path,
+      type: fileType,
+      size: info.size,
+      lastModified: new Date(info.lastModified).getTime(),
+      tags: [],
+    };
+  }
+
+  /**
+   * Get FileType enum from string
+   */
+  private getFileTypeEnum(type: string): FileType {
+    switch (type.toLowerCase()) {
       case "pdf":
         return "pdf";
-      case "xlsx":
-      case "xls":
+      case "excel":
         return "excel";
-      case "doc":
-      case "docx":
+      case "word":
         return "word";
-      case "txt":
-      case "md":
+      case "text":
         return "text";
       default:
         return "other";
-    }
-  }
-
-  /**
-   * Generate a unique file ID
-   */
-  private generateFileId(): string {
-    return `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Generate a path for a new version of a file
-   */
-  private generateVersionPath(fileId: string): string {
-    const timestamp = Date.now();
-    return `versions/${fileId}_${timestamp}`;
-  }
-
-  /**
-   * Extract text content from a PDF file
-   */
-  async extractPdfText(buffer: Buffer): Promise<string> {
-    try {
-      // This is a placeholder. We'll need to implement PDF text extraction
-      // using a library like pdf.js
-      console.log(`Processing PDF buffer of size: ${buffer.byteLength}`);
-      throw new Error("PDF text extraction not implemented");
-    } catch (error) {
-      throw new Error(`Failed to extract PDF text: ${error}`);
-    }
-  }
-
-  /**
-   * Create a file annotation
-   */
-  async createAnnotation(annotation: {
-    fileId: string;
-    text: string;
-    position?: { page: number; x: number; y: number };
-  }): Promise<void> {
-    try {
-      // This is a placeholder. We'll need to implement annotation storage
-      // and possibly use a PDF annotation library
-      console.log(
-        `Creating annotation for file ${annotation.fileId}:`,
-        `"${annotation.text}"`,
-        annotation.position
-          ? `at position ${JSON.stringify(annotation.position)}`
-          : "without position"
-      );
-      throw new Error("File annotation not implemented");
-    } catch (error) {
-      throw new Error(`Failed to create annotation: ${error}`);
     }
   }
 }
