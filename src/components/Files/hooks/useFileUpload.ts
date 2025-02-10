@@ -1,8 +1,3 @@
-/**
- * File: src/components/Files/hooks/useFileUpload.ts
- * Description: Hook for handling file uploads
- */
-
 import { useState, useCallback } from "react";
 import { useAppDispatch } from "../../../store/hooks";
 import { addFile } from "../../../store/slices/fileSlice";
@@ -32,23 +27,38 @@ export function useFileUpload() {
   );
 
   const uploadFile = useCallback(
-    async (uploadFile: UploadingFile) => {
+    async (uploadingFile: UploadingFile) => {
       try {
         // Update status to uploading
-        updateFileStatus(uploadFile.id, { status: "uploading" });
+        updateFileStatus(uploadingFile.id, { status: "uploading" });
 
-        // Get temporary progress updates
+        // Select the destination using electron's file dialog
+        const paths = await FileService.selectFiles({
+          directory: true,
+          multiple: false,
+        });
+
+        if (!paths || paths.length === 0) {
+          throw new Error("No destination selected");
+        }
+
+        const destinationPath = paths[0];
+
+        // Convert File to Buffer
+        const arrayBuffer = await uploadingFile.file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Create a unique filename in case of duplicates
+        const filePath = `${destinationPath}/${uploadingFile.file.name}`;
+
+        // Simulate progress updates
         const interval = setInterval(() => {
-          updateFileStatus(uploadFile.id, {
-            progress: Math.min((uploadFile.progress || 0) + 10, 90),
+          updateFileStatus(uploadingFile.id, {
+            progress: Math.min((uploadingFile.progress || 0) + 10, 90),
           });
         }, 200);
 
-        // Convert File to Buffer
-        const buffer = Buffer.from(await uploadFile.file.arrayBuffer());
-
         // Write file to filesystem
-        const filePath = uploadFile.file.path || uploadFile.file.name; // Use path if available
         const metadata = await FileService.writeFile(filePath, buffer);
 
         // Clear interval
@@ -58,13 +68,13 @@ export function useFileUpload() {
         dispatch(addFile(metadata));
 
         // Update status to completed
-        updateFileStatus(uploadFile.id, {
+        updateFileStatus(uploadingFile.id, {
           status: "completed",
           progress: 100,
         });
       } catch (error) {
         // Update status to error
-        updateFileStatus(uploadFile.id, {
+        updateFileStatus(uploadingFile.id, {
           status: "error",
           error: error instanceof Error ? error.message : "Upload failed",
           progress: 0,
