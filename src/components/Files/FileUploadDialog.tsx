@@ -4,21 +4,47 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Button, Flex, Text, Box, Progress, Card } from "@radix-ui/themes";
 import { UploadIcon, TrashIcon, Cross2Icon } from "@radix-ui/react-icons";
 import { useFileUpload, type UploadingFile } from "./hooks/useFileUpload";
+import FileService from "../../services/fileService";
 
 interface FileUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUploadComplete?: () => void;
+  currentFolderPath?: string;
 }
 
 export const FileUploadDialog = ({
   open,
   onOpenChange,
   onUploadComplete,
+  currentFolderPath,
 }: FileUploadDialogProps) => {
   const { uploadingFiles, processFiles, removeFile } = useFileUpload();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file upload
+  const handleUpload = useCallback(
+    async (files: File[]) => {
+      let destinationPath = currentFolderPath;
+
+      // If no destination path provided, ask user to select one
+      if (!destinationPath) {
+        const paths = await FileService.selectFiles({
+          directory: true,
+          multiple: false,
+        });
+
+        if (!paths || paths.length === 0) {
+          return;
+        }
+        destinationPath = paths[0];
+      }
+
+      await processFiles(files, destinationPath);
+    },
+    [currentFolderPath, processFiles]
+  );
 
   // Drag & Drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -46,10 +72,10 @@ export const FileUploadDialog = ({
 
       const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
-        await processFiles(files);
+        await handleUpload(files);
       }
     },
-    [processFiles]
+    [handleUpload]
   );
 
   // File input change handler
@@ -57,11 +83,11 @@ export const FileUploadDialog = ({
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
         const files = Array.from(e.target.files);
-        await processFiles(files);
-        e.target.value = ""; // Reset input so the same file can be re-selected if needed.
+        await handleUpload(files);
+        e.target.value = ""; // Reset input
       }
     },
-    [processFiles]
+    [handleUpload]
   );
 
   // Dialog close handler
@@ -76,7 +102,7 @@ export const FileUploadDialog = ({
     }
   }, [uploadingFiles, onOpenChange, onUploadComplete]);
 
-  // Render upload status text
+  // Render status text
   const renderStatusText = (file: UploadingFile) => {
     switch (file.status) {
       case "completed":
@@ -122,7 +148,6 @@ export const FileUploadDialog = ({
               marginBottom: "16px",
             }}
           >
-            {/* Hidden file input placed off-screen */}
             <input
               type="file"
               ref={fileInputRef}

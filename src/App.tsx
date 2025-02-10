@@ -1,8 +1,3 @@
-/**
- * File: src/App.tsx
- * Description: Root application component with routing and theme setup
- */
-
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
@@ -17,6 +12,8 @@ import { CalendarPage } from "./pages/Calendar/CalendarPage";
 import { NotesPage } from "./pages/Notes/NotesPage";
 import { AnalysisPage } from "./pages/Analysis/AnalysisPage";
 import { AuthProvider } from "./contexts/AuthContext";
+import { Provider } from "react-redux";
+import { store } from "./store/store";
 import { useAuth } from "./hooks/useAuth";
 import { ThemeMode, ThemeAccent } from "./theme/types";
 import "@radix-ui/themes/styles.css";
@@ -35,7 +32,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-function App() {
+export function App() {
   const getInitialTheme = (): ThemeMode => {
     const savedMode = localStorage.getItem("theme-mode") as ThemeMode | null;
     if (savedMode === "light" || savedMode === "dark") {
@@ -54,37 +51,37 @@ function App() {
   };
 
   return (
-    <ThemeProvider
-      defaultMode={getInitialTheme()}
-      defaultAccent={getInitialAccent()}
-    >
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <MainLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<HomePage />} />
-              <Route path="glossary" element={<GlossaryPage />} />
-              <Route path="analysis" element={<AnalysisPage />} />
-              <Route path="alerts" element={<AlertsPage />} />
-              <Route path="files" element={<FilesPage />} />
-              <Route path="calendar" element={<CalendarPage />} />
-              <Route path="notes" element={<NotesPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider
+        defaultMode={getInitialTheme()}
+        defaultAccent={getInitialAccent()}
+      >
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<HomePage />} />
+                <Route path="glossary" element={<GlossaryPage />} />
+                <Route path="analysis" element={<AnalysisPage />} />
+                <Route path="alerts" element={<AlertsPage />} />
+                <Route path="files" element={<FilesPage />} />
+                <Route path="calendar" element={<CalendarPage />} />
+                <Route path="notes" element={<NotesPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </Provider>
   );
 }
-
-export default App;

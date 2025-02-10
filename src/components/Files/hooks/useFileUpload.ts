@@ -27,28 +27,16 @@ export function useFileUpload() {
   );
 
   const uploadFile = useCallback(
-    async (uploadingFile: UploadingFile) => {
+    async (uploadingFile: UploadingFile, destinationPath: string) => {
       try {
         // Update status to uploading
         updateFileStatus(uploadingFile.id, { status: "uploading" });
-
-        // Select the destination using electron's file dialog
-        const paths = await FileService.selectFiles({
-          directory: true,
-          multiple: false,
-        });
-
-        if (!paths || paths.length === 0) {
-          throw new Error("No destination selected");
-        }
-
-        const destinationPath = paths[0];
 
         // Convert File to Buffer
         const arrayBuffer = await uploadingFile.file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // Create a unique filename in case of duplicates
+        // Create full file path
         const filePath = `${destinationPath}/${uploadingFile.file.name}`;
 
         // Simulate progress updates
@@ -85,20 +73,22 @@ export function useFileUpload() {
   );
 
   const processFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[], destinationPath: string) => {
       // Create upload entries
-      const newFiles = files.map((file) => ({
+      const newFiles: UploadingFile[] = files.map((file) => ({
         id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         file,
         progress: 0,
-        status: "pending" as UploadStatus,
+        status: "pending",
       }));
 
       // Add new files to state
       setUploadingFiles((prev) => [...prev, ...newFiles]);
 
       // Process each file
-      await Promise.all(newFiles.map(uploadFile));
+      await Promise.all(
+        newFiles.map((file) => uploadFile(file, destinationPath))
+      );
     },
     [uploadFile]
   );
@@ -107,16 +97,9 @@ export function useFileUpload() {
     setUploadingFiles((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
-  const clearCompleted = useCallback(() => {
-    setUploadingFiles((prev) =>
-      prev.filter((f) => f.status !== "completed" && f.status !== "error")
-    );
-  }, []);
-
   return {
     uploadingFiles,
     processFiles,
     removeFile,
-    clearCompleted,
   };
 }

@@ -46,7 +46,7 @@ export function useFiles(): UseFilesReturn {
           const currentFiles = await FileService.getFiles(dirPath);
 
           // Check for new or modified files
-          currentFiles.forEach((newFile) => {
+          currentFiles.forEach((newFile: FileMetadata) => {
             const existingFile = files.find((f) => f.path === newFile.path);
 
             if (!existingFile) {
@@ -113,7 +113,7 @@ export function useFiles(): UseFilesReturn {
         const fileList = await FileService.getFiles(targetDir);
 
         // Update store with files
-        fileList.forEach((file) => {
+        fileList.forEach((file: FileMetadata) => {
           dispatch(addFile(file));
         });
 
