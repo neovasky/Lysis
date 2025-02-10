@@ -1,24 +1,27 @@
-/**
- * File: src/components/Files/FilesList.tsx
- * Description: List view component for displaying files
- */
-
-import { Table, Button, Text, Box, Flex } from "@radix-ui/themes";
+import { useCallback } from "react";
+import { Table, Button, Text, Box, Flex, DropdownMenu } from "@radix-ui/themes";
 import {
   DotsVerticalIcon,
   FileIcon,
   FileTextIcon,
-  TableIcon, // Changed from ExcelIcon
-  Component1Icon, // Changed from ComponentIcon
+  TableIcon,
+  Component1Icon,
+  TrashIcon,
+  DownloadIcon,
+  Pencil1Icon,
 } from "@radix-ui/react-icons";
 import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
+import { useFiles } from "./hooks/useFiles";
 
 interface FilesListProps {
   files: FileMetadata[];
+  onFileOpen?: (file: FileMetadata) => void;
 }
 
-export const FilesList = ({ files }: FilesListProps) => {
+export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
+  const { deleteFile } = useFiles();
+
   // Get file icon based on type
   const getFileIcon = (type: FileMetadata["type"]) => {
     switch (type) {
@@ -47,6 +50,65 @@ export const FilesList = ({ files }: FilesListProps) => {
     return `${size.toFixed(1)} ${units[unitIndex]}`;
   };
 
+  // Handle file operations
+  const handleFileDelete = useCallback(
+    async (file: FileMetadata) => {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete ${file.name}?`
+      );
+      if (confirmed) {
+        await deleteFile(file.id, file.path);
+      }
+    },
+    [deleteFile]
+  );
+
+  const handleFileOpen = useCallback(
+    (file: FileMetadata) => {
+      if (onFileOpen) {
+        onFileOpen(file);
+      }
+    },
+    [onFileOpen]
+  );
+
+  const FileActions = ({ file }: { file: FileMetadata }) => (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        <Button variant="ghost" size="1">
+          <DotsVerticalIcon />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content>
+        <DropdownMenu.Item onClick={() => handleFileOpen(file)}>
+          <Flex gap="2" align="center">
+            <FileIcon />
+            Open
+          </Flex>
+        </DropdownMenu.Item>
+        <DropdownMenu.Item>
+          <Flex gap="2" align="center">
+            <DownloadIcon />
+            Download
+          </Flex>
+        </DropdownMenu.Item>
+        <DropdownMenu.Item>
+          <Flex gap="2" align="center">
+            <Pencil1Icon />
+            Rename
+          </Flex>
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item color="red" onClick={() => handleFileDelete(file)}>
+          <Flex gap="2" align="center">
+            <TrashIcon />
+            Delete
+          </Flex>
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  );
+
   return (
     <Table.Root>
       <Table.Header>
@@ -73,7 +135,11 @@ export const FilesList = ({ files }: FilesListProps) => {
           </Table.Row>
         ) : (
           files.map((file) => (
-            <Table.Row key={file.id}>
+            <Table.Row
+              key={file.id}
+              style={{ cursor: "pointer" }}
+              onClick={() => handleFileOpen(file)}
+            >
               <Table.Cell>
                 <Flex align="center" gap="2">
                   {getFileIcon(file.type)}
@@ -99,7 +165,7 @@ export const FilesList = ({ files }: FilesListProps) => {
               </Table.Cell>
               <Table.Cell>
                 <Flex gap="1" wrap="wrap">
-                  {file.tags.map((tag) => (
+                  {file.tags?.map((tag) => (
                     <Text
                       key={tag}
                       size="1"
@@ -114,10 +180,8 @@ export const FilesList = ({ files }: FilesListProps) => {
                   ))}
                 </Flex>
               </Table.Cell>
-              <Table.Cell>
-                <Button variant="ghost" size="1">
-                  <DotsVerticalIcon />
-                </Button>
+              <Table.Cell onClick={(e) => e.stopPropagation()}>
+                <FileActions file={file} />
               </Table.Cell>
             </Table.Row>
           ))
