@@ -6,7 +6,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 // File types that can be handled
-export type FileType = "pdf" | "excel" | "word" | "text" | "other";
+export type FileType = "pdf" | "excel" | "word" | "text" | "other" | "folder";
 
 // Relationship types between files
 export type RelationType = "reference" | "source" | "derivative" | "annotation";

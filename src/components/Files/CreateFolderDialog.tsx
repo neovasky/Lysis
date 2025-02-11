@@ -8,6 +8,7 @@ interface CreateFolderDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: (name: string) => Promise<void>;
   isLoading?: boolean;
+  currentPath?: string | null;
 }
 
 export const CreateFolderDialog = ({
@@ -15,15 +16,43 @@ export const CreateFolderDialog = ({
   onOpenChange,
   onConfirm,
   isLoading = false,
+  currentPath,
 }: CreateFolderDialogProps) => {
   const [folderName, setFolderName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // Build the regex via RegExp constructor to avoid ESLint warnings.
+  // The pattern matches any of these characters: < > : " / \ | ? *
+  // or any control character between U+0000 and U+001F.
+  const invalidCharsPattern = '[<>:"/\\\\|?*\\u0000-\\u001F]';
+  const invalidChars = new RegExp(invalidCharsPattern, "u");
+
+  const validateFolderName = (name: string): string | null => {
+    if (!name.trim()) {
+      return "Please enter a folder name";
+    }
+
+    if (invalidChars.test(name)) {
+      return "Folder name contains invalid characters";
+    }
+
+    if (name.length > 255) {
+      return "Folder name is too long";
+    }
+
+    if (name.startsWith(" ") || name.endsWith(" ") || name.endsWith(".")) {
+      return "Folder name cannot start or end with spaces or end with periods";
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!folderName.trim()) {
-      setError("Please enter a folder name");
+    const validationError = validateFolderName(folderName);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -51,13 +80,26 @@ export const CreateFolderDialog = ({
                   <Text> Create New Folder</Text>
                 </Flex>
                 <Dialog.Close asChild>
-                  <Button asChild>
+                  <Button
+                    asChild
+                    onClick={() => {
+                      setFolderName("");
+                      setError(null);
+                    }}
+                  >
                     <button className="DialogCloseButton">
                       <Cross2Icon />
                     </button>
                   </Button>
                 </Dialog.Close>
               </Flex>
+
+              {/* Current Path Display (optional) */}
+              {currentPath && (
+                <Text size="2" color="gray">
+                  Location: {currentPath}
+                </Text>
+              )}
 
               {/* Input Field */}
               <Box>
@@ -66,7 +108,7 @@ export const CreateFolderDialog = ({
                   size="2"
                   mb="2"
                   weight="medium"
-                  style={{ color: "#fff" }}
+                  style={{ display: "block", color: "#fff" }}
                 >
                   Folder Name
                 </Text>
@@ -78,6 +120,7 @@ export const CreateFolderDialog = ({
                     setFolderName(e.target.value);
                     setError(null);
                   }}
+                  disabled={isLoading}
                   autoFocus
                 />
               </Box>
@@ -89,7 +132,7 @@ export const CreateFolderDialog = ({
                 </Text>
               )}
 
-              {/* Action Button (Cancel button removed) */}
+              {/* Action Button */}
               <Flex justify="end">
                 <Button
                   type="submit"
@@ -97,12 +140,12 @@ export const CreateFolderDialog = ({
                   style={{
                     backgroundColor: "#007aff",
                     color: "#fff",
-                    padding: "8px 16px", // Reduced vertical padding for a balanced look
-                    borderRadius: "6px", // Slightly rounded edges
+                    padding: "8px 16px",
+                    borderRadius: "6px",
                     transition: "background-color 0.2s ease",
                   }}
                   onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#005EC7")
+                    (e.currentTarget.style.backgroundColor = "#005ec7")
                   }
                   onMouseOut={(e) =>
                     (e.currentTarget.style.backgroundColor = "#007aff")

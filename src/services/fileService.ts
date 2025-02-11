@@ -23,8 +23,7 @@ interface FileOperationResult {
 
 export class FileService {
   private static instance: FileService;
-  private currentDirectory: string | null = null;
-  // State management
+  private currentDirectory: string | undefined = undefined;
 
   private constructor() {}
 
@@ -36,9 +35,10 @@ export class FileService {
   }
 
   /**
-   * Get or select current working directory
+   * Get or select current working directory.
+   * If no directory is set, attempt to prompt the user.
    */
-  async getCurrentDirectory(): Promise<string | null> {
+  async getCurrentDirectory(): Promise<string | undefined> {
     if (!this.currentDirectory) {
       const selected = await this.selectFiles({
         directory: true,
@@ -52,14 +52,14 @@ export class FileService {
   }
 
   /**
-   * Set current working directory
+   * Set current working directory.
    */
-  setCurrentDirectory(path: string | null) {
+  setCurrentDirectory(path: string | undefined) {
     this.currentDirectory = path;
   }
 
   /**
-   * Select files or directories
+   * Select files or directories.
    */
   async selectFiles(options?: FileSelection): Promise<string[]> {
     try {
@@ -75,9 +75,21 @@ export class FileService {
   }
 
   /**
-   * Get all files in a directory
+   * Get all files in a directory.
+   * If window.fileAPI isn’t available, return simulated folders stored in localStorage.
+   */
+  /**
+   * Get all files in a directory.
+   * If window.fileAPI isn’t available, return simulated folders stored in localStorage.
    */
   async getFiles(dirPath: string): Promise<FileMetadata[]> {
+    if (!window.fileAPI || typeof window.fileAPI.getFiles !== "function") {
+      // Simulation: read from localStorage.
+      const storageKey = `simulatedFolders_${this.currentDirectory}`;
+      const stored = localStorage.getItem(storageKey);
+      const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
+      return folders;
+    }
     try {
       const files = await window.fileAPI.getFiles(dirPath);
       return files.map((file) => this.convertFileInfo(file));
@@ -88,7 +100,7 @@ export class FileService {
   }
 
   /**
-   * Write file content
+   * Write file content.
    */
   async writeFile(path: string, content: Buffer): Promise<FileMetadata> {
     try {
@@ -102,18 +114,45 @@ export class FileService {
   }
 
   /**
-   * Create new directory
+   * Create new directory.
+   * If window.fileAPI is not available, simulate folder creation and persist it in localStorage.
    */
   async createDirectory(name: string): Promise<FileOperationResult> {
     try {
       if (!this.currentDirectory) {
         throw new Error("No current directory selected");
       }
-
+      // Build the full path by concatenating the current directory with the new folder name.
       const path = `${this.currentDirectory}/${name}`;
+      // If the file API isn’t available, simulate success.
+      if (
+        !window.fileAPI ||
+        typeof window.fileAPI.createDirectory !== "function"
+      ) {
+        console.warn(
+          "window.fileAPI not available. Simulating folder creation."
+        );
+        const simulatedFolder: FileMetadata = {
+          id: `folder_${Date.now()}`,
+          name,
+          path,
+          type: "folder", // Ensure FileType includes "folder"
+          size: 0,
+          lastModified: Date.now(),
+          isDirectory: true,
+          tags: [],
+        };
+        // Persist the simulated folder in localStorage.
+        const storageKey = `simulatedFolders_${this.currentDirectory}`;
+        const stored = localStorage.getItem(storageKey);
+        const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
+        folders.push(simulatedFolder);
+        localStorage.setItem(storageKey, JSON.stringify(folders));
+        return { success: true, metadata: simulatedFolder };
+      }
+      // Otherwise, use the actual API.
       await window.fileAPI.createDirectory(path);
       const info = await window.fileAPI.getFileInfo(path);
-
       return {
         success: true,
         metadata: this.convertFileInfo(info),
@@ -129,24 +168,20 @@ export class FileService {
   }
 
   /**
-   * Upload files to current directory
+   * Upload files to current directory.
    */
   async uploadFiles(files: File[]): Promise<FileOperationResult[]> {
     if (!this.currentDirectory) {
       throw new Error("No current directory selected");
     }
-
     const results: FileOperationResult[] = [];
-
     for (const file of files) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const path = `${this.currentDirectory}/${file.name}`;
-
         await this.writeFile(path, buffer);
         const info = await window.fileAPI.getFileInfo(path);
-
         results.push({
           success: true,
           metadata: this.convertFileInfo(info),
@@ -158,12 +193,11 @@ export class FileService {
         });
       }
     }
-
     return results;
   }
 
   /**
-   * Delete file or directory
+   * Delete file or directory.
    */
   async deleteItem(path: string): Promise<FileOperationResult> {
     try {
@@ -178,7 +212,7 @@ export class FileService {
   }
 
   /**
-   * Rename file or directory
+   * Rename file or directory.
    */
   async renameItem(
     oldPath: string,
@@ -187,10 +221,8 @@ export class FileService {
     try {
       const directory = oldPath.substring(0, oldPath.lastIndexOf("/"));
       const newPath = `${directory}/${newName}`;
-
       await window.fileAPI.renameFile(oldPath, newPath);
       const info = await window.fileAPI.getFileInfo(newPath);
-
       return {
         success: true,
         metadata: this.convertFileInfo(info),
@@ -204,7 +236,7 @@ export class FileService {
   }
 
   /**
-   * Move file or directory
+   * Move file or directory.
    */
   async moveItem(
     sourcePath: string,
@@ -213,7 +245,6 @@ export class FileService {
     try {
       await window.fileAPI.moveFile({ sourcePath, targetPath });
       const info = await window.fileAPI.getFileInfo(targetPath);
-
       return {
         success: true,
         metadata: this.convertFileInfo(info),
@@ -227,7 +258,7 @@ export class FileService {
   }
 
   /**
-   * Convert FileInfo to FileMetadata
+   * Convert FileInfo to FileMetadata.
    */
   private convertFileInfo(info: FileInfo): FileMetadata {
     return {
@@ -243,7 +274,7 @@ export class FileService {
   }
 
   /**
-   * Get file type from extension
+   * Get file type from extension.
    */
   private getFileType(filename: string): FileType {
     const ext = filename.toLowerCase().split(".").pop() || "";

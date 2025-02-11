@@ -18,6 +18,9 @@ import { useFiles } from "../../components/Files/hooks/useFiles";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 
+// Define the default base directory.
+const DEFAULT_BASE_DIRECTORY = "BaseDirectory";
+
 type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
 
@@ -37,24 +40,17 @@ export const FilesPage = () => {
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
 
-  // Load initial root directory
-  useEffect(() => {
-    loadDirectories();
-  }, []);
-
+  // Load directories using the default base directory if needed.
   const loadDirectories = async () => {
     try {
-      const rootPath = await FileService.getCurrentDirectory();
+      let rootPath = await FileService.getCurrentDirectory();
       if (!rootPath) {
-        const paths = await FileService.selectFiles({
-          directory: true,
-          multiple: false,
-        });
-        if (!paths || paths.length === 0) return;
-        FileService.setCurrentDirectory(paths[0]);
+        // If no directory is set, use the default.
+        rootPath = DEFAULT_BASE_DIRECTORY;
+        FileService.setCurrentDirectory(rootPath);
       }
-      const files = await FileService.getFiles(rootPath || "");
-      const dirInfos = files
+      const filesList = await FileService.getFiles(rootPath || "");
+      const dirInfos = filesList
         .filter((f) => f.isDirectory)
         .map((d) => ({
           path: d.path,
@@ -62,26 +58,44 @@ export const FilesPage = () => {
           fileCount: 0,
         }));
       setDirectories(dirInfos);
+      setCurrentDirectory(
+        (prev) => prev || { path: rootPath, name: "Base", fileCount: 0 }
+      );
     } catch (err) {
       console.error("Error loading directories:", err);
     }
   };
 
+  useEffect(() => {
+    loadDirectories();
+  }, []);
+
+  const handleNewFolderClick = () => {
+    setIsNewFolderOpen(true);
+  };
+
   const handleCreateFolder = async (name: string) => {
     try {
-      const parentPath =
-        currentDirectory?.path || (await FileService.getCurrentDirectory());
-      if (!parentPath) return;
-      const result = await FileService.createDirectory(name);
-      if (result.success) {
-        if (currentDirectory) {
-          await loadFiles(currentDirectory.path);
-        } else {
-          await loadDirectories();
-        }
+      let directoryPath = currentDirectory?.path;
+      if (!directoryPath) {
+        directoryPath = DEFAULT_BASE_DIRECTORY;
+        setCurrentDirectory({
+          path: directoryPath,
+          name: "Base",
+          fileCount: 0,
+        });
+        FileService.setCurrentDirectory(directoryPath);
       }
+      const result = await FileService.createDirectory(name);
+      if (!result.success) {
+        throw new Error(result.error || "Folder creation failed");
+      }
+      await loadFiles(directoryPath);
+      await loadDirectories();
+      setIsNewFolderOpen(false);
     } catch (err) {
       console.error("Error creating folder:", err);
+      alert(err instanceof Error ? err.message : "Failed to create folder");
     }
   };
 
@@ -97,12 +111,13 @@ export const FilesPage = () => {
 
   const handleBackToRoot = async () => {
     try {
-      const rootPath = await FileService.getCurrentDirectory();
-      if (rootPath) {
-        setCurrentDirectory(null);
+      let rootPath = await FileService.getCurrentDirectory();
+      if (!rootPath) {
+        rootPath = DEFAULT_BASE_DIRECTORY;
         FileService.setCurrentDirectory(rootPath);
-        await loadDirectories();
       }
+      setCurrentDirectory({ path: rootPath, name: "Base", fileCount: 0 });
+      await loadDirectories();
     } catch (err) {
       console.error("Error going back to root:", err);
     }
@@ -132,7 +147,6 @@ export const FilesPage = () => {
 
   return (
     <Box style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Header Bar without the large "Files" text */}
       <Flex
         align="center"
         px="4"
@@ -146,24 +160,19 @@ export const FilesPage = () => {
           flexWrap: "wrap",
         }}
       >
-        {/* Optional Back Button */}
-        {currentDirectory && (
-          <Button
-            variant="ghost"
-            onClick={handleBackToRoot}
-            style={{ marginRight: "16px" }}
-          >
-            <ChevronLeftIcon />
-          </Button>
-        )}
-
-        {/* Primary Actions: New Folder and Upload Files */}
+        {/* Only show the back arrow if the current directory is not the default base */}
+        {currentDirectory &&
+          currentDirectory.path !== DEFAULT_BASE_DIRECTORY && (
+            <Button
+              variant="ghost"
+              onClick={handleBackToRoot}
+              style={{ marginRight: "16px" }}
+            >
+              <ChevronLeftIcon />
+            </Button>
+          )}
         <Flex align="center" gap="2">
-          <Button
-            variant="solid"
-            size="2"
-            onClick={() => setIsNewFolderOpen(true)}
-          >
+          <Button variant="solid" size="2" onClick={handleNewFolderClick}>
             <PlusIcon />
             New Folder
           </Button>
@@ -176,8 +185,6 @@ export const FilesPage = () => {
             Upload Files
           </Button>
         </Flex>
-
-        {/* Separator between Primary Actions and View Controls */}
         <Box
           style={{
             width: "1px",
@@ -186,8 +193,6 @@ export const FilesPage = () => {
             margin: "0 24px",
           }}
         />
-
-        {/* View Controls: Grid and List */}
         <Flex align="center" gap="2">
           <Tooltip.Provider>
             <Tooltip.Root>
@@ -226,7 +231,6 @@ export const FilesPage = () => {
         </Flex>
       </Flex>
 
-      {/* Optional Error Message */}
       {error && (
         <Box p="2" style={{ backgroundColor: "var(--red-2)" }}>
           <Text color="red" size="2">
@@ -235,11 +239,9 @@ export const FilesPage = () => {
         </Box>
       )}
 
-      {/* Main Content Container */}
       <Box style={{ flex: 1, overflow: "auto", padding: "16px" }}>
         {currentDirectory ? (
           <Box>
-            {/* File Filters */}
             <Flex gap="2" mb="4" style={{ flexWrap: "wrap" }}>
               {["all", "recent", "pdf", "excel", "word"].map((filter) => (
                 <Badge
@@ -252,8 +254,6 @@ export const FilesPage = () => {
                 </Badge>
               ))}
             </Flex>
-
-            {/* Files View */}
             {loading ? (
               <Flex align="center" justify="center" p="6">
                 <Text size="2" color="gray">
@@ -267,7 +267,6 @@ export const FilesPage = () => {
             )}
           </Box>
         ) : (
-          // Directory Grid
           <Grid columns="4" gap="4">
             {directories.map((dir) => (
               <Box
@@ -298,7 +297,6 @@ export const FilesPage = () => {
         )}
       </Box>
 
-      {/* Fixed Refresh Button at Bottom Right with Adjusted Boundary and Matching Color */}
       <Tooltip.Provider>
         <Tooltip.Root>
           <Tooltip.Trigger asChild>
@@ -325,17 +323,17 @@ export const FilesPage = () => {
         </Tooltip.Root>
       </Tooltip.Provider>
 
-      {/* Dialog Components */}
       <FileUploadDialog
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
         onUploadComplete={refreshFiles}
-        currentFolderPath={currentDirectory?.path}
+        currentFolderPath={currentDirectory?.path ?? undefined}
       />
       <CreateFolderDialog
         open={isNewFolderOpen}
         onOpenChange={setIsNewFolderOpen}
         onConfirm={handleCreateFolder}
+        currentPath={currentDirectory?.path ?? undefined}
       />
     </Box>
   );
