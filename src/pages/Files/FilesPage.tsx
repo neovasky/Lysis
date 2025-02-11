@@ -8,7 +8,6 @@ import {
   Flex,
   Button,
   Badge,
-  Separator,
 } from "@radix-ui/themes";
 import {
   UploadIcon,
@@ -145,13 +144,20 @@ export const FilesPage = () => {
   }, [files, activeFilter]);
 
   return (
-    <Box p="4">
+    <Box style={{ padding: "32px" }}>
       {/* Header */}
-      <Card size="3" mb="4">
-        <Flex direction="column" gap="3">
-          <Flex justify="between" align="center">
+      <Card
+        size="3"
+        mb="6"
+        style={{
+          backgroundColor: "var(--color-panel-solid)",
+          padding: "24px",
+        }}
+      >
+        <Flex direction="column" gap="5">
+          <Flex justify="between" align="start">
             <Box>
-              <Heading size="6" weight="bold">
+              <Heading size="6" weight="bold" mb="3">
                 Files
               </Heading>
               <Text color="gray" size="2">
@@ -159,20 +165,18 @@ export const FilesPage = () => {
               </Text>
             </Box>
             <Flex gap="4">
-              <Flex gap="2">
-                <Button
-                  variant="surface"
-                  onClick={() => setIsNewFolderOpen(true)}
-                >
-                  <PlusIcon />
-                  New Folder
-                </Button>
-                <Separator orientation="vertical" />
-                <Button onClick={() => setIsUploadOpen(true)}>
-                  <UploadIcon />
-                  Upload
-                </Button>
-              </Flex>
+              <Button
+                variant="surface"
+                onClick={() => setIsNewFolderOpen(true)}
+                size="3"
+              >
+                <PlusIcon />
+                New Folder
+              </Button>
+              <Button onClick={() => setIsUploadOpen(true)} size="3">
+                <UploadIcon />
+                Upload Files
+              </Button>
             </Flex>
           </Flex>
 
@@ -185,42 +189,129 @@ export const FilesPage = () => {
       </Card>
 
       {/* Action Bar */}
-      <Card mb="4">
-        <Flex justify="between" align="center" p="2">
-          <Flex gap="2" align="center">
+      <Card
+        mb="6"
+        style={{
+          backgroundColor: "var(--color-panel-solid)",
+          padding: "16px 24px",
+        }}
+      >
+        <Flex justify="between" align="center">
+          <Flex gap="4" align="center">
             {currentDirectory && (
-              <Button variant="surface" onClick={handleBackToRoot}>
+              <Button variant="surface" onClick={handleBackToRoot} size="3">
                 <ChevronLeftIcon />
                 Back to Root
               </Button>
             )}
           </Flex>
 
-          <Flex gap="2">
+          <Flex gap="4">
             <Button
               variant="surface"
               disabled={loading}
               onClick={currentDirectory ? refreshFiles : loadDirectories}
+              size="3"
             >
               <ReloadIcon />
               Refresh
             </Button>
-            <Separator orientation="vertical" />
-            <Button
-              variant={viewMode === "list" ? "solid" : "surface"}
-              onClick={() => setViewMode("list")}
-            >
-              <ListBulletIcon />
-            </Button>
-            <Button
-              variant={viewMode === "grid" ? "solid" : "surface"}
-              onClick={() => setViewMode("grid")}
-            >
-              <GridIcon />
-            </Button>
+            <Box>
+              <Flex gap="2">
+                <Button
+                  variant={viewMode === "list" ? "solid" : "surface"}
+                  onClick={() => setViewMode("list")}
+                  size="3"
+                >
+                  <ListBulletIcon />
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "solid" : "surface"}
+                  onClick={() => setViewMode("grid")}
+                  size="3"
+                >
+                  <GridIcon />
+                </Button>
+              </Flex>
+            </Box>
           </Flex>
         </Flex>
       </Card>
+
+      {/* Content */}
+      {currentDirectory ? (
+        <>
+          {/* File Filters */}
+          <Card
+            mb="6"
+            style={{
+              backgroundColor: "var(--color-panel-solid)",
+              padding: "16px 24px",
+            }}
+          >
+            <Flex gap="3">
+              {["all", "recent", "pdf", "excel", "word"].map((filter) => (
+                <Badge
+                  key={filter}
+                  variant={activeFilter === filter ? "solid" : "surface"}
+                  onClick={() => setActiveFilter(filter as FileFilter)}
+                  size="2"
+                  style={{ cursor: "pointer" }}
+                >
+                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </Badge>
+              ))}
+            </Flex>
+          </Card>
+
+          {/* Files View */}
+          <Card
+            style={{
+              backgroundColor: "var(--color-panel-solid)",
+              padding: "24px",
+            }}
+          >
+            {loading ? (
+              <Flex align="center" justify="center" p="6">
+                <Text size="2" color="gray">
+                  Loading files...
+                </Text>
+              </Flex>
+            ) : viewMode === "list" ? (
+              <FilesList files={filteredFiles()} />
+            ) : (
+              <FilesGrid files={filteredFiles()} />
+            )}
+          </Card>
+        </>
+      ) : (
+        // Directory Grid
+        <Grid columns="3" gap="6">
+          {directories.map((dir) => (
+            <Card
+              key={dir.path}
+              style={{
+                cursor: "pointer",
+                backgroundColor: "var(--color-panel-solid)",
+                padding: "24px",
+              }}
+              onClick={() => handleDirectorySelect(dir)}
+            >
+              <Flex align="center" gap="3" mb="4">
+                <FileTextIcon
+                  width="24"
+                  height="24"
+                  style={{ color: "var(--accent-9)" }}
+                />
+                <Heading size="3">{dir.name}</Heading>
+              </Flex>
+              <Text color="gray" size="2">
+                {dir.fileCount} {dir.fileCount === 1 ? "file" : "files"}
+              </Text>
+            </Card>
+          ))}
+        </Grid>
+      )}
 
       {/* Content */}
       {currentDirectory ? (

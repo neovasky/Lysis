@@ -1,5 +1,5 @@
 .DialogOverlay {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   position: fixed;
   inset: 0;
   animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -7,20 +7,78 @@
 }
 
 .DialogContent {
-  background-color: var(--color-background);
-  border-radius: var(--radius-3);
+  background-color: var(--color-panel-solid);
+  border-radius: var(--radius-4);
   box-shadow: var(--shadow-5);
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90vw;
-  max-width: 560px;
+  max-width: 450px;
   max-height: 85vh;
-  padding: 0;
   animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1001;
-  overflow: hidden;
+  border: 1px solid var(--gray-6);
+}
+
+.FolderInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-3);
+  background-color: var(--color-surface);
+  color: var(--gray-12);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2);
+  line-height: var(--line-height-2);
+  transition: all 0.2s ease;
+}
+
+.FolderInput:focus {
+  outline: none;
+  border-color: var(--accent-8);
+  box-shadow: 0 0 0 2px var(--accent-a8);
+}
+
+.FolderInput::placeholder {
+  color: var(--gray-8);
+}
+
+.DropZone {
+  border: 2px dashed var(--gray-6);
+  border-radius: var(--radius-4);
+  padding: 32px;
+  text-align: center;
+  transition: all 0.2s ease;
+  background-color: var(--color-surface);
+  margin-bottom: 16px;
+}
+
+.DropZone.dragging {
+  border-color: var(--accent-9);
+  background-color: var(--accent-3);
+}
+
+.FileList {
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 16px 0;
+  padding-right: 8px;
+}
+
+.FileList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.FileList::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: 4px;
+}
+
+.FileList::-webkit-scrollbar-thumb {
+  background: var(--gray-8);
+  border-radius: 4px;
 }
 
 @keyframes overlayShow {
