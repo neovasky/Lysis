@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import React from "react";
 import {
   Grid,
   Card,
@@ -20,17 +20,19 @@ import {
 } from "@radix-ui/react-icons";
 import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
-import { useFiles } from "./hooks/useFiles";
 
-interface FilesGridProps {
+export interface FilesGridProps {
   files: FileMetadata[];
   onFileOpen?: (file: FileMetadata) => void;
+  onDelete?: (folderPath: string) => Promise<void>;
 }
 
-export const FilesGrid = ({ files, onFileOpen }: FilesGridProps) => {
-  const { deleteFile } = useFiles();
-
-  // Get file icon based on type
+export const FilesGrid: React.FC<FilesGridProps> = ({
+  files,
+  onFileOpen,
+  onDelete,
+}) => {
+  // Return a file icon based on the file type.
   const getFileIcon = (type: FileMetadata["type"]) => {
     switch (type) {
       case "pdf":
@@ -44,28 +46,24 @@ export const FilesGrid = ({ files, onFileOpen }: FilesGridProps) => {
     }
   };
 
-  // Handle file operations
-  const handleFileDelete = useCallback(
-    async (file: FileMetadata) => {
-      const confirmed = window.confirm(
-        `Are you sure you want to delete ${file.name}?`
-      );
-      if (confirmed) {
-        await deleteFile(file.id, file.path);
-      }
-    },
-    [deleteFile]
-  );
+  // Handler to open a file.
+  const handleFileOpen = (file: FileMetadata) => {
+    if (onFileOpen) {
+      onFileOpen(file);
+    }
+  };
 
-  const handleFileOpen = useCallback(
-    (file: FileMetadata) => {
-      if (onFileOpen) {
-        onFileOpen(file);
-      }
-    },
-    [onFileOpen]
-  );
+  // Handler to delete a file or folder.
+  const handleFileDelete = async (file: FileMetadata) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${file.name}?`
+    );
+    if (confirmed && onDelete) {
+      await onDelete(file.path);
+    }
+  };
 
+  // Dropdown for file actions.
   const FileActions = ({ file }: { file: FileMetadata }) => (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -76,42 +74,32 @@ export const FilesGrid = ({ files, onFileOpen }: FilesGridProps) => {
       <DropdownMenu.Content>
         <DropdownMenu.Item onClick={() => handleFileOpen(file)}>
           <Flex gap="2" align="center">
-            <FileIcon />
-            Open
+            <FileIcon width="16" height="16" />
+            <Text>Open</Text>
           </Flex>
         </DropdownMenu.Item>
         <DropdownMenu.Item>
           <Flex gap="2" align="center">
-            <DownloadIcon />
-            Download
+            <DownloadIcon width="16" height="16" />
+            <Text>Download</Text>
           </Flex>
         </DropdownMenu.Item>
         <DropdownMenu.Item>
           <Flex gap="2" align="center">
-            <Pencil1Icon />
-            Rename
+            <Pencil1Icon width="16" height="16" />
+            <Text>Rename</Text>
           </Flex>
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item color="red" onClick={() => handleFileDelete(file)}>
           <Flex gap="2" align="center">
-            <TrashIcon />
-            Delete
+            <TrashIcon width="16" height="16" />
+            <Text>Delete</Text>
           </Flex>
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
-
-  if (files.length === 0) {
-    return (
-      <Box p="6">
-        <Text align="center" color="gray">
-          No files found
-        </Text>
-      </Box>
-    );
-  }
 
   return (
     <Grid columns="4" gap="4" p="4">
@@ -135,7 +123,6 @@ export const FilesGrid = ({ files, onFileOpen }: FilesGridProps) => {
           >
             {getFileIcon(file.type)}
           </Box>
-
           {/* File Info Section */}
           <Flex direction="column" gap="1">
             <Flex justify="between" align="center">
@@ -146,45 +133,16 @@ export const FilesGrid = ({ files, onFileOpen }: FilesGridProps) => {
                 <FileActions file={file} />
               </Box>
             </Flex>
-
             <Text size="1" color="gray">
               {formatDistance(file.lastModified, new Date(), {
                 addSuffix: true,
               })}
             </Text>
-
-            {file.tags && file.tags.length > 0 && (
-              <Flex gap="1" wrap="wrap" mt="1">
-                {file.tags.slice(0, 2).map((tag) => (
-                  <Text
-                    key={tag}
-                    size="1"
-                    style={{
-                      padding: "2px 6px",
-                      backgroundColor: "var(--gray-3)",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {tag}
-                  </Text>
-                ))}
-                {file.tags.length > 2 && (
-                  <Text
-                    size="1"
-                    style={{
-                      padding: "2px 6px",
-                      backgroundColor: "var(--gray-3)",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    +{file.tags.length - 2} more
-                  </Text>
-                )}
-              </Flex>
-            )}
           </Flex>
         </Card>
       ))}
     </Grid>
   );
 };
+
+export default FilesGrid;

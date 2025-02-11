@@ -78,13 +78,9 @@ export class FileService {
    * Get all files in a directory.
    * If window.fileAPI isn’t available, return simulated folders stored in localStorage.
    */
-  /**
-   * Get all files in a directory.
-   * If window.fileAPI isn’t available, return simulated folders stored in localStorage.
-   */
   async getFiles(dirPath: string): Promise<FileMetadata[]> {
     if (!window.fileAPI || typeof window.fileAPI.getFiles !== "function") {
-      // Simulation: read from localStorage.
+      // Simulation: read from localStorage using the current directory as key.
       const storageKey = `simulatedFolders_${this.currentDirectory}`;
       const stored = localStorage.getItem(storageKey);
       const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
@@ -124,7 +120,6 @@ export class FileService {
       }
       // Build the full path by concatenating the current directory with the new folder name.
       const path = `${this.currentDirectory}/${name}`;
-      // If the file API isn’t available, simulate success.
       if (
         !window.fileAPI ||
         typeof window.fileAPI.createDirectory !== "function"
@@ -198,9 +193,20 @@ export class FileService {
 
   /**
    * Delete file or directory.
+   * When fileAPI is not available, simulate deletion by updating localStorage.
    */
   async deleteItem(path: string): Promise<FileOperationResult> {
     try {
+      if (!window.fileAPI || typeof window.fileAPI.deleteFile !== "function") {
+        // Determine the parent directory.
+        const parentDir = path.substring(0, path.lastIndexOf("/"));
+        const storageKey = `simulatedFolders_${parentDir}`;
+        const stored = localStorage.getItem(storageKey);
+        const items: FileMetadata[] = stored ? JSON.parse(stored) : [];
+        const newItems = items.filter((item) => item.path !== path);
+        localStorage.setItem(storageKey, JSON.stringify(newItems));
+        return { success: true };
+      }
       await window.fileAPI.deleteFile(path);
       return { success: true };
     } catch (error) {
@@ -213,6 +219,7 @@ export class FileService {
 
   /**
    * Rename file or directory.
+   * When fileAPI is not available, simulate renaming by updating localStorage.
    */
   async renameItem(
     oldPath: string,
@@ -221,6 +228,27 @@ export class FileService {
     try {
       const directory = oldPath.substring(0, oldPath.lastIndexOf("/"));
       const newPath = `${directory}/${newName}`;
+      if (!window.fileAPI || typeof window.fileAPI.renameFile !== "function") {
+        const storageKey = `simulatedFolders_${directory}`;
+        const stored = localStorage.getItem(storageKey);
+        const items: FileMetadata[] = stored ? JSON.parse(stored) : [];
+        const updatedItems = items.map((item) => {
+          if (item.path === oldPath) {
+            return {
+              ...item,
+              name: newName,
+              path: newPath,
+              lastModified: Date.now(),
+            };
+          }
+          return item;
+        });
+        localStorage.setItem(storageKey, JSON.stringify(updatedItems));
+        return {
+          success: true,
+          metadata: updatedItems.find((item) => item.path === newPath),
+        };
+      }
       await window.fileAPI.renameFile(oldPath, newPath);
       const info = await window.fileAPI.getFileInfo(newPath);
       return {
@@ -237,6 +265,7 @@ export class FileService {
 
   /**
    * Move file or directory.
+   * (For simulation, similar logic can be applied if needed.)
    */
   async moveItem(
     sourcePath: string,

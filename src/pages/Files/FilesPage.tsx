@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Text, Grid, Flex, Button, Badge } from "@radix-ui/themes";
 import {
   UploadIcon,
@@ -7,7 +7,7 @@ import {
   ListBulletIcon,
   ReloadIcon,
   ChevronLeftIcon,
-  FileTextIcon,
+  FileIcon,
 } from "@radix-ui/react-icons";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { FileUploadDialog } from "../../components/Files/FileUploadDialog";
@@ -18,8 +18,10 @@ import { useFiles } from "../../components/Files/hooks/useFiles";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 
-// Define the default base directory.
+// Use the same default base directory as FileService.
 const DEFAULT_BASE_DIRECTORY = "BaseDirectory";
+const simulated =
+  !window.fileAPI || typeof window.fileAPI.getFiles !== "function";
 
 type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
@@ -31,7 +33,7 @@ interface DirectoryInfo {
 }
 
 export const FilesPage = () => {
-  const { files, loading, error, loadFiles, refreshFiles } = useFiles();
+  const { loading, error } = useFiles();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [currentDirectory, setCurrentDirectory] =
     useState<DirectoryInfo | null>(null);
@@ -40,16 +42,18 @@ export const FilesPage = () => {
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
 
-  // Load directories using the default base directory if needed.
-  const loadDirectories = async () => {
+  // loadDirectories loads folder data for the given directory (or defaults)
+  const loadDirectories = async (dirPath?: string) => {
     try {
-      let rootPath = await FileService.getCurrentDirectory();
-      if (!rootPath) {
-        // If no directory is set, use the default.
-        rootPath = DEFAULT_BASE_DIRECTORY;
-        FileService.setCurrentDirectory(rootPath);
+      let targetDir: string;
+      if (dirPath) {
+        targetDir = dirPath;
+      } else {
+        targetDir =
+          (await FileService.getCurrentDirectory()) || DEFAULT_BASE_DIRECTORY;
+        FileService.setCurrentDirectory(targetDir);
       }
-      const filesList = await FileService.getFiles(rootPath || "");
+      const filesList = await FileService.getFiles(targetDir);
       const dirInfos = filesList
         .filter((f) => f.isDirectory)
         .map((d) => ({
@@ -58,9 +62,14 @@ export const FilesPage = () => {
           fileCount: 0,
         }));
       setDirectories(dirInfos);
-      setCurrentDirectory(
-        (prev) => prev || { path: rootPath, name: "Base", fileCount: 0 }
-      );
+      setCurrentDirectory({
+        path: targetDir,
+        name:
+          targetDir === DEFAULT_BASE_DIRECTORY
+            ? "Base"
+            : targetDir.split("/").pop() || targetDir,
+        fileCount: dirInfos.length,
+      });
     } catch (err) {
       console.error("Error loading directories:", err);
     }
@@ -76,22 +85,13 @@ export const FilesPage = () => {
 
   const handleCreateFolder = async (name: string) => {
     try {
-      let directoryPath = currentDirectory?.path;
-      if (!directoryPath) {
-        directoryPath = DEFAULT_BASE_DIRECTORY;
-        setCurrentDirectory({
-          path: directoryPath,
-          name: "Base",
-          fileCount: 0,
-        });
-        FileService.setCurrentDirectory(directoryPath);
-      }
+      const targetDir = currentDirectory?.path || DEFAULT_BASE_DIRECTORY;
+      FileService.setCurrentDirectory(targetDir);
       const result = await FileService.createDirectory(name);
       if (!result.success) {
         throw new Error(result.error || "Folder creation failed");
       }
-      await loadFiles(directoryPath);
-      await loadDirectories();
+      await loadDirectories(targetDir);
       setIsNewFolderOpen(false);
     } catch (err) {
       console.error("Error creating folder:", err);
@@ -103,7 +103,7 @@ export const FilesPage = () => {
     try {
       setCurrentDirectory(dir);
       FileService.setCurrentDirectory(dir.path);
-      await loadFiles(dir.path);
+      await loadDirectories(dir.path);
     } catch (err) {
       console.error("Error selecting directory:", err);
     }
@@ -111,39 +111,49 @@ export const FilesPage = () => {
 
   const handleBackToRoot = async () => {
     try {
-      let rootPath = await FileService.getCurrentDirectory();
-      if (!rootPath) {
-        rootPath = DEFAULT_BASE_DIRECTORY;
-        FileService.setCurrentDirectory(rootPath);
-      }
-      setCurrentDirectory({ path: rootPath, name: "Base", fileCount: 0 });
-      await loadDirectories();
+      FileService.setCurrentDirectory(DEFAULT_BASE_DIRECTORY);
+      await loadDirectories(DEFAULT_BASE_DIRECTORY);
     } catch (err) {
       console.error("Error going back to root:", err);
     }
   };
 
-  const filteredFiles = useCallback(() => {
+  const handleDeleteFolder = async (folderPath: string) => {
     try {
-      return files.filter((file: FileMetadata) => {
-        switch (activeFilter) {
-          case "recent":
-            return Date.now() - file.lastModified < 24 * 60 * 60 * 1000;
-          case "pdf":
-            return file.type === "pdf";
-          case "excel":
-            return file.type === "excel";
-          case "word":
-            return file.type === "word";
-          default:
-            return true;
-        }
-      });
+      const result = await FileService.deleteItem(folderPath);
+      if (result.success) {
+        await loadDirectories(currentDirectory?.path);
+      } else {
+        alert(result.error);
+      }
     } catch (err) {
-      console.error("Error filtering files:", err);
-      return [];
+      console.error("Error deleting folder:", err);
+      alert("Error deleting folder");
     }
-  }, [files, activeFilter]);
+  };
+
+  // Wrap displayFolders in useMemo so it remains stable.
+  const displayFolders: FileMetadata[] = useMemo(() => {
+    return simulated
+      ? directories.map((dir) => ({
+          id: dir.path,
+          name: dir.name,
+          path: dir.path,
+          type: "folder",
+          size: 0,
+          lastModified: 0,
+          isDirectory: true,
+          tags: [],
+        }))
+      : [];
+  }, [directories]);
+
+  const filteredFiles = useCallback(() => {
+    if (simulated) {
+      return displayFolders;
+    }
+    return [];
+  }, [displayFolders]);
 
   return (
     <Box style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -160,7 +170,6 @@ export const FilesPage = () => {
           flexWrap: "wrap",
         }}
       >
-        {/* Only show the back arrow if the current directory is not the default base */}
         {currentDirectory &&
           currentDirectory.path !== DEFAULT_BASE_DIRECTORY && (
             <Button
@@ -196,7 +205,7 @@ export const FilesPage = () => {
         <Flex align="center" gap="2">
           <Tooltip.Provider>
             <Tooltip.Root>
-              <Tooltip.Trigger asChild>
+              <Tooltip.Trigger>
                 <Button
                   variant={viewMode === "grid" ? "solid" : "ghost"}
                   onClick={() => setViewMode("grid")}
@@ -213,7 +222,7 @@ export const FilesPage = () => {
           </Tooltip.Provider>
           <Tooltip.Provider>
             <Tooltip.Root>
-              <Tooltip.Trigger asChild>
+              <Tooltip.Trigger>
                 <Button
                   variant={viewMode === "list" ? "solid" : "ghost"}
                   onClick={() => setViewMode("list")}
@@ -261,9 +270,15 @@ export const FilesPage = () => {
                 </Text>
               </Flex>
             ) : viewMode === "list" ? (
-              <FilesList files={filteredFiles()} />
+              <FilesList
+                files={filteredFiles()}
+                onDelete={handleDeleteFolder}
+              />
             ) : (
-              <FilesGrid files={filteredFiles()} />
+              <FilesGrid
+                files={filteredFiles()}
+                onDelete={handleDeleteFolder}
+              />
             )}
           </Box>
         ) : (
@@ -281,7 +296,7 @@ export const FilesPage = () => {
                 onClick={() => handleDirectorySelect(dir)}
               >
                 <Flex align="center" gap="3" mb="2">
-                  <FileTextIcon
+                  <FileIcon
                     width="24"
                     height="24"
                     style={{ color: "var(--accent-9)" }}
@@ -299,13 +314,13 @@ export const FilesPage = () => {
 
       <Tooltip.Provider>
         <Tooltip.Root>
-          <Tooltip.Trigger asChild>
+          <Tooltip.Trigger>
             <Box style={{ position: "fixed", bottom: "16px", right: "16px" }}>
               <Button
                 variant="solid"
                 size="2"
                 disabled={loading}
-                onClick={refreshFiles}
+                onClick={() => loadDirectories(currentDirectory?.path)}
                 style={{
                   width: "48px",
                   height: "48px",
@@ -326,7 +341,7 @@ export const FilesPage = () => {
       <FileUploadDialog
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
-        onUploadComplete={refreshFiles}
+        onUploadComplete={() => loadDirectories(currentDirectory?.path)}
         currentFolderPath={currentDirectory?.path ?? undefined}
       />
       <CreateFolderDialog

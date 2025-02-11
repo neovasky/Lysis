@@ -14,12 +14,17 @@ import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import { useFiles } from "./hooks/useFiles";
 
-interface FilesListProps {
+export interface FilesListProps {
   files: FileMetadata[];
   onFileOpen?: (file: FileMetadata) => void;
+  onDelete?: (folderPath: string) => Promise<void>;
 }
 
-export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
+export const FilesList: React.FC<FilesListProps> = ({
+  files,
+  onFileOpen,
+  onDelete,
+}) => {
   const { deleteFile } = useFiles();
 
   // Get file icon based on type
@@ -36,31 +41,21 @@ export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
     }
   };
 
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    const units = ["B", "KB", "MB", "GB"];
-    let size = bytes;
-    let unitIndex = 0;
-
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return `${size.toFixed(1)} ${units[unitIndex]}`;
-  };
-
-  // Handle file operations
-  const handleFileDelete = useCallback(
+  // Handle file deletion: use onDelete prop if provided; otherwise fall back.
+  const handleDelete = useCallback(
     async (file: FileMetadata) => {
       const confirmed = window.confirm(
         `Are you sure you want to delete ${file.name}?`
       );
       if (confirmed) {
-        await deleteFile(file.id, file.path);
+        if (onDelete) {
+          await onDelete(file.path);
+        } else {
+          await deleteFile(file.id, file.path);
+        }
       }
     },
-    [deleteFile]
+    [deleteFile, onDelete]
   );
 
   const handleFileOpen = useCallback(
@@ -72,6 +67,7 @@ export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
     [onFileOpen]
   );
 
+  // FileActions component to show dropdown actions including delete.
   const FileActions = ({ file }: { file: FileMetadata }) => (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
@@ -83,26 +79,26 @@ export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
         <DropdownMenu.Item onClick={() => handleFileOpen(file)}>
           <Flex gap="2" align="center">
             <FileIcon />
-            Open
+            <Text>Open</Text>
           </Flex>
         </DropdownMenu.Item>
         <DropdownMenu.Item>
           <Flex gap="2" align="center">
             <DownloadIcon />
-            Download
+            <Text>Download</Text>
           </Flex>
         </DropdownMenu.Item>
         <DropdownMenu.Item>
           <Flex gap="2" align="center">
             <Pencil1Icon />
-            Rename
+            <Text>Rename</Text>
           </Flex>
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
-        <DropdownMenu.Item color="red" onClick={() => handleFileDelete(file)}>
+        <DropdownMenu.Item color="red" onClick={() => handleDelete(file)}>
           <Flex gap="2" align="center">
             <TrashIcon />
-            Delete
+            <Text>Delete</Text>
           </Flex>
         </DropdownMenu.Item>
       </DropdownMenu.Content>
@@ -121,7 +117,6 @@ export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
           <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
         </Table.Row>
       </Table.Header>
-
       <Table.Body>
         {files.length === 0 ? (
           <Table.Row>
@@ -160,7 +155,7 @@ export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
               </Table.Cell>
               <Table.Cell>
                 <Text color="gray" size="2">
-                  {formatFileSize(file.size)}
+                  {/* Optionally format file size here */}
                 </Text>
               </Table.Cell>
               <Table.Cell>
@@ -190,3 +185,5 @@ export const FilesList = ({ files, onFileOpen }: FilesListProps) => {
     </Table.Root>
   );
 };
+
+export default FilesList;
