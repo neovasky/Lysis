@@ -1,15 +1,18 @@
+/* Overlay with a dim, blurred background */
 .DialogOverlay {
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.6);
   position: fixed;
   inset: 0;
   animation: overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
+/* Dialog Content: deep dark background with rounded corners and subtle shadow */
 .DialogContent {
-  background-color: var(--color-panel-solid);
-  border-radius: var(--radius-4);
-  box-shadow: var(--shadow-5);
+  background-color: #1a1a1a; /* Deep dark background */
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   position: fixed;
   top: 50%;
   left: 50%;
@@ -19,68 +22,73 @@
   max-height: 85vh;
   animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1001;
-  border: 1px solid var(--gray-6);
+  padding: 24px;
 }
 
+/* Close Button (X) Styling */
+.DialogCloseButton {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc !important; /* Lighter gray text */
+  font-size: 1.6em; /* Increased size */
+  cursor: pointer;
+  background-color: transparent !important; /* Ensure transparency */
+  border: none !important;
+  border-radius: 8px; /* Rounded square shape */
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.DialogCloseButton:hover {
+  background-color: transparent !important;
+  color: #fff !important; /* Full white on hover */
+  transform: scale(1.1); /* Subtle scale effect */
+  opacity: 1;
+}
+
+.DialogCloseButton:active {
+  background-color: transparent !important;
+}
+
+/* Title & Icon Alignment */
+.DialogTitle {
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #eee;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* Input Field Styling */
 .FolderInput {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--gray-6);
-  border-radius: var(--radius-3);
-  background-color: var(--color-surface);
-  color: var(--gray-12);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-2);
-  line-height: var(--line-height-2);
-  transition: all 0.2s ease;
+  padding: 10px 14px; /* Slightly more padding */
+  box-sizing: border-box;
+  border: 1px solid #444; /* Darker border for contrast */
+  border-radius: 6px; /* Rounded corners for a softer UI */
+  background-color: #222; /* Dark input background */
+  color: #ddd; /* Increased text contrast */
+  font-size: 16px;
+  line-height: 1.6;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 12px; /* Space between input and button */
 }
 
 .FolderInput:focus {
   outline: none;
-  border-color: var(--accent-8);
-  box-shadow: 0 0 0 2px var(--accent-a8);
+  border-color: #0078d7; /* Blue accent on focus */
+  box-shadow: 0 0 5px rgba(0, 120, 215, 0.5); /* Soft blue glow */
 }
 
 .FolderInput::placeholder {
-  color: var(--gray-8);
+  color: #999; /* Lighter placeholder text */
 }
 
-.DropZone {
-  border: 2px dashed var(--gray-6);
-  border-radius: var(--radius-4);
-  padding: 32px;
-  text-align: center;
-  transition: all 0.2s ease;
-  background-color: var(--color-surface);
-  margin-bottom: 16px;
-}
-
-.DropZone.dragging {
-  border-color: var(--accent-9);
-  background-color: var(--accent-3);
-}
-
-.FileList {
-  max-height: 240px;
-  overflow-y: auto;
-  margin: 16px 0;
-  padding-right: 8px;
-}
-
-.FileList::-webkit-scrollbar {
-  width: 8px;
-}
-
-.FileList::-webkit-scrollbar-track {
-  background: var(--color-surface);
-  border-radius: 4px;
-}
-
-.FileList::-webkit-scrollbar-thumb {
-  background: var(--gray-8);
-  border-radius: 4px;
-}
-
+/* Animations */
 @keyframes overlayShow {
   from {
     opacity: 0;
