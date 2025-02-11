@@ -15,9 +15,16 @@ interface FileSelection {
   }>;
 }
 
+interface FileOperationResult {
+  success: boolean;
+  metadata?: FileMetadata;
+  error?: string;
+}
+
 export class FileService {
   private static instance: FileService;
-  private lastKnownHashes: Map<string, string> = new Map();
+  private currentDirectory: string | null = null;
+  // State management
 
   private constructor() {}
 
@@ -29,59 +36,41 @@ export class FileService {
   }
 
   /**
-   * Open file selection dialog
+   * Get or select current working directory
+   */
+  async getCurrentDirectory(): Promise<string | null> {
+    if (!this.currentDirectory) {
+      const selected = await this.selectFiles({
+        directory: true,
+        multiple: false,
+      });
+      if (selected && selected.length > 0) {
+        this.currentDirectory = selected[0];
+      }
+    }
+    return this.currentDirectory;
+  }
+
+  /**
+   * Set current working directory
+   */
+  setCurrentDirectory(path: string | null) {
+    this.currentDirectory = path;
+  }
+
+  /**
+   * Select files or directories
    */
   async selectFiles(options?: FileSelection): Promise<string[]> {
     try {
-      return await window.fileAPI.selectFile(options);
+      const paths = await window.fileAPI.selectFile(options);
+      if (options?.directory && paths.length > 0) {
+        this.currentDirectory = paths[0];
+      }
+      return paths;
     } catch (error) {
       console.error("File selection error:", error);
       throw new Error("Failed to select files");
-    }
-  }
-
-  /**
-   * Get file metadata from a file path
-   */
-  async getFileMetadata(path: string): Promise<FileMetadata> {
-    try {
-      const info = await window.fileAPI.getFileInfo(path);
-      return this.convertToFileMetadata(info);
-    } catch (error) {
-      console.error("Failed to get file metadata:", error);
-      throw new Error(`Failed to get file metadata: ${error}`);
-    }
-  }
-
-  /**
-   * Read file content
-   */
-  async readFile(
-    path: string
-  ): Promise<{ content: Buffer; metadata: FileMetadata }> {
-    try {
-      const result = await window.fileAPI.readFile(path);
-      const info = await window.fileAPI.getFileInfo(path);
-      return {
-        content: result.content,
-        metadata: this.convertToFileMetadata(info),
-      };
-    } catch (error) {
-      console.error("File read error:", error);
-      throw new Error(`Failed to read file: ${error}`);
-    }
-  }
-
-  /**
-   * Write file content
-   */
-  async writeFile(path: string, content: Buffer): Promise<FileMetadata> {
-    try {
-      await window.fileAPI.writeFile({ filePath: path, content });
-      return this.getFileMetadata(path);
-    } catch (error) {
-      console.error("File write error:", error);
-      throw new Error(`Failed to write file: ${error}`);
     }
   }
 
@@ -91,7 +80,7 @@ export class FileService {
   async getFiles(dirPath: string): Promise<FileMetadata[]> {
     try {
       const files = await window.fileAPI.getFiles(dirPath);
-      return files.map((file) => this.convertToFileMetadata(file));
+      return files.map((file) => this.convertFileInfo(file));
     } catch (error) {
       console.error("Failed to get files:", error);
       throw new Error(`Failed to get files: ${error}`);
@@ -99,133 +88,176 @@ export class FileService {
   }
 
   /**
-   * Delete a file or directory
+   * Write file content
    */
-  async deleteFile(path: string): Promise<boolean> {
+  async writeFile(path: string, content: Buffer): Promise<FileMetadata> {
     try {
-      const result = await window.fileAPI.deleteFile(path);
-      this.lastKnownHashes.delete(path);
-      return result;
+      await window.fileAPI.writeFile({ filePath: path, content });
+      const info = await window.fileAPI.getFileInfo(path);
+      return this.convertFileInfo(info);
     } catch (error) {
-      console.error("File deletion error:", error);
-      throw new Error(`Failed to delete file: ${error}`);
+      console.error("File write error:", error);
+      throw new Error(`Failed to write file: ${error}`);
     }
   }
 
   /**
-   * Rename a file or directory
+   * Create new directory
    */
-  async renameFile(oldPath: string, newPath: string): Promise<FileMetadata> {
+  async createDirectory(name: string): Promise<FileOperationResult> {
     try {
-      await window.fileAPI.renameFile(oldPath, newPath);
-      return this.getFileMetadata(newPath);
-    } catch (error) {
-      console.error("File rename error:", error);
-      throw new Error(`Failed to rename file: ${error}`);
-    }
-  }
+      if (!this.currentDirectory) {
+        throw new Error("No current directory selected");
+      }
 
-  /**
-   * Create a new directory
-   */
-  async createDirectory(path: string): Promise<FileMetadata> {
-    try {
+      const path = `${this.currentDirectory}/${name}`;
       await window.fileAPI.createDirectory(path);
-      return this.getFileMetadata(path);
+      const info = await window.fileAPI.getFileInfo(path);
+
+      return {
+        success: true,
+        metadata: this.convertFileInfo(info),
+      };
     } catch (error) {
-      console.error("Directory creation error:", error);
-      throw new Error(`Failed to create directory: ${error}`);
+      console.error("Failed to create directory:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to create directory",
+      };
     }
   }
 
   /**
-   * Move a file or directory
+   * Upload files to current directory
    */
-  async moveFile(
+  async uploadFiles(files: File[]): Promise<FileOperationResult[]> {
+    if (!this.currentDirectory) {
+      throw new Error("No current directory selected");
+    }
+
+    const results: FileOperationResult[] = [];
+
+    for (const file of files) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const path = `${this.currentDirectory}/${file.name}`;
+
+        await this.writeFile(path, buffer);
+        const info = await window.fileAPI.getFileInfo(path);
+
+        results.push({
+          success: true,
+          metadata: this.convertFileInfo(info),
+        });
+      } catch (error) {
+        results.push({
+          success: false,
+          error: error instanceof Error ? error.message : "Upload failed",
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Delete file or directory
+   */
+  async deleteItem(path: string): Promise<FileOperationResult> {
+    try {
+      await window.fileAPI.deleteFile(path);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Deletion failed",
+      };
+    }
+  }
+
+  /**
+   * Rename file or directory
+   */
+  async renameItem(
+    oldPath: string,
+    newName: string
+  ): Promise<FileOperationResult> {
+    try {
+      const directory = oldPath.substring(0, oldPath.lastIndexOf("/"));
+      const newPath = `${directory}/${newName}`;
+
+      await window.fileAPI.renameFile(oldPath, newPath);
+      const info = await window.fileAPI.getFileInfo(newPath);
+
+      return {
+        success: true,
+        metadata: this.convertFileInfo(info),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Rename failed",
+      };
+    }
+  }
+
+  /**
+   * Move file or directory
+   */
+  async moveItem(
     sourcePath: string,
     targetPath: string
-  ): Promise<FileMetadata> {
+  ): Promise<FileOperationResult> {
     try {
       await window.fileAPI.moveFile({ sourcePath, targetPath });
-      this.lastKnownHashes.delete(sourcePath);
-      return this.getFileMetadata(targetPath);
+      const info = await window.fileAPI.getFileInfo(targetPath);
+
+      return {
+        success: true,
+        metadata: this.convertFileInfo(info),
+      };
     } catch (error) {
-      console.error("File move error:", error);
-      throw new Error(`Failed to move file: ${error}`);
-    }
-  }
-
-  /**
-   * Copy a file
-   */
-  async copyFile(
-    sourcePath: string,
-    targetPath: string
-  ): Promise<FileMetadata> {
-    try {
-      await window.fileAPI.copyFile({ sourcePath, targetPath });
-      return this.getFileMetadata(targetPath);
-    } catch (error) {
-      console.error("File copy error:", error);
-      throw new Error(`Failed to copy file: ${error}`);
-    }
-  }
-
-  /**
-   * Check if a file has been modified externally
-   */
-  async checkFileModified(path: string): Promise<boolean> {
-    try {
-      const info = await window.fileAPI.getFileInfo(path);
-      const currentHash = info.hash;
-      const lastKnownHash = this.lastKnownHashes.get(path);
-
-      if (lastKnownHash && currentHash && currentHash !== lastKnownHash) {
-        return true;
-      }
-
-      if (currentHash) {
-        this.lastKnownHashes.set(path, currentHash);
-      }
-      return false;
-    } catch (error) {
-      console.error("File check error:", error);
-      return false;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Move failed",
+      };
     }
   }
 
   /**
    * Convert FileInfo to FileMetadata
    */
-  private convertToFileMetadata(info: FileInfo): FileMetadata {
-    const fileType = this.getFileTypeEnum(info.type);
-    if (info.hash) {
-      this.lastKnownHashes.set(info.path, info.hash);
-    }
-
+  private convertFileInfo(info: FileInfo): FileMetadata {
     return {
       id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: info.name,
       path: info.path,
-      type: fileType,
+      type: this.getFileType(info.name),
       size: info.size,
       lastModified: new Date(info.lastModified).getTime(),
+      isDirectory: info.isDirectory,
       tags: [],
     };
   }
 
   /**
-   * Get FileType enum from string
+   * Get file type from extension
    */
-  private getFileTypeEnum(type: string): FileType {
-    switch (type.toLowerCase()) {
+  private getFileType(filename: string): FileType {
+    const ext = filename.toLowerCase().split(".").pop() || "";
+    switch (ext) {
       case "pdf":
         return "pdf";
-      case "excel":
+      case "xlsx":
+      case "xls":
         return "excel";
-      case "word":
+      case "doc":
+      case "docx":
         return "word";
-      case "text":
+      case "txt":
+      case "md":
         return "text";
       default:
         return "other";

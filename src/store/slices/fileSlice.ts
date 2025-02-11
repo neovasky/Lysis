@@ -21,6 +21,7 @@ export interface FileMetadata {
   size: number;
   tags: string[];
   notes?: string;
+  isDirectory: boolean;
 }
 
 // File relationship interface

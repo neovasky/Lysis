@@ -1,8 +1,3 @@
-/**
- * File: src/types/files.ts
- * Description: Shared type definitions for file operations
- */
-
 export interface FileInfo {
   name: string;
   path: string;
@@ -11,6 +6,15 @@ export interface FileInfo {
   type: string;
   isDirectory: boolean;
   hash: string | null;
+}
+
+export interface DirectoryInfo {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+  size: number;
+  lastModified: Date;
+  fileCount?: number;
 }
 
 export interface FileOperations {

@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback } from "react";
-import "./styles.css";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Button, Flex, Text, Box, Progress, Card } from "@radix-ui/themes";
-import { UploadIcon, TrashIcon, Cross2Icon } from "@radix-ui/react-icons";
-import { useFileUpload, type UploadingFile } from "./hooks/useFileUpload";
+import { Box, Card, Flex, Text, Button, Progress } from "@radix-ui/themes";
+import { Cross2Icon, UploadIcon, TrashIcon } from "@radix-ui/react-icons";
 import FileService from "../../services/fileService";
+import "./styles.css";
 
 interface FileUploadDialogProps {
   open: boolean;
@@ -13,84 +12,103 @@ interface FileUploadDialogProps {
   currentFolderPath?: string;
 }
 
+interface UploadingFile {
+  id: string;
+  file: File;
+  progress: number;
+  status: "pending" | "uploading" | "completed" | "error";
+  error?: string;
+}
+
 export const FileUploadDialog = ({
   open,
   onOpenChange,
   onUploadComplete,
   currentFolderPath,
 }: FileUploadDialogProps) => {
-  const { uploadingFiles, processFiles, removeFile } = useFileUpload();
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle file upload
-  const handleUpload = useCallback(
+  const handleFiles = useCallback(
     async (files: File[]) => {
-      let destinationPath = currentFolderPath;
-
-      // If no destination path provided, ask user to select one
-      if (!destinationPath) {
-        const paths = await FileService.selectFiles({
-          directory: true,
-          multiple: false,
-        });
-
-        if (!paths || paths.length === 0) {
-          return;
+      if (!currentFolderPath) {
+        const rootPath = await FileService.getCurrentDirectory();
+        if (!rootPath) {
+          throw new Error("No folder selected for upload");
         }
-        destinationPath = paths[0];
       }
 
-      await processFiles(files, destinationPath);
-    },
-    [currentFolderPath, processFiles]
-  );
+      const targetPath =
+        currentFolderPath || (await FileService.getCurrentDirectory());
 
-  // Drag & Drop handlers
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
+      const newFiles: UploadingFile[] = files.map((file) => ({
+        id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        file,
+        progress: 0,
+        status: "pending",
+      }));
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
+      setUploadingFiles((prev) => [...prev, ...newFiles]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
+      for (const uploadFile of newFiles) {
+        try {
+          // Set initial uploading state
+          setUploadingFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id
+                ? { ...f, status: "uploading", progress: 10 }
+                : f
+            )
+          );
 
-  const handleDrop = useCallback(
-    async (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
+          // Prepare file data
+          const arrayBuffer = await uploadFile.file.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const filePath = `${targetPath}/${uploadFile.file.name}`;
 
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length > 0) {
-        await handleUpload(files);
+          // Set up progress simulation
+          const progressInterval = setInterval(() => {
+            setUploadingFiles((prev) =>
+              prev.map((f) =>
+                f.id === uploadFile.id && f.progress < 90
+                  ? { ...f, progress: f.progress + 10 }
+                  : f
+              )
+            );
+          }, 200);
+
+          // Perform actual file write
+          await FileService.writeFile(filePath, buffer);
+
+          // Clear interval and set complete
+          clearInterval(progressInterval);
+          setUploadingFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id
+                ? { ...f, status: "completed", progress: 100 }
+                : f
+            )
+          );
+        } catch (error) {
+          setUploadingFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id
+                ? {
+                    ...f,
+                    status: "error",
+                    error:
+                      error instanceof Error ? error.message : "Upload failed",
+                  }
+                : f
+            )
+          );
+        }
       }
     },
-    [handleUpload]
+    [currentFolderPath]
   );
 
-  // File input change handler
-  const handleFileSelect = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files.length > 0) {
-        const files = Array.from(e.target.files);
-        await handleUpload(files);
-        e.target.value = ""; // Reset input
-      }
-    },
-    [handleUpload]
-  );
-
-  // Dialog close handler
   const handleClose = useCallback(() => {
     const hasUploading = uploadingFiles.some((f) => f.status === "uploading");
     if (!hasUploading) {
@@ -98,162 +116,172 @@ export const FileUploadDialog = ({
       if (hasCompleted && onUploadComplete) {
         onUploadComplete();
       }
+      setUploadingFiles([]);
       onOpenChange(false);
     }
-  }, [uploadingFiles, onOpenChange, onUploadComplete]);
+  }, [uploadingFiles, onUploadComplete, onOpenChange]);
 
-  // Render status text
-  const renderStatusText = (file: UploadingFile) => {
-    switch (file.status) {
-      case "completed":
-        return "Completed";
-      case "error":
-        return file.error;
-      case "uploading":
-        return `${file.progress}%`;
-      default:
-        return "Pending";
-    }
-  };
+  const removeFile = useCallback((fileId: string) => {
+    setUploadingFiles((prev) => prev.filter((f) => f.id !== fileId));
+  }, []);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="DialogOverlay" />
         <Dialog.Content className="DialogContent">
-          <Flex justify="between" align="center" mb="4">
-            <Text size="5">Upload Files</Text>
-            <Dialog.Close asChild>
-              <Button variant="ghost" onClick={handleClose}>
-                <Cross2Icon />
-              </Button>
-            </Dialog.Close>
-          </Flex>
-
-          {/* Upload Area */}
-          <Box
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            style={{
-              border: `2px dashed ${
-                isDragging ? "var(--accent-9)" : "var(--gray-6)"
-              }`,
-              borderRadius: "8px",
-              backgroundColor: isDragging ? "var(--accent-2)" : "var(--gray-2)",
-              padding: "32px",
-              textAlign: "center",
-              transition: "all 0.2s ease",
-              marginBottom: "16px",
-            }}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              style={{
-                position: "absolute",
-                width: "1px",
-                height: "1px",
-                padding: "0",
-                margin: "-1px",
-                overflow: "hidden",
-                clip: "rect(0,0,0,0)",
-                border: "0",
-              }}
-              multiple
-            />
-
-            <Flex direction="column" align="center" gap="2">
-              <UploadIcon width="32" height="32" />
-              <Text size="2" weight="bold">
-                Drag and drop files here
+          <Card size="3">
+            <Flex justify="between" align="center" mb="4">
+              <Text size="5" weight="bold">
+                Upload Files
               </Text>
-              <Text size="2" color="gray">
-                or
-              </Text>
-              <Button
-                variant="soft"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Browse Files
-              </Button>
+              <Dialog.Close asChild>
+                <Button variant="ghost" onClick={handleClose}>
+                  <Cross2Icon />
+                </Button>
+              </Dialog.Close>
             </Flex>
-          </Box>
 
-          {/* File List */}
-          {uploadingFiles.length > 0 && (
-            <Box style={{ maxHeight: "240px", overflowY: "auto" }}>
-              <Flex direction="column" gap="2">
-                {uploadingFiles.map((file) => (
-                  <Card key={file.id} style={{ padding: "12px" }}>
-                    <Flex justify="between" align="center" mb="2">
-                      <Text size="2" weight="medium">
-                        {file.file.name}
-                      </Text>
-                      {file.status !== "uploading" && (
-                        <Button
-                          variant="ghost"
-                          color="red"
-                          size="1"
-                          onClick={() => removeFile(file.id)}
-                        >
-                          <TrashIcon />
-                        </Button>
-                      )}
-                    </Flex>
+            {/* Drop Zone */}
+            <Box
+              onDragEnter={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) handleFiles(files);
+              }}
+              style={{
+                border: `2px dashed ${
+                  isDragging ? "var(--accent-9)" : "var(--gray-6)"
+                }`,
+                borderRadius: "8px",
+                backgroundColor: isDragging
+                  ? "var(--accent-2)"
+                  : "var(--gray-2)",
+                padding: "32px",
+                textAlign: "center",
+                marginBottom: "16px",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleFiles(Array.from(e.target.files));
+                    e.target.value = "";
+                  }
+                }}
+                style={{ display: "none" }}
+                multiple
+              />
 
-                    <Flex direction="column" gap="1">
-                      <Progress
-                        value={file.progress}
-                        color={
-                          file.status === "error"
-                            ? "red"
-                            : file.status === "completed"
-                            ? "green"
-                            : "blue"
-                        }
-                      />
-                      <Flex justify="between">
-                        <Text
-                          size="1"
-                          color={file.status === "error" ? "red" : "gray"}
-                        >
-                          {renderStatusText(file)}
-                        </Text>
-                        <Text size="1" color="gray">
-                          {(file.file.size / 1024 / 1024).toFixed(1)} MB
-                        </Text>
-                      </Flex>
-                    </Flex>
-                  </Card>
-                ))}
+              <Flex direction="column" align="center" gap="2">
+                <UploadIcon width="32" height="32" />
+                <Text size="3" weight="bold" color="gray">
+                  Drag and drop files here
+                </Text>
+                <Text size="2" color="gray">
+                  or
+                </Text>
+                <Button
+                  variant="soft"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Browse Files
+                </Button>
               </Flex>
             </Box>
-          )}
 
-          {/* Dialog Actions */}
-          <Flex gap="3" mt="4" justify="end">
-            <Dialog.Close asChild>
+            {/* File List */}
+            {uploadingFiles.length > 0 && (
+              <Box style={{ maxHeight: "240px", overflowY: "auto" }}>
+                <Flex direction="column" gap="2">
+                  {uploadingFiles.map((file) => (
+                    <Card key={file.id} variant="surface">
+                      <Flex justify="between" align="center" mb="2">
+                        <Text size="2" weight="medium">
+                          {file.file.name}
+                        </Text>
+                        {file.status !== "uploading" && (
+                          <Button
+                            variant="ghost"
+                            color="red"
+                            size="1"
+                            onClick={() => removeFile(file.id)}
+                          >
+                            <TrashIcon />
+                          </Button>
+                        )}
+                      </Flex>
+
+                      <Flex direction="column" gap="1">
+                        <Progress
+                          value={file.progress}
+                          color={
+                            file.status === "error"
+                              ? "red"
+                              : file.status === "completed"
+                              ? "green"
+                              : "blue"
+                          }
+                        />
+                        <Flex justify="between">
+                          <Text
+                            size="1"
+                            color={file.status === "error" ? "red" : "gray"}
+                          >
+                            {file.status === "error" ? file.error : file.status}
+                          </Text>
+                          <Text size="1" color="gray">
+                            {(file.file.size / 1024 / 1024).toFixed(1)} MB
+                          </Text>
+                        </Flex>
+                      </Flex>
+                    </Card>
+                  ))}
+                </Flex>
+              </Box>
+            )}
+
+            {/* Dialog Actions */}
+            <Flex gap="3" mt="4" justify="end">
+              <Dialog.Close asChild>
+                <Button
+                  variant="soft"
+                  color="gray"
+                  onClick={handleClose}
+                  disabled={uploadingFiles.some(
+                    (f) => f.status === "uploading"
+                  )}
+                >
+                  Close
+                </Button>
+              </Dialog.Close>
               <Button
-                variant="soft"
-                color="gray"
-                onClick={handleClose}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingFiles.some((f) => f.status === "uploading")}
               >
-                {uploadingFiles.some((f) => f.status === "uploading")
-                  ? "Uploading..."
-                  : "Close"}
+                Add More Files
               </Button>
-            </Dialog.Close>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingFiles.some((f) => f.status === "uploading")}
-            >
-              Add More Files
-            </Button>
-          </Flex>
+            </Flex>
+          </Card>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
