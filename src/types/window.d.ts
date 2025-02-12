@@ -38,6 +38,7 @@ export interface FileAPI {
     sourcePath: string;
     targetPath: string;
   }) => Promise<FileInfo>;
+  openFile?: (filePath: string) => Promise<void>;
 }
 
 declare global {

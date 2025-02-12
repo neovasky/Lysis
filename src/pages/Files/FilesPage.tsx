@@ -40,6 +40,7 @@ export const FilesPage = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
+  const [isOpening, setIsOpening] = useState<boolean>(false); // Prevent duplicate file opens
 
   // Initialize component with saved directory
   useEffect(() => {
@@ -48,7 +49,6 @@ export const FilesPage = () => {
         localStorage.getItem(LAST_DIRECTORY_KEY) || DEFAULT_BASE_DIRECTORY;
       await loadDirectories(savedDirectory);
     };
-
     initializeDirectory();
   }, []);
 
@@ -62,16 +62,13 @@ export const FilesPage = () => {
         const savedDir = localStorage.getItem(LAST_DIRECTORY_KEY);
         targetDir = savedDir || DEFAULT_BASE_DIRECTORY;
       }
-
       // Ensure directory is set in both FileService and localStorage
       FileService.setCurrentDirectory(targetDir);
       localStorage.setItem(LAST_DIRECTORY_KEY, targetDir);
-
       const items = await FileService.getFiles(targetDir);
       // Separate directories and files from the items
       const directoriesList = items.filter((f) => f.isDirectory);
       const filesList = items.filter((f) => !f.isDirectory);
-
       setDirectories(
         directoriesList.map((dir) => ({
           path: dir.path,
@@ -80,7 +77,6 @@ export const FilesPage = () => {
         }))
       );
       setFiles(filesList);
-
       setCurrentDirectory({
         path: targetDir,
         name:
@@ -114,23 +110,109 @@ export const FilesPage = () => {
     }
   };
 
+  // Existing folder open logic
   const handleFolderOpen = async (folder: FileMetadata) => {
     try {
+      // Only handle directories here
       if (!folder.isDirectory) return;
-
       const newDirectory = {
         path: folder.path,
         name: folder.name,
         fileCount: 0,
       };
-
       setCurrentDirectory(newDirectory);
       FileService.setCurrentDirectory(folder.path);
       localStorage.setItem(LAST_DIRECTORY_KEY, folder.path);
-
       await loadDirectories(folder.path);
     } catch (err) {
       console.error("Error opening folder:", err);
+    }
+  };
+
+  // New function to handle file interaction
+  const handleFileOpen = async (file: FileMetadata) => {
+    if (isOpening) return;
+    setIsOpening(true);
+    try {
+      // Open a new window synchronously (as a direct result of the click)
+      const newWindow = window.open("", "_blank");
+      if (!newWindow) {
+        alert("Popup blocked. Please allow popups for this site.");
+        return;
+      }
+
+      const fileContentKey = `fileContent_${file.path}`;
+      const storedDataUrl = localStorage.getItem(fileContentKey);
+      if (storedDataUrl) {
+        // Parse the stored data URL (should be in the format "data:application/pdf;base64,...")
+        const parts = storedDataUrl.split(",");
+        if (parts.length < 2) {
+          throw new Error("Invalid data URL stored");
+        }
+        // Extract the MIME type
+        const mimeMatch = parts[0].match(/data:(.*?);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+        const base64Data = parts[1];
+
+        // Decode the base64 data to binary
+        const binaryString = atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // Create a Blob with the correct MIME type
+        const blob = new Blob([bytes], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Write a full HTML document into the new window that embeds the Blob URL in an iframe
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>${file.name}</title>
+              <style>
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  height: 100%;
+                  overflow: hidden;
+                }
+                iframe {
+                  border: none;
+                  width: 100%;
+                  height: 100%;
+                }
+              </style>
+            </head>
+            <body>
+              <iframe src="${blobUrl}"></iframe>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+        return;
+      }
+
+      // Fallback to native openFile if available
+      if (window.fileAPI?.openFile) {
+        await window.fileAPI.openFile(file.path);
+      } else {
+        alert("File interaction is not implemented.");
+      }
+    } catch (err) {
+      console.error("Error interacting with file:", err);
+    } finally {
+      setIsOpening(false);
+    }
+  };
+
+  // Unified handler: if the item is a directory, open it; if a file, interact with it.
+  const handleOpenItem = async (item: FileMetadata) => {
+    if (item.isDirectory) {
+      await handleFolderOpen(item);
+    } else {
+      await handleFileOpen(item);
     }
   };
 
@@ -303,13 +385,13 @@ export const FilesPage = () => {
               <FilesList
                 files={filteredItems()}
                 onDelete={handleDeleteFolder}
-                onFileOpen={handleFolderOpen}
+                onFileOpen={handleOpenItem} // Use unified handler
               />
             ) : (
               <FilesGrid
                 files={filteredItems()}
                 onDelete={handleDeleteFolder}
-                onFileOpen={handleFolderOpen}
+                onFileOpen={handleOpenItem} // Use unified handler
               />
             )}
           </Box>

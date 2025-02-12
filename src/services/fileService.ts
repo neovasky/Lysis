@@ -1,8 +1,4 @@
-/**
- * File: src/services/fileService.ts
- * Description: Service for handling file operations and monitoring
- */
-
+// File: src/services/fileService.ts
 import { FileMetadata, FileType } from "../store/slices/fileSlice";
 import { FileInfo } from "../types/files";
 
@@ -15,11 +11,7 @@ interface FileSelection {
   }>;
 }
 
-interface FileOperationResult {
-  success: boolean;
-  metadata?: FileMetadata;
-  error?: string;
-}
+// Removed duplicate FileOperationResult declaration here.
 
 export class FileService {
   private static instance: FileService;
@@ -123,9 +115,6 @@ export class FileService {
   /**
    * Write file content.
    */
-  /**
-   * Write file content.
-   */
   async writeFile(path: string, content: Uint8Array): Promise<FileMetadata> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.writeFile !== "function") {
@@ -152,14 +141,25 @@ export class FileService {
         // Remove any existing file with same name
         const filtered = files.filter((f) => f.name !== fileName);
         filtered.push(fileMetadata);
-
         localStorage.setItem(storageKey, JSON.stringify(filtered));
 
-        // Store file content separately
-        const contentStr = Array.from(content)
-          .map((byte) => String.fromCharCode(byte))
-          .join("");
-        localStorage.setItem(`fileContent_${path}`, btoa(contentStr));
+        // Determine MIME type based on file extension
+        const mimeType =
+          this.getFileType(fileName) === "pdf"
+            ? "application/pdf"
+            : "application/octet-stream";
+        // Create a Blob with the correct MIME type
+        const blob = new Blob([content], { type: mimeType });
+        // Use FileReader to convert Blob to full Data URL
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result as string);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        localStorage.setItem(`fileContent_${path}`, dataUrl);
 
         return fileMetadata;
       }
@@ -184,9 +184,7 @@ export class FileService {
       if (!this.currentDirectory) {
         this.currentDirectory = FileService.DEFAULT_BASE_DIRECTORY;
       }
-
       const path = `${this.currentDirectory}/${name}`;
-
       if (
         !window.fileAPI ||
         typeof window.fileAPI.createDirectory !== "function"
@@ -194,7 +192,6 @@ export class FileService {
         const storageKey = `simulatedFolders_${this.currentDirectory}`;
         const stored = localStorage.getItem(storageKey);
         const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
-
         // Check for duplicate folder names
         if (folders.some((folder) => folder.name === name)) {
           return {
@@ -202,7 +199,6 @@ export class FileService {
             error: "A folder with this name already exists",
           };
         }
-
         const simulatedFolder: FileMetadata = {
           id: `folder_${Date.now()}`,
           name,
@@ -213,12 +209,10 @@ export class FileService {
           isDirectory: true,
           tags: [],
         };
-
         folders.push(simulatedFolder);
         localStorage.setItem(storageKey, JSON.stringify(folders));
         return { success: true, metadata: simulatedFolder };
       }
-
       await window.fileAPI.createDirectory(path);
       const info = await window.fileAPI.getFileInfo(path);
       return {
@@ -246,7 +240,6 @@ export class FileService {
         const storageKey = `simulatedFolders_${parentDir}`;
         const stored = localStorage.getItem(storageKey);
         if (!stored) return { success: false, error: "Directory not found" };
-
         const items: FileMetadata[] = JSON.parse(stored);
         const newItems = items.filter((item) => item.path !== path);
         localStorage.setItem(storageKey, JSON.stringify(newItems));
@@ -273,12 +266,10 @@ export class FileService {
     try {
       const directory = oldPath.substring(0, oldPath.lastIndexOf("/"));
       const newPath = `${directory}/${newName}`;
-
       if (!window.fileAPI || typeof window.fileAPI.renameFile !== "function") {
         const storageKey = `simulatedFolders_${directory}`;
         const stored = localStorage.getItem(storageKey);
         if (!stored) return { success: false, error: "Directory not found" };
-
         const items: FileMetadata[] = JSON.parse(stored);
         const updatedItems = items.map((item) => {
           if (item.path === oldPath) {
@@ -291,7 +282,6 @@ export class FileService {
           }
           return item;
         });
-
         localStorage.setItem(storageKey, JSON.stringify(updatedItems));
         const updatedItem = updatedItems.find((item) => item.path === newPath);
         return {
@@ -299,7 +289,6 @@ export class FileService {
           metadata: updatedItem,
         };
       }
-
       await window.fileAPI.renameFile(oldPath, newPath);
       const info = await window.fileAPI.getFileInfo(newPath);
       return {
@@ -328,7 +317,6 @@ export class FileService {
           error: "Move operation not supported in simulation mode",
         };
       }
-
       await window.fileAPI.moveFile({ sourcePath, targetPath });
       const info = await window.fileAPI.getFileInfo(targetPath);
       return {
@@ -383,3 +371,9 @@ export class FileService {
 }
 
 export default FileService.getInstance();
+
+export interface FileOperationResult {
+  success: boolean;
+  metadata?: FileMetadata;
+  error?: string;
+}
