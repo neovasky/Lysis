@@ -32,113 +32,110 @@ export const FileUploadDialog = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleClose = useCallback(() => {
-    const hasUploading = uploadingFiles.some((f) => f.status === "uploading");
-    if (!hasUploading) {
-      const hasCompleted = uploadingFiles.some((f) => f.status === "completed");
-      if (hasCompleted && onUploadComplete) {
-        onUploadComplete();
+  // Adds selected files to the state with status "pending"
+  const addFiles = useCallback((files: File[]) => {
+    const newFiles: UploadingFile[] = files.map((file) => ({
+      id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      file,
+      progress: 0,
+      status: "pending",
+      path: "", // Will be set when the file is uploaded.
+    }));
+    setUploadingFiles((prev) => [...prev, ...newFiles]);
+  }, []);
+
+  // Processes all files with status "pending" and then closes the dialog.
+  const handleUpload = useCallback(async () => {
+    setIsProcessing(true);
+    try {
+      // Determine target directory once
+      const targetPath =
+        currentFolderPath || (await FileService.getCurrentDirectory());
+      if (!targetPath) {
+        throw new Error("No folder selected for upload");
       }
-      setUploadingFiles([]);
-      onOpenChange(false);
-    }
-  }, [uploadingFiles, onUploadComplete, onOpenChange]);
 
-  const handleFiles = useCallback(
-    async (files: File[]) => {
-      try {
-        setIsProcessing(true);
-        const targetPath =
-          currentFolderPath || (await FileService.getCurrentDirectory());
-        if (!targetPath) {
-          throw new Error("No folder selected for upload");
-        }
+      // Filter out pending files
+      const pendingFiles = uploadingFiles.filter((f) => f.status === "pending");
 
-        const newFiles: UploadingFile[] = files.map((file) => ({
-          id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          file,
-          progress: 0,
-          status: "pending",
-          path: `${targetPath}/${file.name}`,
-        }));
+      for (const uploadFile of pendingFiles) {
+        // Build file path based on the target folder
+        const filePath = `${targetPath}/${uploadFile.file.name}`;
 
-        setUploadingFiles((prev) => [...prev, ...newFiles]);
-
-        for (const uploadFile of newFiles) {
-          try {
-            setUploadingFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploadFile.id
-                  ? { ...f, status: "uploading", progress: 10 }
-                  : f
-              )
-            );
-
-            const arrayBuffer = await uploadFile.file.arrayBuffer();
-            const buffer = new Uint8Array(arrayBuffer);
-
-            const progressInterval = setInterval(() => {
-              setUploadingFiles((prev) =>
-                prev.map((f) =>
-                  f.id === uploadFile.id && f.progress < 90
-                    ? { ...f, progress: f.progress + 10 }
-                    : f
-                )
-              );
-            }, 200);
-
-            if (uploadFile.path) {
-              await FileService.writeFile(uploadFile.path, buffer);
-            }
-
-            clearInterval(progressInterval);
-            setUploadingFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploadFile.id
-                  ? { ...f, status: "completed", progress: 100 }
-                  : f
-              )
-            );
-          } catch (error) {
-            setUploadingFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploadFile.id
-                  ? {
-                      ...f,
-                      status: "error",
-                      error:
-                        error instanceof Error
-                          ? error.message
-                          : "Upload failed",
-                    }
-                  : f
-              )
-            );
-          }
-        }
-
-        // Check if all files are completed
-        const allCompleted = newFiles.every(
-          (file) =>
-            uploadingFiles.find((f) => f.id === file.id)?.status === "completed"
+        // Mark file as uploading with an initial progress and store the file path
+        setUploadingFiles((prev) =>
+          prev.map((f) =>
+            f.id === uploadFile.id
+              ? { ...f, status: "uploading", progress: 10, path: filePath }
+              : f
+          )
         );
 
-        if (allCompleted && onUploadComplete) {
-          onUploadComplete();
-          handleClose();
-        }
-      } catch (error) {
-        console.error("Upload error:", error);
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    [currentFolderPath, onUploadComplete, handleClose, uploadingFiles]
-  );
+        try {
+          const arrayBuffer = await uploadFile.file.arrayBuffer();
+          const buffer = new Uint8Array(arrayBuffer);
 
+          // Increase progress periodically until near completion
+          const progressInterval = setInterval(() => {
+            setUploadingFiles((prev) =>
+              prev.map((f) => {
+                if (f.id === uploadFile.id && f.progress < 90) {
+                  return { ...f, progress: f.progress + 10 };
+                }
+                return f;
+              })
+            );
+          }, 200);
+
+          // Write the file using FileService
+          if (filePath) {
+            await FileService.writeFile(filePath, buffer);
+          }
+
+          clearInterval(progressInterval);
+          setUploadingFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id
+                ? { ...f, status: "completed", progress: 100 }
+                : f
+            )
+          );
+        } catch (error) {
+          setUploadingFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id
+                ? {
+                    ...f,
+                    status: "error",
+                    error:
+                      error instanceof Error ? error.message : "Upload failed",
+                  }
+                : f
+            )
+          );
+        }
+      }
+      // After processing all files, trigger the upload complete callback,
+      // clear the file list and close the dialog.
+      onUploadComplete?.();
+      setUploadingFiles([]);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [currentFolderPath, uploadingFiles, onUploadComplete, onOpenChange]);
+
+  // Removes a file from the list
   const removeFile = useCallback((fileId: string) => {
     setUploadingFiles((prev) => prev.filter((f) => f.id !== fileId));
   }, []);
+
+  // Handle manual close via the header "X" button
+  const handleClose = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -147,7 +144,7 @@ export const FileUploadDialog = ({
         <Dialog.Content className="DialogContent">
           <form onSubmit={(e) => e.preventDefault()}>
             <Flex direction="column" gap="4">
-              {/* Header */}
+              {/* Header with title and "X" button */}
               <Flex justify="between" align="center">
                 <Flex className="DialogTitle">
                   <UploadIcon width="24" height="24" />
@@ -183,7 +180,9 @@ export const FileUploadDialog = ({
                   e.stopPropagation();
                   setIsDragging(false);
                   const files = Array.from(e.dataTransfer.files);
-                  if (files.length > 0) handleFiles(files);
+                  if (files.length > 0) {
+                    addFiles(files);
+                  }
                 }}
                 style={{
                   border: `2px dashed ${
@@ -204,7 +203,7 @@ export const FileUploadDialog = ({
                   ref={fileInputRef}
                   onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
-                      handleFiles(Array.from(e.target.files));
+                      addFiles(Array.from(e.target.files));
                       e.target.value = "";
                     }
                   }}
@@ -224,7 +223,7 @@ export const FileUploadDialog = ({
                     variant="soft"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    Browse Files
+                    Add Files
                   </Button>
                 </Flex>
               </Box>
@@ -278,18 +277,18 @@ export const FileUploadDialog = ({
                 </Box>
               )}
 
-              {/* Dialog Actions */}
+              {/* Dialog Actions: "Upload" and "Add More Files" */}
               <Flex gap="3" mt="4" justify="end">
-                <Dialog.Close asChild>
-                  <Button
-                    variant="soft"
-                    color="gray"
-                    onClick={handleClose}
-                    disabled={isProcessing}
-                  >
-                    Close
-                  </Button>
-                </Dialog.Close>
+                <Button
+                  onClick={handleUpload}
+                  disabled={
+                    isProcessing ||
+                    uploadingFiles.filter((f) => f.status === "pending")
+                      .length === 0
+                  }
+                >
+                  Upload
+                </Button>
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessing}

@@ -15,7 +15,7 @@ import { CreateFolderDialog } from "../../components/Files/CreateFolderDialog";
 import { FilesList } from "../../components/Files/FilesList";
 import { FilesGrid } from "../../components/Files/FilesGrid";
 import { useFiles } from "../../components/Files/hooks/useFiles";
-import { FileMetadata } from "../../store/slices/fileSlice";
+import { FileMetadata, FileType } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 import { FILE_CONSTANTS } from "../../services/constants";
 
@@ -36,6 +36,7 @@ export const FilesPage = () => {
   const [currentDirectory, setCurrentDirectory] =
     useState<DirectoryInfo | null>(null);
   const [directories, setDirectories] = useState<DirectoryInfo[]>([]);
+  const [files, setFiles] = useState<FileMetadata[]>([]);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
@@ -51,7 +52,7 @@ export const FilesPage = () => {
     initializeDirectory();
   }, []);
 
-  // loadDirectories loads folder data for the given directory (or defaults)
+  // loadDirectories loads both folder and file data for the given directory
   const loadDirectories = async (dirPath?: string) => {
     try {
       let targetDir: string;
@@ -66,23 +67,27 @@ export const FilesPage = () => {
       FileService.setCurrentDirectory(targetDir);
       localStorage.setItem(LAST_DIRECTORY_KEY, targetDir);
 
-      const filesList = await FileService.getFiles(targetDir);
-      const dirInfos = filesList
-        .filter((f) => f.isDirectory)
-        .map((d) => ({
-          path: d.path,
-          name: d.name,
-          fileCount: 0,
-        }));
+      const items = await FileService.getFiles(targetDir);
+      // Separate directories and files from the items
+      const directoriesList = items.filter((f) => f.isDirectory);
+      const filesList = items.filter((f) => !f.isDirectory);
 
-      setDirectories(dirInfos);
+      setDirectories(
+        directoriesList.map((dir) => ({
+          path: dir.path,
+          name: dir.name,
+          fileCount: directoriesList.length, // Adjust if needed
+        }))
+      );
+      setFiles(filesList);
+
       setCurrentDirectory({
         path: targetDir,
         name:
           targetDir === DEFAULT_BASE_DIRECTORY
             ? "Base"
             : targetDir.split("/").pop() || targetDir,
-        fileCount: dirInfos.length,
+        fileCount: directoriesList.length,
       });
     } catch (err) {
       console.error("Error loading directories:", err);
@@ -153,28 +158,31 @@ export const FilesPage = () => {
     }
   };
 
-  // Wrap displayFolders in useMemo so it remains stable.
-  const displayFolders: FileMetadata[] = useMemo(() => {
-    const simulated =
-      !window.fileAPI || typeof window.fileAPI.getFiles !== "function";
-    if (simulated) {
-      return directories.map((dir) => ({
-        id: dir.path,
-        name: dir.name,
-        path: dir.path,
-        type: "folder",
-        size: 0,
-        lastModified: 0,
-        isDirectory: true,
-        tags: [],
-      }));
-    }
-    return [];
-  }, [directories]);
+  // Combine directories and files into one list for display.
+  const displayItems: FileMetadata[] = useMemo(() => {
+    const dirItems = directories.map((dir) => ({
+      id: dir.path,
+      name: dir.name,
+      path: dir.path,
+      type: "folder" as FileType, // Explicitly cast to FileType
+      size: 0,
+      lastModified: 0,
+      isDirectory: true,
+      tags: [],
+    }));
+    return [...dirItems, ...files];
+  }, [directories, files]);
 
-  const filteredFiles = useCallback(() => {
-    return displayFolders;
-  }, [displayFolders]);
+  // Apply filtering on the combined list.
+  const filteredItems = useCallback(() => {
+    if (activeFilter === "all") {
+      return displayItems;
+    } else if (activeFilter === "recent") {
+      return [...displayItems].sort((a, b) => b.lastModified - a.lastModified);
+    } else {
+      return displayItems.filter((item) => item.type === activeFilter);
+    }
+  }, [displayItems, activeFilter]);
 
   return (
     <Box style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -293,13 +301,13 @@ export const FilesPage = () => {
               </Flex>
             ) : viewMode === "list" ? (
               <FilesList
-                files={filteredFiles()}
+                files={filteredItems()}
                 onDelete={handleDeleteFolder}
                 onFileOpen={handleFolderOpen}
               />
             ) : (
               <FilesGrid
-                files={filteredFiles()}
+                files={filteredItems()}
                 onDelete={handleDeleteFolder}
                 onFileOpen={handleFolderOpen}
               />
@@ -322,7 +330,7 @@ export const FilesPage = () => {
                     id: dir.path,
                     name: dir.name,
                     path: dir.path,
-                    type: "folder",
+                    type: "folder" as FileType,
                     size: 0,
                     lastModified: 0,
                     isDirectory: true,
