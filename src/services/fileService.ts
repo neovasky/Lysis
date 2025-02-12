@@ -123,12 +123,50 @@ export class FileService {
   /**
    * Write file content.
    */
-  async writeFile(path: string, content: Buffer): Promise<FileMetadata> {
+  /**
+   * Write file content.
+   */
+  async writeFile(path: string, content: Uint8Array): Promise<FileMetadata> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.writeFile !== "function") {
-        throw new Error("File writing not supported in simulation mode");
+        // In simulation mode, store the file info in localStorage
+        const pathParts = path.split("/");
+        const fileName = pathParts.pop() || "";
+        const dirPath = pathParts.join("/");
+
+        const fileMetadata: FileMetadata = {
+          id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: fileName,
+          path: path,
+          type: this.getFileType(fileName),
+          size: content.length,
+          lastModified: Date.now(),
+          isDirectory: false,
+          tags: [],
+        };
+
+        const storageKey = `simulatedFolders_${dirPath}`;
+        const stored = localStorage.getItem(storageKey);
+        const files: FileMetadata[] = stored ? JSON.parse(stored) : [];
+
+        // Remove any existing file with same name
+        const filtered = files.filter((f) => f.name !== fileName);
+        filtered.push(fileMetadata);
+
+        localStorage.setItem(storageKey, JSON.stringify(filtered));
+
+        // Store file content separately
+        const contentStr = Array.from(content)
+          .map((byte) => String.fromCharCode(byte))
+          .join("");
+        localStorage.setItem(`fileContent_${path}`, btoa(contentStr));
+
+        return fileMetadata;
       }
-      await window.fileAPI.writeFile({ filePath: path, content });
+
+      // For actual file system, convert Uint8Array to Buffer
+      const buffer = Buffer.from(content);
+      await window.fileAPI.writeFile({ filePath: path, content: buffer });
       const info = await window.fileAPI.getFileInfo(path);
       return this.convertFileInfo(info);
     } catch (error) {

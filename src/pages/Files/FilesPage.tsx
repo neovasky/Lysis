@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Box, Text, Grid, Flex, Button, Badge } from "@radix-ui/themes";
 import {
   UploadIcon,
@@ -17,11 +17,7 @@ import { FilesGrid } from "../../components/Files/FilesGrid";
 import { useFiles } from "../../components/Files/hooks/useFiles";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
-
-// Use the same default base directory as FileService.
-const DEFAULT_BASE_DIRECTORY = "BaseDirectory";
-const simulated =
-  !window.fileAPI || typeof window.fileAPI.getFiles !== "function";
+import { FILE_CONSTANTS } from "../../services/constants";
 
 type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
@@ -31,6 +27,8 @@ interface DirectoryInfo {
   name: string;
   fileCount: number;
 }
+
+const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
 
 export const FilesPage = () => {
   const { loading, error } = useFiles();
@@ -42,6 +40,17 @@ export const FilesPage = () => {
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
 
+  // Initialize component with saved directory
+  useEffect(() => {
+    const initializeDirectory = async () => {
+      const savedDirectory =
+        localStorage.getItem(LAST_DIRECTORY_KEY) || DEFAULT_BASE_DIRECTORY;
+      await loadDirectories(savedDirectory);
+    };
+
+    initializeDirectory();
+  }, []);
+
   // loadDirectories loads folder data for the given directory (or defaults)
   const loadDirectories = async (dirPath?: string) => {
     try {
@@ -49,10 +58,14 @@ export const FilesPage = () => {
       if (dirPath) {
         targetDir = dirPath;
       } else {
-        targetDir =
-          (await FileService.getCurrentDirectory()) || DEFAULT_BASE_DIRECTORY;
-        FileService.setCurrentDirectory(targetDir);
+        const savedDir = localStorage.getItem(LAST_DIRECTORY_KEY);
+        targetDir = savedDir || DEFAULT_BASE_DIRECTORY;
       }
+
+      // Ensure directory is set in both FileService and localStorage
+      FileService.setCurrentDirectory(targetDir);
+      localStorage.setItem(LAST_DIRECTORY_KEY, targetDir);
+
       const filesList = await FileService.getFiles(targetDir);
       const dirInfos = filesList
         .filter((f) => f.isDirectory)
@@ -61,6 +74,7 @@ export const FilesPage = () => {
           name: d.name,
           fileCount: 0,
         }));
+
       setDirectories(dirInfos);
       setCurrentDirectory({
         path: targetDir,
@@ -74,10 +88,6 @@ export const FilesPage = () => {
       console.error("Error loading directories:", err);
     }
   };
-
-  useEffect(() => {
-    loadDirectories();
-  }, []);
 
   const handleNewFolderClick = () => {
     setIsNewFolderOpen(true);
@@ -99,19 +109,30 @@ export const FilesPage = () => {
     }
   };
 
-  const handleDirectorySelect = async (dir: DirectoryInfo) => {
+  const handleFolderOpen = async (folder: FileMetadata) => {
     try {
-      setCurrentDirectory(dir);
-      FileService.setCurrentDirectory(dir.path);
-      await loadDirectories(dir.path);
+      if (!folder.isDirectory) return;
+
+      const newDirectory = {
+        path: folder.path,
+        name: folder.name,
+        fileCount: 0,
+      };
+
+      setCurrentDirectory(newDirectory);
+      FileService.setCurrentDirectory(folder.path);
+      localStorage.setItem(LAST_DIRECTORY_KEY, folder.path);
+
+      await loadDirectories(folder.path);
     } catch (err) {
-      console.error("Error selecting directory:", err);
+      console.error("Error opening folder:", err);
     }
   };
 
   const handleBackToRoot = async () => {
     try {
       FileService.setCurrentDirectory(DEFAULT_BASE_DIRECTORY);
+      localStorage.setItem(LAST_DIRECTORY_KEY, DEFAULT_BASE_DIRECTORY);
       await loadDirectories(DEFAULT_BASE_DIRECTORY);
     } catch (err) {
       console.error("Error going back to root:", err);
@@ -134,29 +155,30 @@ export const FilesPage = () => {
 
   // Wrap displayFolders in useMemo so it remains stable.
   const displayFolders: FileMetadata[] = useMemo(() => {
-    return simulated
-      ? directories.map((dir) => ({
-          id: dir.path,
-          name: dir.name,
-          path: dir.path,
-          type: "folder",
-          size: 0,
-          lastModified: 0,
-          isDirectory: true,
-          tags: [],
-        }))
-      : [];
+    const simulated =
+      !window.fileAPI || typeof window.fileAPI.getFiles !== "function";
+    if (simulated) {
+      return directories.map((dir) => ({
+        id: dir.path,
+        name: dir.name,
+        path: dir.path,
+        type: "folder",
+        size: 0,
+        lastModified: 0,
+        isDirectory: true,
+        tags: [],
+      }));
+    }
+    return [];
   }, [directories]);
 
   const filteredFiles = useCallback(() => {
-    if (simulated) {
-      return displayFolders;
-    }
-    return [];
+    return displayFolders;
   }, [displayFolders]);
 
   return (
     <Box style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Header Toolbar */}
       <Flex
         align="center"
         px="4"
@@ -273,11 +295,13 @@ export const FilesPage = () => {
               <FilesList
                 files={filteredFiles()}
                 onDelete={handleDeleteFolder}
+                onFileOpen={handleFolderOpen}
               />
             ) : (
               <FilesGrid
                 files={filteredFiles()}
                 onDelete={handleDeleteFolder}
+                onFileOpen={handleFolderOpen}
               />
             )}
           </Box>
@@ -293,7 +317,18 @@ export const FilesPage = () => {
                   border: "1px solid var(--gray-5)",
                   backgroundColor: "var(--gray-2)",
                 }}
-                onClick={() => handleDirectorySelect(dir)}
+                onClick={() =>
+                  handleFolderOpen({
+                    id: dir.path,
+                    name: dir.name,
+                    path: dir.path,
+                    type: "folder",
+                    size: 0,
+                    lastModified: 0,
+                    isDirectory: true,
+                    tags: [],
+                  })
+                }
               >
                 <Flex align="center" gap="3" mb="2">
                   <FileIcon
