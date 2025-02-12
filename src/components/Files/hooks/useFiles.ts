@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+// File: src/components/Files/hooks/useFiles.ts
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   selectAllFiles,
@@ -8,6 +9,7 @@ import {
   FileMetadata,
 } from "../../../store/slices/fileSlice";
 import FileService from "../../../services/fileService";
+import { FILE_CONSTANTS } from "../../../services/constants";
 
 export interface UseFilesReturn {
   files: FileMetadata[];
@@ -30,15 +32,16 @@ export function useFiles(): UseFilesReturn {
     null
   );
 
+  // Use ref for loadFiles to avoid dependency cycles
+  const loadFilesRef = useRef<(dirPath?: string) => Promise<void>>();
+
   // Setup file watching
   const setupFileWatching = useCallback(
     (dirPath: string) => {
-      // Clear existing interval if any
       if (checkInterval) {
         clearInterval(checkInterval);
       }
 
-      // Set up new interval to check for file changes
       const interval = setInterval(async () => {
         if (!dirPath) return;
 
@@ -50,10 +53,8 @@ export function useFiles(): UseFilesReturn {
             const existingFile = files.find((f) => f.path === newFile.path);
 
             if (!existingFile) {
-              // New file
               dispatch(addFile(newFile));
             } else if (existingFile.lastModified !== newFile.lastModified) {
-              // Modified file
               dispatch(updateFile({ id: existingFile.id, updates: newFile }));
             }
           });
@@ -71,11 +72,10 @@ export function useFiles(): UseFilesReturn {
         } catch (err) {
           console.error("Error checking for file changes:", err);
         }
-      }, 5000); // Check every 5 seconds
+      }, 5000);
 
       setCheckInterval(interval);
 
-      // Cleanup function
       return () => {
         if (interval) {
           clearInterval(interval);
@@ -110,7 +110,14 @@ export function useFiles(): UseFilesReturn {
         }
 
         setCurrentDirectory(targetDir);
+        // Store the current directory
+        localStorage.setItem("lastUsedDirectory", targetDir);
+
         const fileList = await FileService.getFiles(targetDir);
+
+        // Clear existing files before adding new ones
+        const existingFiles = files.map((file) => file.id);
+        existingFiles.forEach((id) => dispatch(removeFile(id)));
 
         // Update store with files
         fileList.forEach((file: FileMetadata) => {
@@ -126,15 +133,39 @@ export function useFiles(): UseFilesReturn {
         setLoading(false);
       }
     },
-    [dispatch, setupFileWatching]
+    [dispatch, setupFileWatching, files]
   );
+
+  // Store loadFiles in ref to avoid dependency cycles
+  useEffect(() => {
+    loadFilesRef.current = loadFiles;
+  }, [loadFiles]);
+
+  // Initialize stored folders on mount
+  useEffect(() => {
+    const initializeStoredFolders = async () => {
+      try {
+        // Access DEFAULT_BASE_DIRECTORY through the FileService class directly
+        const lastDirectory =
+          localStorage.getItem("lastUsedDirectory") ||
+          FILE_CONSTANTS.DEFAULT_BASE_DIRECTORY;
+        if (lastDirectory && loadFilesRef.current) {
+          await loadFilesRef.current(lastDirectory);
+        }
+      } catch (error) {
+        console.error("Error initializing stored folders:", error);
+      }
+    };
+
+    initializeStoredFolders();
+  }, []);
 
   // Delete a file
   const deleteFile = useCallback(
     async (fileId: string, filePath: string) => {
       try {
         setError(null);
-        await FileService.deleteFile(filePath);
+        await FileService.deleteItem(filePath); // Changed from deleteFile to deleteItem
         dispatch(removeFile(fileId));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to delete file");

@@ -24,8 +24,14 @@ interface FileOperationResult {
 export class FileService {
   private static instance: FileService;
   private currentDirectory: string | undefined = undefined;
+  static readonly DEFAULT_BASE_DIRECTORY = "BaseDirectory";
+  static readonly LAST_DIRECTORY_KEY = "lysis_last_directory";
 
-  private constructor() {}
+  private constructor() {
+    // Initialize currentDirectory from storage on instantiation
+    const storedDir = localStorage.getItem(FileService.LAST_DIRECTORY_KEY);
+    this.currentDirectory = storedDir || FileService.DEFAULT_BASE_DIRECTORY;
+  }
 
   static getInstance(): FileService {
     if (!FileService.instance) {
@@ -36,16 +42,27 @@ export class FileService {
 
   /**
    * Get or select current working directory.
-   * If no directory is set, attempt to prompt the user.
+   * If no directory is set, return the default directory.
    */
-  async getCurrentDirectory(): Promise<string | undefined> {
+  async getCurrentDirectory(): Promise<string> {
     if (!this.currentDirectory) {
-      const selected = await this.selectFiles({
-        directory: true,
-        multiple: false,
-      });
-      if (selected && selected.length > 0) {
-        this.currentDirectory = selected[0];
+      try {
+        const selected = await this.selectFiles({
+          directory: true,
+          multiple: false,
+        });
+        if (selected && selected.length > 0) {
+          this.currentDirectory = selected[0];
+          localStorage.setItem(
+            FileService.LAST_DIRECTORY_KEY,
+            this.currentDirectory
+          );
+        } else {
+          this.currentDirectory = FileService.DEFAULT_BASE_DIRECTORY;
+        }
+      } catch (error) {
+        console.warn("Failed to select directory, using default:", error);
+        this.currentDirectory = FileService.DEFAULT_BASE_DIRECTORY;
       }
     }
     return this.currentDirectory;
@@ -56,6 +73,9 @@ export class FileService {
    */
   setCurrentDirectory(path: string | undefined) {
     this.currentDirectory = path;
+    if (path) {
+      localStorage.setItem(FileService.LAST_DIRECTORY_KEY, path);
+    }
   }
 
   /**
@@ -63,9 +83,14 @@ export class FileService {
    */
   async selectFiles(options?: FileSelection): Promise<string[]> {
     try {
+      if (!window.fileAPI || typeof window.fileAPI.selectFile !== "function") {
+        // In simulation mode, return default directory
+        return [FileService.DEFAULT_BASE_DIRECTORY];
+      }
+
       const paths = await window.fileAPI.selectFile(options);
       if (options?.directory && paths.length > 0) {
-        this.currentDirectory = paths[0];
+        this.setCurrentDirectory(paths[0]);
       }
       return paths;
     } catch (error) {
@@ -76,12 +101,12 @@ export class FileService {
 
   /**
    * Get all files in a directory.
-   * If window.fileAPI isn’t available, return simulated folders stored in localStorage.
+   * If window.fileAPI isn't available, return simulated folders stored in localStorage.
    */
   async getFiles(dirPath: string): Promise<FileMetadata[]> {
     if (!window.fileAPI || typeof window.fileAPI.getFiles !== "function") {
-      // Simulation: read from localStorage using the current directory as key.
-      const storageKey = `simulatedFolders_${this.currentDirectory}`;
+      // Simulation: read from localStorage using the provided directory path
+      const storageKey = `simulatedFolders_${dirPath}`;
       const stored = localStorage.getItem(storageKey);
       const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
       return folders;
@@ -100,6 +125,9 @@ export class FileService {
    */
   async writeFile(path: string, content: Buffer): Promise<FileMetadata> {
     try {
+      if (!window.fileAPI || typeof window.fileAPI.writeFile !== "function") {
+        throw new Error("File writing not supported in simulation mode");
+      }
       await window.fileAPI.writeFile({ filePath: path, content });
       const info = await window.fileAPI.getFileInfo(path);
       return this.convertFileInfo(info);
@@ -116,36 +144,43 @@ export class FileService {
   async createDirectory(name: string): Promise<FileOperationResult> {
     try {
       if (!this.currentDirectory) {
-        throw new Error("No current directory selected");
+        this.currentDirectory = FileService.DEFAULT_BASE_DIRECTORY;
       }
-      // Build the full path by concatenating the current directory with the new folder name.
+
       const path = `${this.currentDirectory}/${name}`;
+
       if (
         !window.fileAPI ||
         typeof window.fileAPI.createDirectory !== "function"
       ) {
-        console.warn(
-          "window.fileAPI not available. Simulating folder creation."
-        );
+        const storageKey = `simulatedFolders_${this.currentDirectory}`;
+        const stored = localStorage.getItem(storageKey);
+        const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
+
+        // Check for duplicate folder names
+        if (folders.some((folder) => folder.name === name)) {
+          return {
+            success: false,
+            error: "A folder with this name already exists",
+          };
+        }
+
         const simulatedFolder: FileMetadata = {
           id: `folder_${Date.now()}`,
           name,
           path,
-          type: "folder", // Ensure FileType includes "folder"
+          type: "folder",
           size: 0,
           lastModified: Date.now(),
           isDirectory: true,
           tags: [],
         };
-        // Persist the simulated folder in localStorage.
-        const storageKey = `simulatedFolders_${this.currentDirectory}`;
-        const stored = localStorage.getItem(storageKey);
-        const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
+
         folders.push(simulatedFolder);
         localStorage.setItem(storageKey, JSON.stringify(folders));
         return { success: true, metadata: simulatedFolder };
       }
-      // Otherwise, use the actual API.
+
       await window.fileAPI.createDirectory(path);
       const info = await window.fileAPI.getFileInfo(path);
       return {
@@ -163,46 +198,18 @@ export class FileService {
   }
 
   /**
-   * Upload files to current directory.
-   */
-  async uploadFiles(files: File[]): Promise<FileOperationResult[]> {
-    if (!this.currentDirectory) {
-      throw new Error("No current directory selected");
-    }
-    const results: FileOperationResult[] = [];
-    for (const file of files) {
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const path = `${this.currentDirectory}/${file.name}`;
-        await this.writeFile(path, buffer);
-        const info = await window.fileAPI.getFileInfo(path);
-        results.push({
-          success: true,
-          metadata: this.convertFileInfo(info),
-        });
-      } catch (error) {
-        results.push({
-          success: false,
-          error: error instanceof Error ? error.message : "Upload failed",
-        });
-      }
-    }
-    return results;
-  }
-
-  /**
    * Delete file or directory.
    * When fileAPI is not available, simulate deletion by updating localStorage.
    */
   async deleteItem(path: string): Promise<FileOperationResult> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.deleteFile !== "function") {
-        // Determine the parent directory.
         const parentDir = path.substring(0, path.lastIndexOf("/"));
         const storageKey = `simulatedFolders_${parentDir}`;
         const stored = localStorage.getItem(storageKey);
-        const items: FileMetadata[] = stored ? JSON.parse(stored) : [];
+        if (!stored) return { success: false, error: "Directory not found" };
+
+        const items: FileMetadata[] = JSON.parse(stored);
         const newItems = items.filter((item) => item.path !== path);
         localStorage.setItem(storageKey, JSON.stringify(newItems));
         return { success: true };
@@ -228,10 +235,13 @@ export class FileService {
     try {
       const directory = oldPath.substring(0, oldPath.lastIndexOf("/"));
       const newPath = `${directory}/${newName}`;
+
       if (!window.fileAPI || typeof window.fileAPI.renameFile !== "function") {
         const storageKey = `simulatedFolders_${directory}`;
         const stored = localStorage.getItem(storageKey);
-        const items: FileMetadata[] = stored ? JSON.parse(stored) : [];
+        if (!stored) return { success: false, error: "Directory not found" };
+
+        const items: FileMetadata[] = JSON.parse(stored);
         const updatedItems = items.map((item) => {
           if (item.path === oldPath) {
             return {
@@ -243,12 +253,15 @@ export class FileService {
           }
           return item;
         });
+
         localStorage.setItem(storageKey, JSON.stringify(updatedItems));
+        const updatedItem = updatedItems.find((item) => item.path === newPath);
         return {
           success: true,
-          metadata: updatedItems.find((item) => item.path === newPath),
+          metadata: updatedItem,
         };
       }
+
       await window.fileAPI.renameFile(oldPath, newPath);
       const info = await window.fileAPI.getFileInfo(newPath);
       return {
@@ -265,13 +278,19 @@ export class FileService {
 
   /**
    * Move file or directory.
-   * (For simulation, similar logic can be applied if needed.)
    */
   async moveItem(
     sourcePath: string,
     targetPath: string
   ): Promise<FileOperationResult> {
     try {
+      if (!window.fileAPI || typeof window.fileAPI.moveFile !== "function") {
+        return {
+          success: false,
+          error: "Move operation not supported in simulation mode",
+        };
+      }
+
       await window.fileAPI.moveFile({ sourcePath, targetPath });
       const info = await window.fileAPI.getFileInfo(targetPath);
       return {
