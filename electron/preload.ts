@@ -1,7 +1,6 @@
 // File: electron/preload.ts
-import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron";
+import { contextBridge, ipcRenderer } from "electron";
 import { FILE_CHANNELS } from "./handlers/fileHandlers";
-import type { FileAPI } from "../src/types/window";
 
 // Define valid channel types
 type ValidChannels = "main-process-message" | keyof typeof FILE_CHANNELS;
@@ -16,16 +15,12 @@ type IpcMessage = {
 contextBridge.exposeInMainWorld("electron", {
   ipcRenderer: {
     on: (channel: ValidChannels, func: (data: unknown) => void) => {
-      const subscription = (_event: IpcRendererEvent, ...args: unknown[]) =>
-        func(args);
+      const subscription = (_: unknown, ...args: unknown[]) => func(args);
       ipcRenderer.on(channel, subscription);
       return () => ipcRenderer.removeListener(channel, subscription);
     },
     once: (channel: ValidChannels, func: (data: unknown) => void) => {
-      ipcRenderer.once(
-        channel,
-        (_event: IpcRendererEvent, ...args: unknown[]) => func(args)
-      );
+      ipcRenderer.once(channel, (_: unknown, ...args: unknown[]) => func(args));
     },
     send: (channel: ValidChannels, message: IpcMessage) => {
       ipcRenderer.send(channel, message);
@@ -33,8 +28,8 @@ contextBridge.exposeInMainWorld("electron", {
   },
 });
 
-// Expose the file API to the renderer process
-contextBridge.exposeInMainWorld("fileAPI", {
+// Define the file API type
+const fileAPI = {
   selectFile: (options?: { multiple?: boolean }) =>
     ipcRenderer.invoke(FILE_CHANNELS.SELECT_FILE, options),
 
@@ -63,4 +58,13 @@ contextBridge.exposeInMainWorld("fileAPI", {
 
   copyFile: (options: { sourcePath: string; targetPath: string }) =>
     ipcRenderer.invoke(FILE_CHANNELS.COPY_FILE, options),
-} as FileAPI);
+
+  openFile: (filePath: string) =>
+    ipcRenderer.invoke(FILE_CHANNELS.OPEN_FILE, filePath),
+};
+
+// Expose the file API to the renderer process
+contextBridge.exposeInMainWorld("fileAPI", fileAPI);
+
+// Declare the fileAPI type for TypeScript
+export type FileAPI = typeof fileAPI;

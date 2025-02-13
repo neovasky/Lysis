@@ -13,27 +13,25 @@ const FILE_CHANNELS = {
   RENAME_FILE: "file:rename",
   CREATE_DIRECTORY: "file:create-dir",
   MOVE_FILE: "file:move",
-  COPY_FILE: "file:copy"
+  COPY_FILE: "file:copy",
+  OPEN_FILE: "file:open"
 };
 electron.contextBridge.exposeInMainWorld("electron", {
   ipcRenderer: {
     on: (channel, func) => {
-      const subscription = (_event, ...args) => func(args);
+      const subscription = (_, ...args) => func(args);
       electron.ipcRenderer.on(channel, subscription);
       return () => electron.ipcRenderer.removeListener(channel, subscription);
     },
     once: (channel, func) => {
-      electron.ipcRenderer.once(
-        channel,
-        (_event, ...args) => func(args)
-      );
+      electron.ipcRenderer.once(channel, (_, ...args) => func(args));
     },
     send: (channel, message) => {
       electron.ipcRenderer.send(channel, message);
     }
   }
 });
-electron.contextBridge.exposeInMainWorld("fileAPI", {
+const fileAPI = {
   selectFile: (options) => electron.ipcRenderer.invoke(FILE_CHANNELS.SELECT_FILE, options),
   readFile: (path) => electron.ipcRenderer.invoke(FILE_CHANNELS.READ_FILE, path),
   writeFile: (options) => electron.ipcRenderer.invoke(FILE_CHANNELS.WRITE_FILE, options),
@@ -43,6 +41,8 @@ electron.contextBridge.exposeInMainWorld("fileAPI", {
   renameFile: (oldPath, newPath) => electron.ipcRenderer.invoke(FILE_CHANNELS.RENAME_FILE, { oldPath, newPath }),
   createDirectory: (path) => electron.ipcRenderer.invoke(FILE_CHANNELS.CREATE_DIRECTORY, path),
   moveFile: (options) => electron.ipcRenderer.invoke(FILE_CHANNELS.MOVE_FILE, options),
-  copyFile: (options) => electron.ipcRenderer.invoke(FILE_CHANNELS.COPY_FILE, options)
-});
+  copyFile: (options) => electron.ipcRenderer.invoke(FILE_CHANNELS.COPY_FILE, options),
+  openFile: (filePath) => electron.ipcRenderer.invoke(FILE_CHANNELS.OPEN_FILE, filePath)
+};
+electron.contextBridge.exposeInMainWorld("fileAPI", fileAPI);
 //# sourceMappingURL=preload.mjs.map

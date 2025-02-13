@@ -9,11 +9,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <!-- Added Content Security Policy meta tag to allow data: and blob: URLs -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
-    />
+    <!-- Removed the meta http-equiv CSP to avoid conflicts with Electron's override -->
   </head>
   <body>
     <div id="root"></div>

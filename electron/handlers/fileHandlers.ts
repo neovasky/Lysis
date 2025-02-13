@@ -3,7 +3,7 @@
  * Description: Main process handlers for file operations
  */
 
-import { ipcMain, dialog } from "electron";
+import { ipcMain, dialog, shell } from "electron";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
@@ -22,6 +22,7 @@ export const FILE_CHANNELS = {
   COPY_FILE: "file:copy",
   WATCH_FILE: "file:watch",
   GET_FILE_HASH: "file:hash",
+  OPEN_FILE: "file:open",
 } as const;
 
 export function setupFileHandlers() {
@@ -86,12 +87,10 @@ export function setupFileHandlers() {
   // Handler for writing files
   ipcMain.handle(
     FILE_CHANNELS.WRITE_FILE,
-    async (_, { filePath, content, createDirectory }) => {
+    async (_, { filePath, content }: { filePath: string; content: Buffer }) => {
       try {
-        if (createDirectory) {
-          await fs.mkdir(path.dirname(filePath), { recursive: true });
-        }
-
+        const dir = path.dirname(filePath);
+        await fs.mkdir(dir, { recursive: true });
         await fs.writeFile(filePath, content);
         const stats = await fs.stat(filePath);
         const hash = await getFileHash(filePath);
@@ -194,30 +193,33 @@ export function setupFileHandlers() {
   });
 
   // Handler for renaming files
-  ipcMain.handle(FILE_CHANNELS.RENAME_FILE, async (_, { oldPath, newPath }) => {
-    try {
-      await fs.rename(oldPath, newPath);
-      const stats = await fs.stat(newPath);
-      const hash = stats.isFile() ? await getFileHash(newPath) : null;
+  ipcMain.handle(
+    FILE_CHANNELS.RENAME_FILE,
+    async (_, { oldPath, newPath }: { oldPath: string; newPath: string }) => {
+      try {
+        await fs.rename(oldPath, newPath);
+        const stats = await fs.stat(newPath);
+        const hash = stats.isFile() ? await getFileHash(newPath) : null;
 
-      return {
-        name: path.basename(newPath),
-        path: newPath,
-        size: stats.size,
-        lastModified: stats.mtime,
-        type: stats.isDirectory() ? "directory" : getFileType(newPath),
-        isDirectory: stats.isDirectory(),
-        hash,
-      };
-    } catch (error) {
-      console.error("File rename error:", error);
-      throw new Error(
-        `Failed to rename file: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+        return {
+          name: path.basename(newPath),
+          path: newPath,
+          size: stats.size,
+          lastModified: stats.mtime,
+          type: stats.isDirectory() ? "directory" : getFileType(newPath),
+          isDirectory: stats.isDirectory(),
+          hash,
+        };
+      } catch (error) {
+        console.error("File rename error:", error);
+        throw new Error(
+          `Failed to rename file: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+      }
     }
-  });
+  );
 
   // Handler for creating directories
   ipcMain.handle(FILE_CHANNELS.CREATE_DIRECTORY, async (_, dirPath: string) => {
@@ -247,7 +249,10 @@ export function setupFileHandlers() {
   // Handler for moving files
   ipcMain.handle(
     FILE_CHANNELS.MOVE_FILE,
-    async (_, { sourcePath, targetPath }) => {
+    async (
+      _,
+      { sourcePath, targetPath }: { sourcePath: string; targetPath: string }
+    ) => {
       try {
         await fs.rename(sourcePath, targetPath);
         const stats = await fs.stat(targetPath);
@@ -276,7 +281,10 @@ export function setupFileHandlers() {
   // Handler for copying files
   ipcMain.handle(
     FILE_CHANNELS.COPY_FILE,
-    async (_, { sourcePath, targetPath }) => {
+    async (
+      _,
+      { sourcePath, targetPath }: { sourcePath: string; targetPath: string }
+    ) => {
       try {
         await fs.copyFile(sourcePath, targetPath);
         const stats = await fs.stat(targetPath);
@@ -302,38 +310,53 @@ export function setupFileHandlers() {
     }
   );
 
-  // Helper function to get file type from extension
-  function getFileType(filename: string): string {
-    const ext = path.extname(filename).toLowerCase();
-    switch (ext) {
-      case ".pdf":
-        return "pdf";
-      case ".xlsx":
-      case ".xls":
-        return "excel";
-      case ".doc":
-      case ".docx":
-        return "word";
-      case ".txt":
-      case ".md":
-        return "text";
-      default:
-        return "other";
-    }
-  }
-
-  // Helper function to calculate file hash
-  async function getFileHash(filePath: string): Promise<string> {
+  // Handler for opening files in default application
+  ipcMain.handle(FILE_CHANNELS.OPEN_FILE, async (_, filePath: string) => {
     try {
-      const content = await fs.readFile(filePath);
-      return crypto.createHash("sha256").update(content).digest("hex");
+      await shell.openPath(filePath);
+      return true;
     } catch (error) {
-      console.error("Hash calculation error:", error);
+      console.error("File open error:", error);
       throw new Error(
-        `Failed to calculate file hash: ${
+        `Failed to open file: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
+  });
+}
+
+// Helper function to get file type from extension
+function getFileType(filename: string): string {
+  const ext = path.extname(filename).toLowerCase();
+  switch (ext) {
+    case ".pdf":
+      return "pdf";
+    case ".xlsx":
+    case ".xls":
+      return "excel";
+    case ".doc":
+    case ".docx":
+      return "word";
+    case ".txt":
+    case ".md":
+      return "text";
+    default:
+      return "other";
+  }
+}
+
+// Helper function to calculate file hash
+async function getFileHash(filePath: string): Promise<string> {
+  try {
+    const content = await fs.readFile(filePath);
+    return crypto.createHash("sha256").update(content).digest("hex");
+  } catch (error) {
+    console.error("Hash calculation error:", error);
+    throw new Error(
+      `Failed to calculate file hash: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
 }

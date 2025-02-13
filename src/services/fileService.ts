@@ -308,6 +308,21 @@ export class FileService {
   }
 
   /**
+   * Open file in default system application
+   */
+  async openFile(path: string): Promise<void> {
+    try {
+      if (!window.fileAPI || typeof window.fileAPI.openFile !== "function") {
+        throw new Error("Open file operation not supported in simulation mode");
+      }
+      await window.fileAPI.openFile(path);
+    } catch (error) {
+      console.error("Failed to open file:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Rename file or directory.
    * When fileAPI is not available, simulate renaming by updating localStorage.
    */

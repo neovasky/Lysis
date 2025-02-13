@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app, BrowserWindow } from "electron";
+import { ipcMain, dialog, shell, app, BrowserWindow } from "electron";
 import * as path from "path";
 import path__default from "path";
 import { fileURLToPath } from "url";
@@ -14,7 +14,8 @@ const FILE_CHANNELS = {
   RENAME_FILE: "file:rename",
   CREATE_DIRECTORY: "file:create-dir",
   MOVE_FILE: "file:move",
-  COPY_FILE: "file:copy"
+  COPY_FILE: "file:copy",
+  OPEN_FILE: "file:open"
 };
 function setupFileHandlers() {
   ipcMain.handle(
@@ -58,11 +59,10 @@ function setupFileHandlers() {
   });
   ipcMain.handle(
     FILE_CHANNELS.WRITE_FILE,
-    async (_, { filePath, content, createDirectory }) => {
+    async (_, { filePath, content }) => {
       try {
-        if (createDirectory) {
-          await fs.mkdir(path__default.dirname(filePath), { recursive: true });
-        }
+        const dir = path__default.dirname(filePath);
+        await fs.mkdir(dir, { recursive: true });
         await fs.writeFile(filePath, content);
         const stats = await fs.stat(filePath);
         const hash = await getFileHash(filePath);
@@ -144,27 +144,30 @@ function setupFileHandlers() {
       );
     }
   });
-  ipcMain.handle(FILE_CHANNELS.RENAME_FILE, async (_, { oldPath, newPath }) => {
-    try {
-      await fs.rename(oldPath, newPath);
-      const stats = await fs.stat(newPath);
-      const hash = stats.isFile() ? await getFileHash(newPath) : null;
-      return {
-        name: path__default.basename(newPath),
-        path: newPath,
-        size: stats.size,
-        lastModified: stats.mtime,
-        type: stats.isDirectory() ? "directory" : getFileType(newPath),
-        isDirectory: stats.isDirectory(),
-        hash
-      };
-    } catch (error) {
-      console.error("File rename error:", error);
-      throw new Error(
-        `Failed to rename file: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+  ipcMain.handle(
+    FILE_CHANNELS.RENAME_FILE,
+    async (_, { oldPath, newPath }) => {
+      try {
+        await fs.rename(oldPath, newPath);
+        const stats = await fs.stat(newPath);
+        const hash = stats.isFile() ? await getFileHash(newPath) : null;
+        return {
+          name: path__default.basename(newPath),
+          path: newPath,
+          size: stats.size,
+          lastModified: stats.mtime,
+          type: stats.isDirectory() ? "directory" : getFileType(newPath),
+          isDirectory: stats.isDirectory(),
+          hash
+        };
+      } catch (error) {
+        console.error("File rename error:", error);
+        throw new Error(
+          `Failed to rename file: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+      }
     }
-  });
+  );
   ipcMain.handle(FILE_CHANNELS.CREATE_DIRECTORY, async (_, dirPath) => {
     try {
       await fs.mkdir(dirPath, { recursive: true });
@@ -233,34 +236,45 @@ function setupFileHandlers() {
       }
     }
   );
-  function getFileType(filename) {
-    const ext = path__default.extname(filename).toLowerCase();
-    switch (ext) {
-      case ".pdf":
-        return "pdf";
-      case ".xlsx":
-      case ".xls":
-        return "excel";
-      case ".doc":
-      case ".docx":
-        return "word";
-      case ".txt":
-      case ".md":
-        return "text";
-      default:
-        return "other";
-    }
-  }
-  async function getFileHash(filePath) {
+  ipcMain.handle(FILE_CHANNELS.OPEN_FILE, async (_, filePath) => {
     try {
-      const content = await fs.readFile(filePath);
-      return crypto.createHash("sha256").update(content).digest("hex");
+      await shell.openPath(filePath);
+      return true;
     } catch (error) {
-      console.error("Hash calculation error:", error);
+      console.error("File open error:", error);
       throw new Error(
-        `Failed to calculate file hash: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to open file: ${error instanceof Error ? error.message : "Unknown error"}`
       );
     }
+  });
+}
+function getFileType(filename) {
+  const ext = path__default.extname(filename).toLowerCase();
+  switch (ext) {
+    case ".pdf":
+      return "pdf";
+    case ".xlsx":
+    case ".xls":
+      return "excel";
+    case ".doc":
+    case ".docx":
+      return "word";
+    case ".txt":
+    case ".md":
+      return "text";
+    default:
+      return "other";
+  }
+}
+async function getFileHash(filePath) {
+  try {
+    const content = await fs.readFile(filePath);
+    return crypto.createHash("sha256").update(content).digest("hex");
+  } catch (error) {
+    console.error("Hash calculation error:", error);
+    throw new Error(
+      `Failed to calculate file hash: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 const __filename = fileURLToPath(import.meta.url);
@@ -277,9 +291,9 @@ async function createWindow() {
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
-      // Updated path
       nodeIntegration: false,
       contextIsolation: true,
+      // Possibly set to false if you're still having issues
       webSecurity: true,
       sandbox: false
     }
@@ -290,14 +304,15 @@ async function createWindow() {
         responseHeaders: {
           ...details.responseHeaders,
           "Content-Security-Policy": [
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+            // Example policy that allows inline styles/scripts, data: or blob: sources, etc.
+            "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;script-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;font-src 'self' https://fonts.gstatic.com;img-src 'self' data: blob:;object-src 'self' data: blob:;media-src 'self' data: blob:;"
           ]
         }
       });
     }
   );
   if (VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(VITE_DEV_SERVER_URL);
+    await mainWindow.loadURL(VITE_DEV_SERVER_URL);
     if (process.env.ELECTRON_DEBUG === "1") {
       mainWindow.webContents.openDevTools();
     }
@@ -312,9 +327,7 @@ app.on("window-all-closed", () => {
   }
 });
 app.on("activate", () => {
-  if (mainWindow === null) {
-    createWindow();
-  }
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 process.on("unhandledRejection", (error) => {
   console.error("Unhandled rejection:", error);
