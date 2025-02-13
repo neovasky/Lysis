@@ -130,78 +130,96 @@ export const FilesPage = () => {
   };
 
   // New function to handle file interaction
+  // Update the handleFileOpen function in FilesPage.tsx
+
+  // Function to handle file opening
   const handleFileOpen = async (file: FileMetadata) => {
     if (isOpening) return;
     setIsOpening(true);
     try {
-      // Open a new window synchronously (as a direct result of the click)
+      const fileContentKey = `fileContent_${file.path}`;
+      const dataUrl = localStorage.getItem(fileContentKey);
+      if (!dataUrl) {
+        // Fallback to native openFile if available.
+        if (window.fileAPI?.openFile) {
+          await window.fileAPI.openFile(file.path);
+        } else {
+          alert("File interaction is not implemented.");
+        }
+        return;
+      }
+
+      // Extract MIME type (if needed)
+      const mimeMatch = dataUrl.match(/^data:(.*?);base64,/);
+      const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+
+      // Create a Blob URL from the data URL.
       const newWindow = window.open("", "_blank");
       if (!newWindow) {
         alert("Popup blocked. Please allow popups for this site.");
         return;
       }
 
-      const fileContentKey = `fileContent_${file.path}`;
-      const storedDataUrl = localStorage.getItem(fileContentKey);
-      if (storedDataUrl) {
-        // Parse the stored data URL (should be in the format "data:application/pdf;base64,...")
-        const parts = storedDataUrl.split(",");
-        if (parts.length < 2) {
-          throw new Error("Invalid data URL stored");
-        }
-        // Extract the MIME type
-        const mimeMatch = parts[0].match(/data:(.*?);/);
-        const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-        const base64Data = parts[1];
-
-        // Decode the base64 data to binary
-        const binaryString = atob(base64Data);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        // Create a Blob with the correct MIME type
-        const blob = new Blob([bytes], { type: mimeType });
-        const blobUrl = URL.createObjectURL(blob);
-
-        // Write a full HTML document into the new window that embeds the Blob URL in an iframe
+      newWindow.document.open();
+      if (mimeType === "application/pdf") {
         newWindow.document.write(`
-          <html>
+          <!DOCTYPE html>
+          <html lang="en">
             <head>
+              <meta charset="UTF-8">
+              <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; object-src 'self' data: blob:;">
               <title>${file.name}</title>
               <style>
-                html, body {
-                  margin: 0;
-                  padding: 0;
-                  height: 100%;
-                  overflow: hidden;
-                }
-                iframe {
-                  border: none;
-                  width: 100%;
-                  height: 100%;
-                }
+                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background-color: #525659; }
+                iframe { width: 100%; height: 100%; border: none; }
               </style>
             </head>
             <body>
-              <iframe src="${blobUrl}"></iframe>
+              <iframe src="${dataUrl}" type="${mimeType}"></iframe>
             </body>
           </html>
         `);
-        newWindow.document.close();
-        return;
-      }
-
-      // Fallback to native openFile if available
-      if (window.fileAPI?.openFile) {
-        await window.fileAPI.openFile(file.path);
+      } else if (mimeType.startsWith("image/")) {
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; object-src 'self' data: blob:;">
+              <title>${file.name}</title>
+              <style>
+                html, body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100%; background-color: #525659; }
+                img { max-width: 100%; max-height: 100%; }
+              </style>
+            </head>
+            <body>
+              <img src="${dataUrl}" alt="${file.name}" />
+            </body>
+          </html>
+        `);
       } else {
-        alert("File interaction is not implemented.");
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; object-src 'self' data: blob:;">
+              <title>${file.name}</title>
+              <style>
+                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background-color: #525659; }
+                embed { width: 100%; height: 100%; border: none; }
+              </style>
+            </head>
+            <body>
+              <embed src="${dataUrl}" type="${mimeType}">
+            </body>
+          </html>
+        `);
       }
+      newWindow.document.close();
     } catch (err) {
-      console.error("Error interacting with file:", err);
+      console.error("Error opening file:", err);
+      alert("Failed to open file. Please try again.");
     } finally {
       setIsOpening(false);
     }

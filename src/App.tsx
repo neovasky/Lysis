@@ -1,3 +1,4 @@
+// File: src/App.tsx
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
@@ -17,6 +18,7 @@ import { store } from "./store/store";
 import { useAuth } from "./hooks/useAuth";
 import { ThemeMode, ThemeAccent } from "./theme/types";
 import "@radix-ui/themes/styles.css";
+import { PDFViewerWrapper } from "./components/PDFViewer/PDFViewerWrapper";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -78,6 +80,10 @@ export function App() {
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
+              {/* Add the PDF viewer route outside of the ProtectedRoute if desired */}
+              <Route path="/pdf-viewer" element={<PDFViewerWrapper />} />
+              {/* Fallback route */}
+              <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </BrowserRouter>
         </AuthProvider>
@@ -85,3 +91,5 @@ export function App() {
     </Provider>
   );
 }
+
+export default App;

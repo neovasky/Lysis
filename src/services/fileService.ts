@@ -92,6 +92,51 @@ export class FileService {
   }
 
   /**
+   * Read file content.
+   */
+  async readFile(path: string) {
+    try {
+      if (!window.fileAPI || typeof window.fileAPI.readFile !== "function") {
+        // In simulation mode, try to get file from localStorage
+        const fileContentKey = `fileContent_${path}`;
+        const storedContent = localStorage.getItem(fileContentKey);
+        if (!storedContent) {
+          throw new Error("File not found in storage");
+        }
+
+        // Parse the stored data URL
+        const parts = storedContent.split(",");
+        if (parts.length < 2) {
+          throw new Error("Invalid data URL stored");
+        }
+
+        // Extract the content
+        const base64Content = parts[1];
+
+        // Convert base64 to binary
+        const binaryString = atob(base64Content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        return {
+          content: bytes,
+          name: path.split("/").pop() || "",
+          path: path,
+          size: bytes.length,
+          lastModified: new Date(),
+        };
+      }
+
+      return await window.fileAPI.readFile(path);
+    } catch (error) {
+      console.error("File read error:", error);
+      throw new Error(`Failed to read file: ${error}`);
+    }
+  }
+
+  /**
    * Get all files in a directory.
    * If window.fileAPI isn't available, return simulated folders stored in localStorage.
    */
@@ -115,10 +160,11 @@ export class FileService {
   /**
    * Write file content.
    */
+  // Inside FileService.writeFile(...)
   async writeFile(path: string, content: Uint8Array): Promise<FileMetadata> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.writeFile !== "function") {
-        // In simulation mode, store the file info in localStorage
+        // In simulation mode, store the file info in localStorage.
         const pathParts = path.split("/");
         const fileName = pathParts.pop() || "";
         const dirPath = pathParts.join("/");
@@ -137,34 +183,40 @@ export class FileService {
         const storageKey = `simulatedFolders_${dirPath}`;
         const stored = localStorage.getItem(storageKey);
         const files: FileMetadata[] = stored ? JSON.parse(stored) : [];
-
-        // Remove any existing file with same name
+        // Remove any existing file with same name and add the new one.
         const filtered = files.filter((f) => f.name !== fileName);
         filtered.push(fileMetadata);
         localStorage.setItem(storageKey, JSON.stringify(filtered));
 
-        // Determine MIME type based on file extension
-        const mimeType =
-          this.getFileType(fileName) === "pdf"
-            ? "application/pdf"
-            : "application/octet-stream";
-        // Create a Blob with the correct MIME type
-        const blob = new Blob([content], { type: mimeType });
-        // Use FileReader to convert Blob to full Data URL
+        // Determine the MIME type based on the file extension.
+        const extension = fileName.split(".").pop()?.toLowerCase();
+        let mime = "application/octet-stream";
+        if (extension === "pdf") mime = "application/pdf";
+        else if (extension === "png") mime = "image/png";
+        else if (extension === "jpg" || extension === "jpeg")
+          mime = "image/jpeg";
+        else if (extension === "gif") mime = "image/gif";
+        else if (extension === "txt") mime = "text/plain";
+        // Add additional types as needed.
+
+        // Create a Blob with the proper MIME type.
+        const blob = new Blob([content], { type: mime });
+        // Use FileReader to get a full data URL.
         const dataUrl: string = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
-            resolve(reader.result as string);
+            resolve(reader.result as string); // This returns something like "data:application/pdf;base64,..."
           };
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
+        // Store the complete data URL.
         localStorage.setItem(`fileContent_${path}`, dataUrl);
 
         return fileMetadata;
       }
 
-      // For actual file system, convert Uint8Array to Buffer
+      // Production branch (actual file system)
       const buffer = Buffer.from(content);
       await window.fileAPI.writeFile({ filePath: path, content: buffer });
       const info = await window.fileAPI.getFileInfo(path);
