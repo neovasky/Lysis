@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, session } from "electron";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { setupFileHandlers } from "./handlers/fileHandlers";
@@ -24,35 +24,32 @@ async function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, "../preload/preload.js"),
+      preload: path.join(__dirname, "../electron/preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
-      // Possibly set to false if you're still having issues
-      webSecurity: true,
+      webSecurity: true, // Keep web security enabled
       sandbox: false,
     },
   });
 
-  // Override response headers to set a lenient CSP
-  mainWindow.webContents.session.webRequest.onHeadersReceived(
-    (details, callback) => {
-      callback({
-        responseHeaders: {
-          ...details.responseHeaders,
-          "Content-Security-Policy": [
-            // Example policy that allows inline styles/scripts, data: or blob: sources, etc.
-            "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;" +
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;" +
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;" +
-              "font-src 'self' https://fonts.gstatic.com;" +
-              "img-src 'self' data: blob:;" +
-              "object-src 'self' data: blob:;" +
-              "media-src 'self' data: blob:;",
-          ],
-        },
-      });
-    }
-  );
+  // **🔹 Fix CSP issues for PDFs**
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        "Content-Security-Policy": [
+          "default-src 'self' data: blob: filesystem:; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "img-src 'self' data: blob:; " +
+            "object-src 'self' data: blob:; " +
+            "media-src 'self' data: blob:; " +
+            "frame-src 'self' data: blob:;",
+        ],
+      },
+    });
+  });
 
   if (VITE_DEV_SERVER_URL) {
     await mainWindow.loadURL(VITE_DEV_SERVER_URL);
@@ -60,7 +57,6 @@ async function createWindow() {
       mainWindow.webContents.openDevTools();
     }
   } else {
-    // production build
     mainWindow.loadFile(path.join(process.env.DIST!, "index.html"));
   }
 }
