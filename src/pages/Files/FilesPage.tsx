@@ -21,6 +21,9 @@ import FileService from "../../services/fileService";
 import { FILE_CONSTANTS } from "../../services/constants";
 import ContinuousPDFViewerWithSidebar from "../../components/PDFViewer/ContinuousPDFViewerWithSidebar";
 
+// Import our custom CSS last so that its rules have higher priority
+import "../../components/Files/dialogstyles.css";
+
 type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
 

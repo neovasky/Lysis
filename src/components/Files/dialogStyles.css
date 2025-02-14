@@ -1,0 +1,321 @@
+/**************************************
+  1) OVERLAY & BASE DIALOG STYLES
+**************************************/
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+}
+
+/* 
+     Default "dialogContent" for 
+     fluid-style dialogs (like File Upload)
+  */
+.dialogContent {
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+  /* Center the dialog */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* More fluid approach for bigger dialogs */
+  width: 90%;
+  max-width: 450px;
+  max-height: 85vh;
+
+  /* Default padding for consistent spacing */
+  padding: 32px;
+  color: #eee;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease forwards;
+
+  /* Avoid accidental horizontal scroll */
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/**************************************
+    2) CREATE FOLDER DIALOG (NARROWER)
+  **************************************/
+/* 
+     Add this class in addition to .dialogContent 
+     for the narrower Create Folder dialog 
+     with a fixed-width input.
+  */
+.createFolderDialog {
+  /* Instead of fluid 90%, we let it auto-size */
+  width: auto !important;
+  max-width: 450px !important;
+
+  /* Keep or increase padding for more breathing room */
+  padding: 32px !important;
+}
+
+/**************************************
+    3) HEADER & CLOSE BUTTON
+  **************************************/
+.dialogTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  /* Slightly larger and bolder title text */
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.dialogIcon {
+  width: 20px;
+  height: 20px;
+  color: #007aff;
+}
+
+.dialogClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.dialogClose:hover {
+  color: #fff;
+}
+
+/**************************************
+    4) FORM & COMMON ELEMENT STYLES
+  **************************************/
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.locationText {
+  font-size: 0.9rem;
+  color: #bbb; /* slightly brighter than #aaa */
+}
+
+.formLabel {
+  display: block;
+  font-size: 1rem; /* bigger label text */
+  font-weight: 600; /* bolder label */
+  color: #ddd; /* slightly brighter than #ccc */
+}
+
+/*
+     By default, the input is fluid for bigger dialogs 
+     (like File Upload).
+  */
+.formInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background-color: #2a2a2a;
+  color: #eee;
+  transition: border-color 0.2s ease;
+
+  /* Slightly bigger text inside the input */
+  font-size: 1rem;
+}
+
+/* Subtle placeholder color */
+.formInput::placeholder {
+  color: #666;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+/* 
+     If you want a fixed input width for the 
+     narrower Create Folder dialog:
+  */
+.createFolderDialog .formInput {
+  width: 320px !important;
+}
+
+.errorText {
+  color: #ff5b5b;
+  font-size: 0.85rem;
+  margin-top: -4px;
+}
+
+/**************************************
+    5) ACTION BUTTONS
+  **************************************/
+.actionButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.actionButton {
+  background-color: #007aff;
+  border: none;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #005ec7;
+}
+
+/**************************************
+    6) UPLOAD DIALOG SPECIFIC
+  **************************************/
+.dropZone {
+  border: 2px dashed #444;
+  border-radius: 6px;
+  padding: 24px;
+  text-align: center;
+  background-color: #2a2a2a;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.dropZoneActive {
+  border-color: #007aff;
+  background-color: #262626;
+}
+
+.dropZoneIcon {
+  width: 32px;
+  height: 32px;
+  color: #007aff;
+  margin-bottom: 8px;
+}
+
+.dropZoneText {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.dropZoneContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.softButton {
+  background: none;
+  border: 1px solid #007aff;
+  color: #007aff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.softButton:hover {
+  background-color: #007aff;
+  color: #fff;
+}
+
+/**************************************
+    7) CUSTOM PROGRESS BAR
+  **************************************/
+.progressBar {
+  background-color: #444;
+  border-radius: 3px;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progressFill {
+  background-color: #007aff;
+  height: 100%;
+  width: 0%;
+  transition: width 0.2s ease;
+}
+
+/**************************************
+    8) FILE LIST
+  **************************************/
+.fileList {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 8px;
+  background-color: #222;
+}
+
+.fileItem {
+  margin-bottom: 12px;
+}
+
+.fileName {
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.fileFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fileDetails {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.fileStatus {
+  color: #bbb;
+  font-size: 0.85rem;
+}
+
+.fileError {
+  color: #ff5b5b;
+  font-size: 0.85rem;
+}
+
+/**************************************
+    9) UTILITY CLASSES
+  **************************************/
+.srOnly {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}

@@ -1,18 +1,11 @@
 import { useState, useRef, useCallback } from "react";
+
 import * as Dialog from "@radix-ui/react-dialog";
-import { Box, Card, Flex, Text, Button, Progress } from "@radix-ui/themes";
 import { Cross2Icon, UploadIcon, TrashIcon } from "@radix-ui/react-icons";
 import FileService from "../../services/fileService";
-import "./styles.css";
+import "./dialogStyles.css";
 
-interface FileUploadDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUploadComplete?: () => void;
-  currentFolderPath?: string;
-}
-
-interface UploadingFile {
+export interface UploadingFile {
   id: string;
   file: File;
   progress: number;
@@ -21,6 +14,19 @@ interface UploadingFile {
   path?: string;
 }
 
+interface FileUploadDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUploadComplete?: () => void;
+  currentFolderPath?: string;
+}
+
+const ProgressBar = ({ value }: { value: number }) => (
+  <div className="progressBar">
+    <div className="progressFill" style={{ width: `${value}%` }}></div>
+  </div>
+);
+
 export const FileUploadDialog = ({
   open,
   onOpenChange,
@@ -28,45 +34,45 @@ export const FileUploadDialog = ({
   currentFolderPath,
 }: FileUploadDialogProps) => {
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Adds selected files to the state with status "pending"
+  console.log("Rendering FileUploadDialog");
+
   const addFiles = useCallback((files: File[]) => {
     const newFiles: UploadingFile[] = files.map((file) => ({
-      id: `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `upload_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       file,
       progress: 0,
       status: "pending",
-      path: "", // Will be set when the file is uploaded.
+      path: "",
     }));
-    setUploadingFiles((prev) => [...prev, ...newFiles]);
+    setUploadingFiles((prev: UploadingFile[]) => [...prev, ...newFiles]);
   }, []);
 
-  // Processes all files with status "pending" and then closes the dialog.
   const handleUpload = useCallback(async () => {
     setIsProcessing(true);
     try {
-      // Determine target directory once
       const targetPath =
         currentFolderPath || (await FileService.getCurrentDirectory());
-      if (!targetPath) {
-        throw new Error("No folder selected for upload");
-      }
+      if (!targetPath) throw new Error("No folder selected for upload");
 
-      // Filter out pending files
-      const pendingFiles = uploadingFiles.filter((f) => f.status === "pending");
+      const pendingFiles = uploadingFiles.filter(
+        (f: UploadingFile) => f.status === "pending"
+      );
 
       for (const uploadFile of pendingFiles) {
-        // Build file path based on the target folder
         const filePath = `${targetPath}/${uploadFile.file.name}`;
-
-        // Mark file as uploading with an initial progress and store the file path
-        setUploadingFiles((prev) =>
-          prev.map((f) =>
+        setUploadingFiles((prev: UploadingFile[]) =>
+          prev.map((f: UploadingFile) =>
             f.id === uploadFile.id
-              ? { ...f, status: "uploading", progress: 10, path: filePath }
+              ? ({
+                  ...f,
+                  status: "uploading",
+                  progress: 10,
+                  path: filePath,
+                } as UploadingFile)
               : f
           )
         );
@@ -75,228 +81,184 @@ export const FileUploadDialog = ({
           const arrayBuffer = await uploadFile.file.arrayBuffer();
           const buffer = new Uint8Array(arrayBuffer);
 
-          // Increase progress periodically until near completion
           const progressInterval = setInterval(() => {
-            setUploadingFiles((prev) =>
-              prev.map((f) => {
+            setUploadingFiles((prev: UploadingFile[]) =>
+              prev.map((f: UploadingFile) => {
                 if (f.id === uploadFile.id && f.progress < 90) {
-                  return { ...f, progress: f.progress + 10 };
+                  return { ...f, progress: f.progress + 10 } as UploadingFile;
                 }
                 return f;
               })
             );
           }, 200);
 
-          // Write the file using FileService
-          if (filePath) {
-            await FileService.writeFile(filePath, buffer);
-          }
-
+          await FileService.writeFile(filePath, buffer);
           clearInterval(progressInterval);
-          setUploadingFiles((prev) =>
-            prev.map((f) =>
+          setUploadingFiles((prev: UploadingFile[]) =>
+            prev.map((f: UploadingFile) =>
               f.id === uploadFile.id
-                ? { ...f, status: "completed", progress: 100 }
+                ? ({
+                    ...f,
+                    status: "completed",
+                    progress: 100,
+                  } as UploadingFile)
                 : f
             )
           );
         } catch (error) {
-          setUploadingFiles((prev) =>
-            prev.map((f) =>
+          setUploadingFiles((prev: UploadingFile[]) =>
+            prev.map((f: UploadingFile) =>
               f.id === uploadFile.id
-                ? {
+                ? ({
                     ...f,
                     status: "error",
                     error:
                       error instanceof Error ? error.message : "Upload failed",
-                  }
+                  } as UploadingFile)
                 : f
             )
           );
         }
       }
-      // After processing all files, trigger the upload complete callback,
-      // clear the file list and close the dialog.
+
       onUploadComplete?.();
       setUploadingFiles([]);
       onOpenChange(false);
-    } catch (error) {
-      console.error("Upload error:", error);
+    } catch (err) {
+      console.error("Upload error:", err);
     } finally {
       setIsProcessing(false);
     }
   }, [currentFolderPath, uploadingFiles, onUploadComplete, onOpenChange]);
 
-  // Removes a file from the list
   const removeFile = useCallback((fileId: string) => {
-    setUploadingFiles((prev) => prev.filter((f) => f.id !== fileId));
+    setUploadingFiles((prev: UploadingFile[]) =>
+      prev.filter((f: UploadingFile) => f.id !== fileId)
+    );
   }, []);
-
-  // Handle manual close via the header "X" button
-  const handleClose = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="DialogOverlay" />
-        <Dialog.Content className="DialogContent">
-          <form onSubmit={(e) => e.preventDefault()}>
-            <Flex direction="column" gap="4">
-              {/* Header with title and "X" button */}
-              <Flex justify="between" align="center">
-                <Flex className="DialogTitle">
-                  <UploadIcon width="24" height="24" />
-                  <Text>Upload Files</Text>
-                </Flex>
-                <Dialog.Close asChild>
-                  <Button asChild onClick={handleClose} disabled={isProcessing}>
-                    <button className="DialogCloseButton">
-                      <Cross2Icon />
-                    </button>
-                  </Button>
-                </Dialog.Close>
-              </Flex>
+        <Dialog.Overlay className="dialogOverlay" />
+        <Dialog.Content className="dialogContent">
+          <Dialog.Title className="dialogTitle">
+            <UploadIcon className="dialogIcon" />
+            <span>Upload Files</span>
+          </Dialog.Title>
+          <Dialog.Description className="srOnly">
+            Add files to upload them.
+          </Dialog.Description>
+          <Dialog.Close className="dialogClose" aria-label="Close dialog">
+            <Cross2Icon />
+          </Dialog.Close>
 
-              {/* Drop Zone */}
-              <Box
+          <form onSubmit={(e) => e.preventDefault()}>
+            <div className="formContainer">
+              <div
+                className={`dropZone ${isDragging ? "dropZoneActive" : ""}`}
                 onDragEnter={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                   setIsDragging(true);
                 }}
                 onDragLeave={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                   setIsDragging(false);
                 }}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
-                  e.stopPropagation();
                   setIsDragging(false);
-                  const files = Array.from(e.dataTransfer.files);
-                  if (files.length > 0) {
-                    addFiles(files);
-                  }
-                }}
-                style={{
-                  border: `2px dashed ${
-                    isDragging ? "var(--accent-9)" : "var(--gray-6)"
-                  }`,
-                  borderRadius: "8px",
-                  backgroundColor: isDragging
-                    ? "var(--accent-2)"
-                    : "var(--gray-2)",
-                  padding: "32px",
-                  textAlign: "center",
-                  marginBottom: "16px",
-                  transition: "all 0.2s ease",
+                  const files: File[] = Array.from(e.dataTransfer.files);
+                  if (files.length > 0) addFiles(files);
                 }}
               >
                 <input
                   type="file"
                   ref={fileInputRef}
+                  style={{ display: "none" }}
+                  multiple
                   onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
                       addFiles(Array.from(e.target.files));
                       e.target.value = "";
                     }
                   }}
-                  style={{ display: "none" }}
-                  multiple
                 />
-
-                <Flex direction="column" align="center" gap="2">
-                  <UploadIcon width="32" height="32" />
-                  <Text size="3" weight="bold">
-                    Drag and drop files here
-                  </Text>
-                  <Text size="2" color="gray">
-                    or
-                  </Text>
-                  <Button
-                    variant="soft"
+                <div className="dropZoneContent">
+                  <UploadIcon className="dropZoneIcon" />
+                  <p className="dropZoneText">Drag &amp; drop files here</p>
+                  <p className="smallText">or</p>
+                  <button
+                    type="button"
+                    className="softButton"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Add Files
-                  </Button>
-                </Flex>
-              </Box>
+                  </button>
+                </div>
+              </div>
 
-              {/* File List */}
               {uploadingFiles.length > 0 && (
-                <Box style={{ maxHeight: "240px", overflowY: "auto" }}>
-                  <Flex direction="column" gap="2">
-                    {uploadingFiles.map((file) => (
-                      <Card key={file.id} variant="surface">
-                        <Text weight="bold" mb="1">
-                          {file.file.name}
-                        </Text>
-                        <Flex direction="column" gap="1">
-                          <Progress
-                            value={file.progress}
-                            style={{
-                              height: "6px",
-                              backgroundColor: "var(--gray-4)",
-                            }}
-                          />
-                          <Flex justify="between" align="center">
-                            <Text
-                              size="1"
-                              color={file.status === "error" ? "red" : "gray"}
+                <div className="fileList">
+                  {uploadingFiles.map((file: UploadingFile) => (
+                    <div key={file.id} className="fileItem">
+                      <p className="fileName">{file.file.name}</p>
+                      <ProgressBar value={file.progress} />
+                      <div className="fileFooter">
+                        <p
+                          className={
+                            file.status === "error" ? "fileError" : "fileStatus"
+                          }
+                        >
+                          {file.status === "error" ? file.error : file.status}
+                        </p>
+                        <div className="fileDetails">
+                          <p className="smallText">
+                            {(file.file.size / 1024 / 1024).toFixed(1)} MB
+                          </p>
+                          {file.status !== "uploading" && (
+                            <button
+                              type="button"
+                              className="ghostButton"
+                              onClick={() => removeFile(file.id)}
                             >
-                              {file.status === "error"
-                                ? file.error
-                                : file.status}
-                            </Text>
-                            <Flex align="center" gap="2">
-                              <Text size="1" color="gray">
-                                {(file.file.size / 1024 / 1024).toFixed(1)} MB
-                              </Text>
-                              {file.status !== "uploading" && (
-                                <Button
-                                  variant="ghost"
-                                  size="1"
-                                  onClick={() => removeFile(file.id)}
-                                  style={{ padding: "2px" }}
-                                >
-                                  <TrashIcon />
-                                </Button>
-                              )}
-                            </Flex>
-                          </Flex>
-                        </Flex>
-                      </Card>
-                    ))}
-                  </Flex>
-                </Box>
+                              <TrashIcon />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
 
-              {/* Dialog Actions: "Upload" and "Add More Files" */}
-              <Flex gap="3" mt="4" justify="end">
-                <Button
+              <div className="actionButtons">
+                <button
+                  type="button"
+                  className="actionButton"
                   onClick={handleUpload}
                   disabled={
                     isProcessing ||
-                    uploadingFiles.filter((f) => f.status === "pending")
-                      .length === 0
+                    uploadingFiles.filter(
+                      (f: UploadingFile) => f.status === "pending"
+                    ).length === 0
                   }
                 >
                   Upload
-                </Button>
-                <Button
+                </button>
+                <button
+                  type="button"
+                  className="actionButton"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessing}
                 >
                   Add More Files
-                </Button>
-              </Flex>
-            </Flex>
+                </button>
+              </div>
+            </div>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
