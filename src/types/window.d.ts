@@ -41,6 +41,16 @@ export interface FileAPI {
   openFile?: (filePath: string) => Promise<void>;
 }
 
+export interface ElectronAPI {
+  getPDFPath: () => Promise<string>;
+}
+
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI;
+  }
+}
+
 declare global {
   interface Window {
     fileAPI: FileAPI;

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { setupFileHandlers } from "./handlers/fileHandlers";
@@ -8,9 +8,6 @@ const __dirname = path.dirname(__filename);
 
 process.env.DIST_ELECTRON = path.join(__dirname);
 process.env.DIST = path.join(process.env.DIST_ELECTRON, "../dist");
-process.env.VITE_PUBLIC = app.isPackaged
-  ? process.env.DIST
-  : path.join(process.env.DIST_ELECTRON, "../public");
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -18,48 +15,55 @@ let mainWindow: BrowserWindow | null = null;
 setupFileHandlers();
 
 async function createWindow() {
-  const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+  const isDev = !app.isPackaged;
+  const VITE_DEV_SERVER_URL =
+    process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+
+  const pdfPath = isDev
+    ? path.join(__dirname, "..", "public", "example.pdf") // Dev Mode
+    : path.join(process.resourcesPath, "example.pdf"); // Prod Mode
+
+  console.log(`✅ PDF Path: ${pdfPath}`);
 
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, "../electron/preload.js"),
+      preload: path.join(__dirname, "../preload/preload.js"), // ✅ Corrected path
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true, // Keep web security enabled
+      webSecurity: true,
       sandbox: false,
     },
   });
 
-  // **🔹 Fix CSP issues for PDFs**
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        "Content-Security-Policy": [
-          "default-src 'self' data: blob: filesystem:; " +
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-            "font-src 'self' https://fonts.gstatic.com; " +
-            "img-src 'self' data: blob:; " +
-            "object-src 'self' data: blob:; " +
-            "media-src 'self' data: blob:; " +
-            "frame-src 'self' data: blob:;",
-        ],
-      },
-    });
-  });
+  if (!mainWindow) {
+    console.error("❌ Failed to create mainWindow.");
+    return;
+  }
 
   if (VITE_DEV_SERVER_URL) {
     await mainWindow.loadURL(VITE_DEV_SERVER_URL);
     if (process.env.ELECTRON_DEBUG === "1") {
-      mainWindow.webContents.openDevTools();
+      mainWindow.webContents.on("did-finish-load", () => {
+        console.log("📌 DevTools are disabled to prevent Chromium warnings.");
+      });
     }
-  } else {
-    mainWindow.loadFile(path.join(process.env.DIST!, "index.html"));
   }
+
+  // ✅ Send PDF path to renderer when window loads
+  mainWindow.webContents.once("did-finish-load", () => {
+    mainWindow?.webContents.send("load-pdf", pdfPath);
+  });
 }
+
+// ✅ IPC: Handle PDF Path Request from Renderer
+ipcMain.handle("get-pdf-path", () => {
+  const isDev = !app.isPackaged;
+  return isDev
+    ? path.join(__dirname, "..", "public", "example.pdf") // Dev Mode
+    : path.join(process.resourcesPath, "example.pdf"); // Prod Mode
+});
 
 app.whenReady().then(createWindow);
 
@@ -71,8 +75,8 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
-});
 
-process.on("unhandledRejection", (error) => {
-  console.error("Unhandled rejection:", error);
+  process.on("unhandledRejection", (error) => {
+    console.error("Unhandled rejection:", error);
+  });
 });

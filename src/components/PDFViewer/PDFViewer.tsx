@@ -6,14 +6,11 @@ import "pdfjs-dist/web/pdf_viewer.css";
 // Configure the worker (ensure this path is correct)
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-interface PDFViewerProps {
-  url: string;
-}
-
-export const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
+export const PDFViewer: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
-  const scale = 1.5; // constant scale value
+  const [pdfPath, setPdfPath] = useState<string>(""); // Store PDF Path
+  const scale = 1.5;
 
   const renderPage = useCallback(
     async (pageNumber: number) => {
@@ -23,9 +20,12 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
         const viewport = page.getViewport({ scale });
         const canvas = canvasRef.current;
         const context = canvas.getContext("2d");
+
+        if (!canvas || !context) return;
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        await page.render({ canvasContext: context!, viewport }).promise;
+
+        await page.render({ canvasContext: context, viewport }).promise;
       } catch (error) {
         console.error("Error rendering page:", error);
       }
@@ -34,9 +34,23 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
   );
 
   useEffect(() => {
+    const fetchPDFPath = async () => {
+      try {
+        const path = await window.electronAPI.getPDFPath(); // ✅ Ensure this is typed correctly
+        setPdfPath(path);
+      } catch (error) {
+        console.error("Failed to load PDF path:", error);
+      }
+    };
+
+    fetchPDFPath();
+  }, []);
+
+  useEffect(() => {
+    if (!pdfPath) return;
     const loadPDF = async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument(url);
+        const loadingTask = pdfjsLib.getDocument(pdfPath);
         const pdf = await loadingTask.promise;
         setPdfDoc(pdf);
         renderPage(1);
@@ -45,7 +59,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ url }) => {
       }
     };
     loadPDF();
-  }, [url, renderPage]);
+  }, [pdfPath, renderPage]);
 
   return (
     <div style={{ width: "100%", height: "100vh", background: "#525659" }}>
