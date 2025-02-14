@@ -26,14 +26,14 @@ async function createWindow() {
   console.log(`✅ PDF Path: ${pdfPath}`);
 
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 1000,
+    minWidth: 1200,
+    minHeight: 800,
     webPreferences: {
-      preload: path.join(__dirname, "../preload/preload.js"), // ✅ Corrected path
-      nodeIntegration: false,
+      preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,
-      webSecurity: true,
-      sandbox: false,
+      nodeIntegration: false,
     },
   });
 

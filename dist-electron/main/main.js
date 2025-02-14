@@ -289,15 +289,14 @@ async function createWindow() {
   const pdfPath = isDev ? path.join(__dirname, "..", "public", "example.pdf") : path.join(process.resourcesPath, "example.pdf");
   console.log(`✅ PDF Path: ${pdfPath}`);
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 1e3,
+    minWidth: 1200,
+    minHeight: 800,
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
-      // ✅ Corrected path
-      nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true,
-      sandbox: false
+      nodeIntegration: false
     }
   });
   if (!mainWindow) {

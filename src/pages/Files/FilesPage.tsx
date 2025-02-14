@@ -30,6 +30,22 @@ interface DirectoryInfo {
 
 const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
 
+/**
+ * Utility function that converts a data URL to a Blob.
+ */
+const dataURLtoBlob = (dataUrl: string): Blob => {
+  const parts = dataUrl.split(",");
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
+
 export const FilesPage = () => {
   const { loading, error } = useFiles();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -129,10 +145,7 @@ export const FilesPage = () => {
     }
   };
 
-  // New function to handle file interaction
-  // Update the handleFileOpen function in FilesPage.tsx
-
-  // Function to handle file opening
+  // Updated function to handle file opening using Blob conversion for PDFs and images.
   const handleFileOpen = async (file: FileMetadata) => {
     if (isOpening) return;
     setIsOpening(true);
@@ -149,55 +162,23 @@ export const FilesPage = () => {
         return;
       }
 
-      // Extract MIME type (if needed)
+      // Extract the MIME type from the data URL.
       const mimeMatch = dataUrl.match(/^data:(.*?);base64,/);
       const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
 
-      // Create a Blob URL from the data URL.
-      const newWindow = window.open("", "_blank");
-      if (!newWindow) {
-        alert("Popup blocked. Please allow popups for this site.");
-        return;
-      }
-
-      newWindow.document.open();
-      if (mimeType === "application/pdf") {
-        newWindow.document.write(`
-          <!DOCTYPE html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8">
-              <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; object-src 'self' data: blob:;">
-              <title>${file.name}</title>
-              <style>
-                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background-color: #525659; }
-                iframe { width: 100%; height: 100%; border: none; }
-              </style>
-            </head>
-            <body>
-              <iframe src="${dataUrl}" type="${mimeType}"></iframe>
-            </body>
-          </html>
-        `);
-      } else if (mimeType.startsWith("image/")) {
-        newWindow.document.write(`
-          <!DOCTYPE html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8">
-              <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; object-src 'self' data: blob:;">
-              <title>${file.name}</title>
-              <style>
-                html, body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100%; background-color: #525659; }
-                img { max-width: 100%; max-height: 100%; }
-              </style>
-            </head>
-            <body>
-              <img src="${dataUrl}" alt="${file.name}" />
-            </body>
-          </html>
-        `);
+      // For PDFs and images, convert the data URL to a Blob and then create an object URL.
+      if (mimeType === "application/pdf" || mimeType.startsWith("image/")) {
+        const blob = dataURLtoBlob(dataUrl);
+        const objectUrl = URL.createObjectURL(blob);
+        window.open(objectUrl, "_blank");
       } else {
+        // Fallback for other file types using an embed.
+        const newWindow = window.open("", "_blank");
+        if (!newWindow) {
+          alert("Popup blocked. Please allow popups for this site.");
+          return;
+        }
+        newWindow.document.open();
         newWindow.document.write(`
           <!DOCTYPE html>
           <html lang="en">
@@ -215,8 +196,8 @@ export const FilesPage = () => {
             </body>
           </html>
         `);
+        newWindow.document.close();
       }
-      newWindow.document.close();
     } catch (err) {
       console.error("Error opening file:", err);
       alert("Failed to open file. Please try again.");
@@ -496,3 +477,5 @@ export const FilesPage = () => {
     </Box>
   );
 };
+
+export default FilesPage;

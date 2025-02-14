@@ -1,4 +1,6 @@
+// File: src/components/PDFViewer/SimplePDFViewer.tsx
 import React from "react";
+import { Box } from "@radix-ui/themes";
 
 interface SimplePDFViewerProps {
   url: string;
@@ -6,8 +8,25 @@ interface SimplePDFViewerProps {
 
 export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({ url }) => {
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
-      <embed src={url} type="application/pdf" width="100%" height="100%" />
-    </div>
+    <Box
+      style={{
+        width: "100%",
+        height: "100vh",
+        overflow: "hidden",
+        background: "var(--gray-1)",
+      }}
+    >
+      <embed
+        src={url}
+        type="application/pdf"
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+        }}
+      />
+    </Box>
   );
 };
+
+export default SimplePDFViewer;

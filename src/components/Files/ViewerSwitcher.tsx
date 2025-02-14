@@ -1,9 +1,15 @@
 // File: src/components/Files/ViewerSwitcher.tsx
-
 import React, { useEffect, useState } from "react";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import { PDFViewer } from "../PDFViewer/PDFViewer";
 import { SimplePDFViewer } from "../PDFViewer/SimplePDFViewer";
+import { Box, Button, Text, Flex } from "@radix-ui/themes";
+import {
+  ZoomInIcon,
+  ZoomOutIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+} from "@radix-ui/react-icons";
 import FileService from "../../services/fileService";
 
 interface ViewerSwitcherProps {
@@ -16,15 +22,14 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
   content,
 }) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
-    // Clear any previous errors when file changes
     setViewerError(null);
   }, [file]);
 
   const handleOpenInSystemApp = async () => {
     try {
-      // If FileService provides an openFile method, use it.
       if (typeof FileService.openFile === "function") {
         await FileService.openFile(file.path);
       } else {
@@ -35,45 +40,79 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
     }
   };
 
+  const handleZoomIn = () => {
+    setZoom((prev) => Math.min(prev + 0.25, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((prev) => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = content;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const renderViewer = () => {
     const fileExtension = file.name.split(".").pop()?.toLowerCase();
+
+    const ViewerControls = () => (
+      <Flex
+        gap="2"
+        style={{
+          position: "fixed",
+          top: "16px",
+          right: "16px",
+          zIndex: 1000,
+          background: "var(--gray-2)",
+          padding: "8px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        }}
+      >
+        <Button size="2" variant="soft" onClick={handleZoomOut}>
+          <ZoomOutIcon />
+        </Button>
+        <Button size="2" variant="soft" onClick={handleZoomIn}>
+          <ZoomInIcon />
+        </Button>
+        <Button size="2" variant="soft" onClick={handleDownload}>
+          <DownloadIcon />
+        </Button>
+        <Button size="2" variant="soft" onClick={handleOpenInSystemApp}>
+          <ExternalLinkIcon />
+        </Button>
+      </Flex>
+    );
 
     switch (fileExtension) {
       case "pdf":
         try {
           return (
-            <div
-              style={{
-                width: "100%",
-                height: "100vh",
-                overflow: "hidden",
-                position: "relative",
-              }}
+            <Box
+              style={{ width: "100vw", height: "100vh", overflow: "hidden" }}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "10px",
-                  zIndex: 1000,
-                  background: "#1e1e1e",
-                  padding: "8px",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-                onClick={handleOpenInSystemApp}
-              >
-                Open in System Viewer
-              </div>
-              <PDFViewer url={content} />
-            </div>
+              <ViewerControls />
+              <PDFViewer filePath={file.path} />
+            </Box>
           );
         } catch (pdfError) {
           console.warn(
             "PDFViewer failed, falling back to simple viewer:",
             pdfError
           );
-          return <SimplePDFViewer url={content} />;
+          return (
+            <Box
+              style={{ width: "100vw", height: "100vh", overflow: "hidden" }}
+            >
+              <ViewerControls />
+              <SimplePDFViewer url={content} />
+            </Box>
+          );
         }
 
       case "png":
@@ -81,87 +120,71 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
       case "jpeg":
       case "gif":
         return (
-          <div
+          <Box
             style={{
-              width: "100%",
+              width: "100vw",
               height: "100vh",
+              overflow: "auto",
+              background: "#525659",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              background: "#525659",
-              position: "relative",
             }}
           >
+            <ViewerControls />
             <img
               src={content}
               alt={file.name}
               style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                objectFit: "contain",
+                maxWidth: "none",
+                maxHeight: "none",
+                transform: `scale(${zoom})`,
+                transformOrigin: "center",
+                transition: "transform 0.2s ease",
               }}
             />
-            <div
-              style={{
-                position: "absolute",
-                top: "10px",
-                right: "10px",
-                background: "#1e1e1e",
-                padding: "8px",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-              onClick={handleOpenInSystemApp}
-            >
-              Open in System Viewer
-            </div>
-          </div>
+          </Box>
         );
 
       case "txt":
       case "md":
         return (
-          <div
+          <Box
             style={{
-              width: "100%",
+              width: "100vw",
               height: "100vh",
-              padding: "20px",
+              padding: "40px",
               background: "#525659",
               color: "#fff",
               fontFamily: "monospace",
               whiteSpace: "pre-wrap",
               overflow: "auto",
-              position: "relative",
             }}
           >
-            <div
+            <ViewerControls />
+            <Box
               style={{
-                position: "absolute",
-                top: "10px",
-                right: "10px",
-                background: "#1e1e1e",
-                padding: "8px",
-                borderRadius: "4px",
-                cursor: "pointer",
+                transform: `scale(${zoom})`,
+                transformOrigin: "top left",
+                padding: "20px",
+                background: "var(--gray-2)",
+                borderRadius: "8px",
               }}
-              onClick={handleOpenInSystemApp}
             >
-              Open in System Viewer
-            </div>
-            {content}
-          </div>
+              {content}
+            </Box>
+          </Box>
         );
 
       default:
         return (
-          <div
+          <Flex
+            direction="column"
+            align="center"
+            justify="center"
             style={{
-              width: "100%",
+              width: "100vw",
               height: "100vh",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
               background: "#525659",
               color: "#fff",
               padding: "20px",
@@ -169,36 +192,28 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
               gap: "20px",
             }}
           >
-            <p>No preview available for this file type ({fileExtension})</p>
-            <button
-              onClick={handleOpenInSystemApp}
-              style={{
-                padding: "10px 20px",
-                background: "#1e1e1e",
-                border: "none",
-                borderRadius: "4px",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
+            <Text size="5">
+              No preview available for this file type ({fileExtension})
+            </Text>
+            <Button size="3" onClick={handleOpenInSystemApp}>
+              <ExternalLinkIcon />
               Open in System Application
-            </button>
-          </div>
+            </Button>
+          </Flex>
         );
     }
   };
 
   return (
-    <div style={{ width: "100%", height: "100vh", overflow: "hidden" }}>
+    <Box style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
       {viewerError ? (
-        <div
+        <Flex
+          direction="column"
+          align="center"
+          justify="center"
           style={{
             width: "100%",
             height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
             background: "#525659",
             color: "#fff",
             padding: "20px",
@@ -206,25 +221,18 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
             gap: "20px",
           }}
         >
-          <p>Error: {viewerError}</p>
-          <button
-            onClick={handleOpenInSystemApp}
-            style={{
-              padding: "10px 20px",
-              background: "#1e1e1e",
-              border: "none",
-              borderRadius: "4px",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
+          <Text color="red" size="5">
+            Error: {viewerError}
+          </Text>
+          <Button size="3" onClick={handleOpenInSystemApp}>
+            <ExternalLinkIcon />
             Open in System Application
-          </button>
-        </div>
+          </Button>
+        </Flex>
       ) : (
         renderViewer()
       )}
-    </div>
+    </Box>
   );
 };
 
