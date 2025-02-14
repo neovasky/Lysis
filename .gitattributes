@@ -1,0 +1,2 @@
+release/0.0.0/*.exe filter=lfs diff=lfs merge=lfs -text
+release/0.0.0/win-unpacked/** filter=lfs diff=lfs merge=lfs -text
