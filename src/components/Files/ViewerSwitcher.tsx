@@ -1,8 +1,8 @@
 // File: src/components/Files/ViewerSwitcher.tsx
 import React, { useEffect, useState } from "react";
 import { FileMetadata } from "../../store/slices/fileSlice";
-import { PDFViewer } from "../PDFViewer/PDFViewer";
 import { SimplePDFViewer } from "../PDFViewer/SimplePDFViewer";
+import PDFViewerWithAnnotations from "../PDFViewer/PDFViewerWithAnnotations";
 import { Box, Button, Text, Flex } from "@radix-ui/themes";
 import {
   ZoomInIcon,
@@ -14,7 +14,7 @@ import FileService from "../../services/fileService";
 
 interface ViewerSwitcherProps {
   file: FileMetadata;
-  content: string;
+  content: string; // Data URL for images/text
 }
 
 export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
@@ -24,8 +24,14 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
 
+  // For PDFs, we store the typed array data
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
   useEffect(() => {
     setViewerError(null);
+    setPdfData(null);
+    setIsPdfLoading(false);
   }, [file]);
 
   const handleOpenInSystemApp = async () => {
@@ -55,6 +61,21 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // A small helper to read the PDF from disk
+  const loadPdfData = async () => {
+    try {
+      setIsPdfLoading(true);
+      const result = await FileService.readFile(file.path); // returns { content: Buffer, ... }
+      const typedArray = new Uint8Array(result.content);
+      setPdfData(typedArray);
+    } catch (err: unknown) {
+      console.error("Error reading PDF from disk:", err);
+      setViewerError("Failed to load PDF from disk");
+    } finally {
+      setIsPdfLoading(false);
+    }
   };
 
   const renderViewer = () => {
@@ -90,21 +111,32 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
     );
 
     switch (fileExtension) {
-      case "pdf":
-        try {
+      case "pdf": {
+        // If we haven't yet loaded the PDF data from disk, do so
+        if (!pdfData && !isPdfLoading && !viewerError) {
+          // Kick off loading
+          loadPdfData();
+          // Show a "loading" or blank
           return (
             <Box
-              style={{ width: "100vw", height: "100vh", overflow: "hidden" }}
+              style={{
+                width: "100vw",
+                height: "100vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#333",
+              }}
             >
-              <ViewerControls />
-              <PDFViewer filePath={file.path} />
+              <Text color="gray" size="3">
+                Loading PDF...
+              </Text>
             </Box>
           );
-        } catch (pdfError) {
-          console.warn(
-            "PDFViewer failed, falling back to simple viewer:",
-            pdfError
-          );
+        }
+
+        if (viewerError) {
+          // If we had an error reading from disk, fallback to SimplePDFViewer with data URL
           return (
             <Box
               style={{ width: "100vw", height: "100vh", overflow: "hidden" }}
@@ -114,6 +146,37 @@ export const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
             </Box>
           );
         }
+
+        if (pdfData) {
+          // We have the typed array, render the annotation viewer
+          return (
+            <Box
+              style={{ width: "100vw", height: "100vh", overflow: "hidden" }}
+            >
+              <ViewerControls />
+              <PDFViewerWithAnnotations pdfData={pdfData} />
+            </Box>
+          );
+        }
+
+        // If we're still loading
+        return (
+          <Box
+            style={{
+              width: "100vw",
+              height: "100vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#333",
+            }}
+          >
+            <Text color="gray" size="3">
+              Loading PDF...
+            </Text>
+          </Box>
+        );
+      }
 
       case "png":
       case "jpg":

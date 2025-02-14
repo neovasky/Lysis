@@ -9,7 +9,7 @@ import {
 } from "@radix-ui/react-icons";
 import "pdfjs-dist/web/pdf_viewer.css";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface PDFViewerProps {
   filePath: string;

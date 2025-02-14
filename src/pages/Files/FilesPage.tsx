@@ -1,3 +1,4 @@
+// File: src/pages/Files/FilesPage.tsx
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { Box, Text, Grid, Flex, Button, Badge } from "@radix-ui/themes";
 import {
@@ -18,6 +19,7 @@ import { useFiles } from "../../components/Files/hooks/useFiles";
 import { FileMetadata, FileType } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 import { FILE_CONSTANTS } from "../../services/constants";
+import PDFViewerWithAnnotations from "../../components/PDFViewer/PDFViewerWithAnnotations";
 
 type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
@@ -30,10 +32,8 @@ interface DirectoryInfo {
 
 const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
 
-/**
- * Utility function that converts a data URL to a Blob.
- */
-const dataURLtoBlob = (dataUrl: string): Blob => {
+/** Utility function to convert a data URL to a Blob. */
+function dataURLtoBlob(dataUrl: string): Blob {
   const parts = dataUrl.split(",");
   const mimeMatch = parts[0].match(/:(.*?);/);
   const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
@@ -44,7 +44,7 @@ const dataURLtoBlob = (dataUrl: string): Blob => {
     u8arr[n] = bstr.charCodeAt(n);
   }
   return new Blob([u8arr], { type: mime });
-};
+}
 
 export const FilesPage = () => {
   const { loading, error } = useFiles();
@@ -58,6 +58,12 @@ export const FilesPage = () => {
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
   const [isOpening, setIsOpening] = useState<boolean>(false); // Prevent duplicate file opens
 
+  // For PDF annotation overlay
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdfData, setSelectedPdfData] = useState<Uint8Array | null>(
+    null
+  );
+
   // Initialize component with saved directory
   useEffect(() => {
     const initializeDirectory = async () => {
@@ -68,7 +74,7 @@ export const FilesPage = () => {
     initializeDirectory();
   }, []);
 
-  // loadDirectories loads both folder and file data for the given directory
+  // Load directories (folders & files)
   const loadDirectories = async (dirPath?: string) => {
     try {
       let targetDir: string;
@@ -78,18 +84,18 @@ export const FilesPage = () => {
         const savedDir = localStorage.getItem(LAST_DIRECTORY_KEY);
         targetDir = savedDir || DEFAULT_BASE_DIRECTORY;
       }
-      // Ensure directory is set in both FileService and localStorage
       FileService.setCurrentDirectory(targetDir);
       localStorage.setItem(LAST_DIRECTORY_KEY, targetDir);
+
       const items = await FileService.getFiles(targetDir);
-      // Separate directories and files from the items
       const directoriesList = items.filter((f) => f.isDirectory);
       const filesList = items.filter((f) => !f.isDirectory);
+
       setDirectories(
         directoriesList.map((dir) => ({
           path: dir.path,
           name: dir.name,
-          fileCount: directoriesList.length, // Adjust if needed
+          fileCount: directoriesList.length,
         }))
       );
       setFiles(filesList);
@@ -126,10 +132,9 @@ export const FilesPage = () => {
     }
   };
 
-  // Existing folder open logic
+  // Folder open logic
   const handleFolderOpen = async (folder: FileMetadata) => {
     try {
-      // Only handle directories here
       if (!folder.isDirectory) return;
       const newDirectory = {
         path: folder.path,
@@ -145,15 +150,19 @@ export const FilesPage = () => {
     }
   };
 
-  // Updated function to handle file opening using Blob conversion for PDFs and images.
+  /**
+   * handleFileOpen: if it's a PDF, we load the typed array and show the modal;
+   * if it's an image, open in a new tab; otherwise fallback to an <embed> approach.
+   */
   const handleFileOpen = async (file: FileMetadata) => {
     if (isOpening) return;
     setIsOpening(true);
+
     try {
       const fileContentKey = `fileContent_${file.path}`;
       const dataUrl = localStorage.getItem(fileContentKey);
       if (!dataUrl) {
-        // Fallback to native openFile if available.
+        // fallback to system open
         if (window.fileAPI?.openFile) {
           await window.fileAPI.openFile(file.path);
         } else {
@@ -162,17 +171,24 @@ export const FilesPage = () => {
         return;
       }
 
-      // Extract the MIME type from the data URL.
       const mimeMatch = dataUrl.match(/^data:(.*?);base64,/);
       const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
 
-      // For PDFs and images, convert the data URL to a Blob and then create an object URL.
-      if (mimeType === "application/pdf" || mimeType.startsWith("image/")) {
+      if (mimeType === "application/pdf") {
+        // Convert to typed array and show the PDF overlay
+        const blob = dataURLtoBlob(dataUrl);
+        const arrayBuf = await blob.arrayBuffer();
+        const typedArray = new Uint8Array(arrayBuf);
+
+        setSelectedPdfData(typedArray);
+        setShowPdfModal(true);
+      } else if (mimeType.startsWith("image/")) {
+        // Image => open in a new tab
         const blob = dataURLtoBlob(dataUrl);
         const objectUrl = URL.createObjectURL(blob);
         window.open(objectUrl, "_blank");
       } else {
-        // Fallback for other file types using an embed.
+        // Fallback for other file types
         const newWindow = window.open("", "_blank");
         if (!newWindow) {
           alert("Popup blocked. Please allow popups for this site.");
@@ -187,8 +203,13 @@ export const FilesPage = () => {
               <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; object-src 'self' data: blob:;">
               <title>${file.name}</title>
               <style>
-                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background-color: #525659; }
-                embed { width: 100%; height: 100%; border: none; }
+                html, body {
+                  margin: 0; padding: 0; width: 100%; height: 100vh;
+                  overflow: hidden; background-color: #525659;
+                }
+                embed {
+                  width: 100%; height: 100%; border: none;
+                }
               </style>
             </head>
             <body>
@@ -206,7 +227,7 @@ export const FilesPage = () => {
     }
   };
 
-  // Unified handler: if the item is a directory, open it; if a file, interact with it.
+  // If folder => open folder, else => open file
   const handleOpenItem = async (item: FileMetadata) => {
     if (item.isDirectory) {
       await handleFolderOpen(item);
@@ -239,13 +260,13 @@ export const FilesPage = () => {
     }
   };
 
-  // Combine directories and files into one list for display.
+  // Combine directories & files
   const displayItems: FileMetadata[] = useMemo(() => {
     const dirItems = directories.map((dir) => ({
       id: dir.path,
       name: dir.name,
       path: dir.path,
-      type: "folder" as FileType, // Explicitly cast to FileType
+      type: "folder" as FileType,
       size: 0,
       lastModified: 0,
       isDirectory: true,
@@ -254,7 +275,7 @@ export const FilesPage = () => {
     return [...dirItems, ...files];
   }, [directories, files]);
 
-  // Apply filtering on the combined list.
+  // Filter
   const filteredItems = useCallback(() => {
     if (activeFilter === "all") {
       return displayItems;
@@ -267,7 +288,7 @@ export const FilesPage = () => {
 
   return (
     <Box style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Header Toolbar */}
+      {/* Toolbar */}
       <Flex
         align="center"
         px="4"
@@ -359,6 +380,7 @@ export const FilesPage = () => {
         </Box>
       )}
 
+      {/* File Listing */}
       <Box style={{ flex: 1, overflow: "auto", padding: "16px" }}>
         {currentDirectory ? (
           <Box>
@@ -384,13 +406,13 @@ export const FilesPage = () => {
               <FilesList
                 files={filteredItems()}
                 onDelete={handleDeleteFolder}
-                onFileOpen={handleOpenItem} // Use unified handler
+                onFileOpen={handleOpenItem}
               />
             ) : (
               <FilesGrid
                 files={filteredItems()}
                 onDelete={handleDeleteFolder}
-                onFileOpen={handleOpenItem} // Use unified handler
+                onFileOpen={handleOpenItem}
               />
             )}
           </Box>
@@ -436,6 +458,7 @@ export const FilesPage = () => {
         )}
       </Box>
 
+      {/* Refresh Button */}
       <Tooltip.Provider>
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -462,6 +485,7 @@ export const FilesPage = () => {
         </Tooltip.Root>
       </Tooltip.Provider>
 
+      {/* Dialogs */}
       <FileUploadDialog
         open={isUploadOpen}
         onOpenChange={setIsUploadOpen}
@@ -474,6 +498,38 @@ export const FilesPage = () => {
         onConfirm={handleCreateFolder}
         currentPath={currentDirectory?.path ?? undefined}
       />
+
+      {/* PDF Modal for annotation overlay */}
+      {showPdfModal && selectedPdfData && (
+        <Box
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.8)",
+            zIndex: 2000,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Flex justify="end" p="2" style={{ background: "#333" }}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowPdfModal(false);
+                setSelectedPdfData(null);
+              }}
+            >
+              Close
+            </Button>
+          </Flex>
+          <Box style={{ flex: 1, overflow: "auto" }}>
+            <PDFViewerWithAnnotations pdfData={selectedPdfData} />
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };
