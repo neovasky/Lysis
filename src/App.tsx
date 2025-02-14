@@ -1,4 +1,6 @@
 // File: src/App.tsx
+
+import React from "react";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
@@ -17,9 +19,15 @@ import { Provider } from "react-redux";
 import { store } from "./store/store";
 import { useAuth } from "./hooks/useAuth";
 import { ThemeMode, ThemeAccent } from "./theme/types";
-import "@radix-ui/themes/styles.css";
-import { PDFViewer } from "./components/PDFViewer/PDFViewer";
 
+// Radix UI Themes styles
+import "@radix-ui/themes/styles.css";
+
+/**
+ * ProtectedRoute:
+ *   - if user is logged in, show children
+ *   - if not logged in, redirect to /auth
+ */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
@@ -35,6 +43,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export function App() {
+  // Detect initial light/dark mode
   const getInitialTheme = (): ThemeMode => {
     const savedMode = localStorage.getItem("theme-mode") as ThemeMode | null;
     if (savedMode === "light" || savedMode === "dark") {
@@ -45,6 +54,7 @@ export function App() {
       : "light";
   };
 
+  // Detect initial accent color
   const getInitialAccent = (): ThemeAccent => {
     const savedAccent = localStorage.getItem(
       "theme-accent"
@@ -61,7 +71,10 @@ export function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
+              {/* Public route for authentication */}
               <Route path="/auth" element={<AuthPage />} />
+
+              {/* Protected routes require user login */}
               <Route
                 path="/"
                 element={
@@ -80,9 +93,8 @@ export function App() {
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
-              {/* PDF Viewer Route */}
-              <Route path="/pdf-viewer" element={<PDFViewer />} />
-              {/* Catch-all Route */}
+
+              {/* Catch-all route: if not matched, go home */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </BrowserRouter>

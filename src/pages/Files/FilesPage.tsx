@@ -19,7 +19,7 @@ import { useFiles } from "../../components/Files/hooks/useFiles";
 import { FileMetadata, FileType } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 import { FILE_CONSTANTS } from "../../services/constants";
-import PDFViewerWithAnnotations from "../../components/PDFViewer/PDFViewerWithAnnotations";
+import ContinuousPDFViewerWithSidebar from "../../components/PDFViewer/ContinuousPDFViewerWithSidebar";
 
 type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
@@ -32,7 +32,6 @@ interface DirectoryInfo {
 
 const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
 
-/** Utility function to convert a data URL to a Blob. */
 function dataURLtoBlob(dataUrl: string): Blob {
   const parts = dataUrl.split(",");
   const mimeMatch = parts[0].match(/:(.*?);/);
@@ -56,56 +55,49 @@ export const FilesPage = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
-  const [isOpening, setIsOpening] = useState<boolean>(false); // Prevent duplicate file opens
+  const [isOpening, setIsOpening] = useState<boolean>(false);
 
-  // For PDF annotation overlay
+  // PDF Modal state
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdfData, setSelectedPdfData] = useState<Uint8Array | null>(
     null
   );
 
-  // Initialize component with saved directory
   useEffect(() => {
-    const initializeDirectory = async () => {
-      const savedDirectory =
+    const initDir = async () => {
+      const savedDir =
         localStorage.getItem(LAST_DIRECTORY_KEY) || DEFAULT_BASE_DIRECTORY;
-      await loadDirectories(savedDirectory);
+      await loadDirectories(savedDir);
     };
-    initializeDirectory();
+    initDir();
   }, []);
 
-  // Load directories (folders & files)
   const loadDirectories = async (dirPath?: string) => {
     try {
-      let targetDir: string;
-      if (dirPath) {
-        targetDir = dirPath;
-      } else {
-        const savedDir = localStorage.getItem(LAST_DIRECTORY_KEY);
-        targetDir = savedDir || DEFAULT_BASE_DIRECTORY;
-      }
+      const targetDir =
+        dirPath ||
+        localStorage.getItem(LAST_DIRECTORY_KEY) ||
+        DEFAULT_BASE_DIRECTORY;
       FileService.setCurrentDirectory(targetDir);
       localStorage.setItem(LAST_DIRECTORY_KEY, targetDir);
-
       const items = await FileService.getFiles(targetDir);
-      const directoriesList = items.filter((f) => f.isDirectory);
-      const filesList = items.filter((f) => !f.isDirectory);
-
+      const dirs = items.filter((f) => f.isDirectory);
+      const fs = items.filter((f) => !f.isDirectory);
       setDirectories(
-        directoriesList.map((dir) => ({
+        dirs.map((dir) => ({
           path: dir.path,
           name: dir.name,
-          fileCount: directoriesList.length,
+          fileCount: dirs.length,
         }))
       );
-      setFiles(filesList);
+      setFiles(fs);
       setCurrentDirectory({
         path: targetDir,
         name:
           targetDir === DEFAULT_BASE_DIRECTORY
             ? "Base"
             : targetDir.split("/").pop() || targetDir,
-        fileCount: directoriesList.length,
+        fileCount: dirs.length,
       });
     } catch (err) {
       console.error("Error loading directories:", err);
@@ -132,16 +124,11 @@ export const FilesPage = () => {
     }
   };
 
-  // Folder open logic
   const handleFolderOpen = async (folder: FileMetadata) => {
     try {
       if (!folder.isDirectory) return;
-      const newDirectory = {
-        path: folder.path,
-        name: folder.name,
-        fileCount: 0,
-      };
-      setCurrentDirectory(newDirectory);
+      const newDir = { path: folder.path, name: folder.name, fileCount: 0 };
+      setCurrentDirectory(newDir);
       FileService.setCurrentDirectory(folder.path);
       localStorage.setItem(LAST_DIRECTORY_KEY, folder.path);
       await loadDirectories(folder.path);
@@ -150,45 +137,32 @@ export const FilesPage = () => {
     }
   };
 
-  /**
-   * handleFileOpen: if it's a PDF, we load the typed array and show the modal;
-   * if it's an image, open in a new tab; otherwise fallback to an <embed> approach.
-   */
   const handleFileOpen = async (file: FileMetadata) => {
     if (isOpening) return;
     setIsOpening(true);
-
     try {
-      const fileContentKey = `fileContent_${file.path}`;
-      const dataUrl = localStorage.getItem(fileContentKey);
+      const key = `fileContent_${file.path}`;
+      const dataUrl = localStorage.getItem(key);
       if (!dataUrl) {
-        // fallback to system open
         if (window.fileAPI?.openFile) {
           await window.fileAPI.openFile(file.path);
         } else {
-          alert("File interaction is not implemented.");
+          alert("File interaction not implemented.");
         }
         return;
       }
-
       const mimeMatch = dataUrl.match(/^data:(.*?);base64,/);
       const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-
       if (mimeType === "application/pdf") {
-        // Convert to typed array and show the PDF overlay
         const blob = dataURLtoBlob(dataUrl);
         const arrayBuf = await blob.arrayBuffer();
-        const typedArray = new Uint8Array(arrayBuf);
-
-        setSelectedPdfData(typedArray);
+        setSelectedPdfData(new Uint8Array(arrayBuf));
         setShowPdfModal(true);
       } else if (mimeType.startsWith("image/")) {
-        // Image => open in a new tab
         const blob = dataURLtoBlob(dataUrl);
-        const objectUrl = URL.createObjectURL(blob);
-        window.open(objectUrl, "_blank");
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
       } else {
-        // Fallback for other file types
         const newWindow = window.open("", "_blank");
         if (!newWindow) {
           alert("Popup blocked. Please allow popups for this site.");
@@ -203,13 +177,8 @@ export const FilesPage = () => {
               <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; object-src 'self' data: blob:;">
               <title>${file.name}</title>
               <style>
-                html, body {
-                  margin: 0; padding: 0; width: 100%; height: 100vh;
-                  overflow: hidden; background-color: #525659;
-                }
-                embed {
-                  width: 100%; height: 100%; border: none;
-                }
+                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #525659; }
+                embed { width: 100%; height: 100%; border: none; }
               </style>
             </head>
             <body>
@@ -227,7 +196,6 @@ export const FilesPage = () => {
     }
   };
 
-  // If folder => open folder, else => open file
   const handleOpenItem = async (item: FileMetadata) => {
     if (item.isDirectory) {
       await handleFolderOpen(item);
@@ -260,7 +228,6 @@ export const FilesPage = () => {
     }
   };
 
-  // Combine directories & files
   const displayItems: FileMetadata[] = useMemo(() => {
     const dirItems = directories.map((dir) => ({
       id: dir.path,
@@ -275,7 +242,6 @@ export const FilesPage = () => {
     return [...dirItems, ...files];
   }, [directories, files]);
 
-  // Filter
   const filteredItems = useCallback(() => {
     if (activeFilter === "all") {
       return displayItems;
@@ -314,16 +280,14 @@ export const FilesPage = () => {
           )}
         <Flex align="center" gap="2">
           <Button variant="solid" size="2" onClick={handleNewFolderClick}>
-            <PlusIcon />
-            New Folder
+            <PlusIcon /> New Folder
           </Button>
           <Button
             variant="solid"
             size="2"
             onClick={() => setIsUploadOpen(true)}
           >
-            <UploadIcon />
-            Upload Files
+            <UploadIcon /> Upload Files
           </Button>
         </Flex>
         <Box
@@ -468,11 +432,7 @@ export const FilesPage = () => {
                 size="2"
                 disabled={loading}
                 onClick={() => loadDirectories(currentDirectory?.path)}
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "8px",
-                }}
+                style={{ width: "48px", height: "48px", borderRadius: "8px" }}
               >
                 <ReloadIcon width="16" height="16" />
               </Button>
@@ -526,7 +486,7 @@ export const FilesPage = () => {
             </Button>
           </Flex>
           <Box style={{ flex: 1, overflow: "auto" }}>
-            <PDFViewerWithAnnotations pdfData={selectedPdfData} />
+            <ContinuousPDFViewerWithSidebar pdfData={selectedPdfData} />
           </Box>
         </Box>
       )}
