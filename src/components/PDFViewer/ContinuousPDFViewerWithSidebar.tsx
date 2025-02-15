@@ -1,6 +1,10 @@
-// File: src/components/PDFViewer/ContinuousPDFViewerWithSidebar.tsx
-
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  CSSProperties,
+} from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import {
   PDFDocumentProxy,
@@ -9,14 +13,44 @@ import {
 } from "pdfjs-dist/types/src/display/api";
 import "pdfjs-dist/web/pdf_viewer.css";
 
-// Make sure pdf.worker.min.mjs is in your public folder.
+// Import TextLayerBuilder from pdfjs-dist/web/pdf_viewer
+import { TextLayerBuilder } from "pdfjs-dist/web/pdf_viewer";
+
+// Radix UI icons
+import {
+  MinusIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  ViewVerticalIcon,
+  Pencil2Icon,
+  DrawingPinIcon,
+} from "@radix-ui/react-icons";
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-/** Types **/
+// Minimal button styles for icons
+const iconButtonStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "transparent",
+  border: "none",
+  color: "#fff",
+  cursor: "pointer",
+  padding: "6px",
+  borderRadius: "4px",
+  transition: "background 0.2s ease",
+};
+
+const iconButtonHoverStyle: CSSProperties = {
+  background: "rgba(255, 255, 255, 0.1)",
+};
+
+// Types
 interface Highlight {
   id: string;
-  pageNumber: number; // 1-based
-  text: string; // the selected text snippet
+  pageNumber: number;
+  text: string;
   rects: { x: number; y: number; width: number; height: number }[];
   color: string;
   comment?: string;
@@ -24,7 +58,7 @@ interface Highlight {
 
 interface StickyNote {
   id: string;
-  pageNumber: number; // 1-based
+  pageNumber: number;
   x: number;
   y: number;
   comment: string;
@@ -33,38 +67,19 @@ interface StickyNote {
 type AnnotationTool = "highlight" | "sticky";
 
 interface PageInfo {
-  pageIndex: number; // 0-based
+  pageIndex: number;
   scale: number;
 }
 
-type TextContent = PdfTextContent;
-
-interface RenderTextLayerParams {
-  textContent: TextContent;
-  container: HTMLDivElement;
-  viewport: pdfjsLib.PageViewport;
-  textDivs: HTMLDivElement[];
-  enhanceTextSelection?: boolean;
-}
-
-interface PdfjsTextLayer {
-  renderTextLayer(params: RenderTextLayerParams): Promise<void>;
-}
-
 interface ContinuousPDFViewerWithSidebarProps {
-  /** The raw PDF data as a typed array. */
   pdfData: Uint8Array;
-  /** Optional callback for a "Close" button in the top bar. */
   onClose?: () => void;
 }
 
-/** ContinuousPDFViewerWithSidebar:
- * Renders a continuous (scrollable) PDF with annotation support (highlight & sticky notes),
- * a left sidebar with thumbnails, and a top toolbar for tool selection.
- */
-export const ContinuousPDFViewerWithSidebar: React.FC<
+const ContinuousPDFViewerWithSidebar: React.FC<
   ContinuousPDFViewerWithSidebarProps
 > = ({ pdfData, onClose }) => {
+  // State
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [tool, setTool] = useState<AnnotationTool>("highlight");
@@ -73,61 +88,83 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Main container for full-size pages and sidebar container for thumbnails
+  // UI states
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [globalScale, setGlobalScale] = useState(1.2);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Page navigation
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [editPageInput, setEditPageInput] = useState(false);
+  const [pageInputValue, setPageInputValue] = useState("");
+
+  // Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // ----------------------------------------------------------------
-  // Load PDF from pdfData
-  // ----------------------------------------------------------------
+  // Load & Save Annotations (localStorage)
+  useEffect(() => {
+    const savedHighlights = localStorage.getItem("pdfHighlights");
+    const savedSticky = localStorage.getItem("pdfStickyNotes");
+    if (savedHighlights) setHighlights(JSON.parse(savedHighlights));
+    if (savedSticky) setStickyNotes(JSON.parse(savedSticky));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("pdfHighlights", JSON.stringify(highlights));
+  }, [highlights]);
+
+  useEffect(() => {
+    localStorage.setItem("pdfStickyNotes", JSON.stringify(stickyNotes));
+  }, [stickyNotes]);
+
+  // Load PDF (using a copy of pdfData)
   useEffect(() => {
     if (!pdfData) return;
     setIsLoading(true);
     setError(null);
-
-    const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+    const pdfDataCopy = pdfData.slice();
+    const loadingTask = pdfjsLib.getDocument({ data: pdfDataCopy });
     loadingTask.promise
       .then((pdf: PDFDocumentProxy) => {
         setPdfDoc(pdf);
         const initialPages = Array.from({ length: pdf.numPages }, (_, i) => ({
           pageIndex: i,
-          scale: 1.2,
+          scale: globalScale,
         }));
         setPages(initialPages);
         setIsLoading(false);
       })
-      .catch((err: unknown) => {
+      .catch((err) => {
         console.error("Error loading PDF:", err);
-        // Remove or comment out the following line to prevent the popup:
-        // setError("Failed to load PDF");
+        setError("Failed to load PDF");
         setIsLoading(false);
       });
-  }, [pdfData]);
+  }, [pdfData, globalScale]);
 
-  // ----------------------------------------------------------------
-  // Helper: Render the text layer for a page
-  // ----------------------------------------------------------------
+  // Render text layer using TextLayerBuilder
   const renderTextLayer = async (
     page: PDFPageProxy,
     viewport: pdfjsLib.PageViewport,
-    container: HTMLDivElement
+    container: HTMLDivElement,
+    pageIndex: number
   ) => {
-    const textContent: TextContent = await page.getTextContent();
+    // Retrieve the text content from the PDF page.
+    const textContent: PdfTextContent = await page.getTextContent();
+
     container.innerHTML = "";
-    // Cast pdfjsLib to our PdfjsTextLayer interface
-    const pdfjsWithTextLayer = pdfjsLib as unknown as PdfjsTextLayer;
-    return pdfjsWithTextLayer.renderTextLayer({
-      textContent,
-      container,
-      viewport,
-      textDivs: [],
+    const textLayer = new TextLayerBuilder({
+      textLayerDiv: container,
+      pageIndex: pageIndex,
+      viewport: viewport,
       enhanceTextSelection: true,
     });
+    // Assign the text content to the text layer.
+    textLayer.textContent = textContent;
+    textLayer.render();
   };
 
-  // ----------------------------------------------------------------
   // Render a single page (canvas + text layer)
-  // ----------------------------------------------------------------
   const renderPage = useCallback(
     async (pageContainer: HTMLDivElement, pageIndex: number, scale: number) => {
       if (!pdfDoc) return;
@@ -157,25 +194,23 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
           textLayerDiv.style.top = "0";
           textLayerDiv.style.left = "0";
           textLayerDiv.style.pointerEvents = "auto";
+          textLayerDiv.style.zIndex = "10";
           pageContainer.appendChild(textLayerDiv);
         }
         textLayerDiv.style.width = `${viewport.width}px`;
         textLayerDiv.style.height = `${viewport.height}px`;
-        await renderTextLayer(page, viewport, textLayerDiv);
-      } catch (err: unknown) {
+        await renderTextLayer(page, viewport, textLayerDiv, pageIndex);
+      } catch (err) {
         console.error(`Error rendering page ${pageIndex + 1}:`, err);
       }
     },
     [pdfDoc]
   );
 
-  // ----------------------------------------------------------------
-  // Render all pages continuously in the main container
-  // ----------------------------------------------------------------
+  // Render all pages
   useEffect(() => {
     if (!pdfDoc || !containerRef.current) return;
-    const container = containerRef.current;
-    container.innerHTML = "";
+    containerRef.current.innerHTML = "";
     pages.forEach((pageInfo) => {
       const pageDiv = document.createElement("div");
       pageDiv.style.position = "relative";
@@ -184,14 +219,12 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
       pageDiv.style.background = "#fff";
       pageDiv.style.width = "fit-content";
       pageDiv.dataset.pageIndex = pageInfo.pageIndex.toString();
-      container.appendChild(pageDiv);
+      containerRef.current?.appendChild(pageDiv);
       renderPage(pageDiv, pageInfo.pageIndex, pageInfo.scale);
     });
   }, [pdfDoc, pages, renderPage]);
 
-  // ----------------------------------------------------------------
-  // Render thumbnails in the sidebar
-  // ----------------------------------------------------------------
+  // Thumbnails
   const renderThumbnail = useCallback(
     async (
       pageIndex: number,
@@ -199,7 +232,7 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
     ): Promise<HTMLCanvasElement | null> => {
       if (!pdfDoc) return null;
       try {
-        const page = await pdfDoc.getPage(pageIndex + 1);
+        const page: PDFPageProxy = await pdfDoc.getPage(pageIndex + 1);
         const viewport = page.getViewport({ scale });
         const canvas = document.createElement("canvas");
         canvas.width = viewport.width;
@@ -218,8 +251,7 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
 
   const renderThumbnails = useCallback(async () => {
     if (!pdfDoc || !sidebarRef.current) return;
-    const sidebar = sidebarRef.current;
-    sidebar.innerHTML = "";
+    sidebarRef.current.innerHTML = "";
     for (let i = 0; i < pdfDoc.numPages; i++) {
       const thumbDiv = document.createElement("div");
       thumbDiv.style.margin = "8px";
@@ -227,6 +259,7 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
       thumbDiv.style.border = "1px solid #aaa";
       thumbDiv.style.padding = "2px";
       thumbDiv.style.backgroundColor = "#f5f5f5";
+
       const canvas = await renderThumbnail(i, 0.2);
       if (canvas) {
         thumbDiv.appendChild(canvas);
@@ -236,33 +269,30 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
           ) as HTMLDivElement | null;
           if (targetPageDiv) {
             targetPageDiv.scrollIntoView({ behavior: "smooth" });
+            setCurrentPage(i + 1);
           }
         });
       }
-      sidebar.appendChild(thumbDiv);
+      sidebarRef.current?.appendChild(thumbDiv);
     }
   }, [pdfDoc, renderThumbnail]);
 
   useEffect(() => {
-    if (pdfDoc) {
+    if (sidebarOpen && pdfDoc) {
       renderThumbnails();
     }
-  }, [pdfDoc, renderThumbnails]);
+  }, [sidebarOpen, pdfDoc, renderThumbnails]);
 
-  // ----------------------------------------------------------------
-  // Generate a unique ID
-  // ----------------------------------------------------------------
+  // Annotations
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  // ----------------------------------------------------------------
-  // Handle text selection for highlights (highlight mode)
-  // ----------------------------------------------------------------
   const handleMouseUp = () => {
-    if (tool !== "highlight") return;
+    if (tool !== "highlight" || !pdfDoc) return;
     const selection = document.getSelection();
     if (!selection || selection.isCollapsed) return;
     const selectedText = selection.toString().trim();
     if (!selectedText) return;
+
     const range = selection.getRangeAt(0);
     const clientRects = Array.from(range.getClientRects());
     const pageDiv = findPageDiv(selection.anchorNode as Node);
@@ -285,6 +315,7 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
       width: rect.width,
       height: rect.height,
     }));
+
     const newHighlight: Highlight = {
       id: generateId(),
       pageNumber: pageIndex + 1,
@@ -294,6 +325,7 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
     };
     setHighlights((prev) => [...prev, newHighlight]);
     selection.removeAllRanges();
+
     const comment = prompt("Add a note to this highlight?");
     if (comment) {
       setHighlights((prev) =>
@@ -302,11 +334,8 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
     }
   };
 
-  // ----------------------------------------------------------------
-  // Handle click for sticky notes (sticky mode)
-  // ----------------------------------------------------------------
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (tool !== "sticky") return;
+    if (tool !== "sticky" || !pdfDoc) return;
     const pageDiv = findPageDiv(e.target as Node);
     if (!pageDiv) return;
     const pageIndex = parseInt(pageDiv.dataset.pageIndex || "0", 10);
@@ -314,11 +343,14 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
       ".textLayer"
     ) as HTMLDivElement | null;
     if (!textLayerEl) return;
+
     const box = textLayerEl.getBoundingClientRect();
     const x = e.clientX - box.left;
     const y = e.clientY - box.top;
+
     const noteComment = prompt("Enter sticky note text");
     if (!noteComment) return;
+
     const newNote: StickyNote = {
       id: generateId(),
       pageNumber: pageIndex + 1,
@@ -329,9 +361,6 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
     setStickyNotes((prev) => [...prev, newNote]);
   };
 
-  // ----------------------------------------------------------------
-  // Helper: Find page container from a DOM node
-  // ----------------------------------------------------------------
   const findPageDiv = (node: Node): HTMLDivElement | null => {
     let current = node instanceof HTMLElement ? node : node.parentElement;
     while (current) {
@@ -343,20 +372,21 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
     return null;
   };
 
-  // ----------------------------------------------------------------
-  // Render overlays (highlights and sticky notes) for each page
-  // ----------------------------------------------------------------
+  // Overlay for highlights/sticky notes
   useEffect(() => {
     if (!pdfDoc || !containerRef.current) return;
+
     pages.forEach((pageInfo) => {
       const pageDiv = containerRef.current?.querySelector(
         `div[data-page-index="${pageInfo.pageIndex}"]`
       ) as HTMLDivElement | null;
       if (!pageDiv) return;
+
       let overlay = pageDiv.querySelector(
         ".overlayLayer"
       ) as HTMLDivElement | null;
       if (overlay) overlay.remove();
+
       overlay = document.createElement("div");
       overlay.className = "overlayLayer";
       overlay.style.position = "absolute";
@@ -364,6 +394,8 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
       overlay.style.left = "0";
       overlay.style.pointerEvents = "none";
       pageDiv.appendChild(overlay);
+
+      // Render highlights
       const pageHighlights = highlights.filter(
         (hl) => hl.pageNumber === pageInfo.pageIndex + 1
       );
@@ -377,7 +409,23 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
           hlDiv.style.height = `${r.height}px`;
           hlDiv.style.backgroundColor = hl.color;
           hlDiv.title = hl.comment || "No comment";
+          hlDiv.style.cursor = "pointer";
+          hlDiv.addEventListener("dblclick", () => {
+            if (window.confirm("Delete this highlight?")) {
+              setHighlights((prev) => prev.filter((h) => h.id !== hl.id));
+            } else {
+              const newComment = prompt("Edit comment:", hl.comment);
+              if (newComment !== null) {
+                setHighlights((prev) =>
+                  prev.map((h) =>
+                    h.id === hl.id ? { ...h, comment: newComment } : h
+                  )
+                );
+              }
+            }
+          });
           overlay!.appendChild(hlDiv);
+
           if (hl.comment) {
             const commentDiv = document.createElement("div");
             commentDiv.style.position = "absolute";
@@ -393,6 +441,8 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
           }
         });
       });
+
+      // Render sticky notes
       const pageNotes = stickyNotes.filter(
         (n) => n.pageNumber === pageInfo.pageIndex + 1
       );
@@ -406,7 +456,23 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
         noteDiv.style.backgroundColor = "yellow";
         noteDiv.style.border = "1px solid #999";
         noteDiv.title = note.comment;
+        noteDiv.style.cursor = "pointer";
+        noteDiv.addEventListener("dblclick", () => {
+          if (window.confirm("Delete this sticky note?")) {
+            setStickyNotes((prev) => prev.filter((sn) => sn.id !== note.id));
+          } else {
+            const newComment = prompt("Edit sticky note text:", note.comment);
+            if (newComment !== null) {
+              setStickyNotes((prev) =>
+                prev.map((sn) =>
+                  sn.id === note.id ? { ...sn, comment: newComment } : sn
+                )
+              );
+            }
+          }
+        });
         overlay!.appendChild(noteDiv);
+
         const labelDiv = document.createElement("div");
         labelDiv.style.position = "absolute";
         labelDiv.style.top = "20px";
@@ -422,9 +488,61 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
     });
   }, [highlights, stickyNotes, pages, pdfDoc]);
 
-  // ----------------------------------------------------------------
-  // UI Rendering
-  // ----------------------------------------------------------------
+  // Toolbar Handlers
+  const handleZoomIn = () => {
+    const newScale = globalScale + 0.2;
+    setGlobalScale(newScale);
+    if (pdfDoc) {
+      const updatedPages = Array.from({ length: pdfDoc.numPages }, (_, i) => ({
+        pageIndex: i,
+        scale: newScale,
+      }));
+      setPages(updatedPages);
+    }
+  };
+
+  const handleZoomOut = () => {
+    const newScale = globalScale - 0.2;
+    if (newScale <= 0.2) return;
+    setGlobalScale(newScale);
+    if (pdfDoc) {
+      const updatedPages = Array.from({ length: pdfDoc.numPages }, (_, i) => ({
+        pageIndex: i,
+        scale: newScale,
+      }));
+      setPages(updatedPages);
+    }
+  };
+
+  const handleSearch = () => {
+    alert(`Search for "${searchTerm}" not implemented yet.`);
+  };
+
+  // Page navigation
+  const totalPages = pdfDoc?.numPages ?? 1;
+  const handlePageNumberClick = () => {
+    if (!pdfDoc) return;
+    setEditPageInput(true);
+    setPageInputValue(String(currentPage));
+  };
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPageInputValue(e.target.value);
+  };
+  const handlePageInputBlur = () => {
+    setEditPageInput(false);
+    const pageNum = parseInt(pageInputValue, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      const targetPageDiv = containerRef.current?.querySelector(
+        `div[data-page-index="${pageNum - 1}"]`
+      ) as HTMLDivElement | null;
+      if (targetPageDiv) {
+        targetPageDiv.scrollIntoView({ behavior: "smooth" });
+        setCurrentPage(pageNum);
+      }
+    }
+  };
+
+  // Render
   return (
     <div
       style={{
@@ -433,71 +551,250 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
         height: "100%",
         flexDirection: "row",
         overflow: "hidden",
+        position: "relative",
       }}
       onMouseUp={handleMouseUp}
       onClick={handleClick}
     >
       {/* Sidebar for thumbnails */}
-      <div
-        ref={sidebarRef}
-        style={{
-          width: "150px",
-          borderRight: "1px solid #ccc",
-          overflowY: "auto",
-          backgroundColor: "#f8f8f8",
-        }}
-      >
-        {/* Thumbnails will be rendered dynamically */}
-      </div>
+      {sidebarOpen && (
+        <div
+          ref={sidebarRef}
+          style={{
+            width: "150px",
+            borderRight: "1px solid #ccc",
+            overflowY: "auto",
+            backgroundColor: "#f8f8f8",
+          }}
+        />
+      )}
 
       {/* Main PDF content area */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Top toolbar with tool selection and optional close button */}
+        {/* Top toolbar with a dark background */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            padding: "8px",
-            background: "#f2f2f2",
+            padding: "4px 8px",
+            background: "#3f4042",
             borderBottom: "1px solid #ccc",
             justifyContent: "space-between",
+            color: "#fff",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {/* Left group: sidebar toggle + optional close */}
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <button
+              style={iconButtonStyle}
+              onMouseEnter={(e) =>
+                Object.assign(e.currentTarget.style, iconButtonHoverStyle)
+              }
+              onMouseLeave={(e) =>
+                Object.assign(e.currentTarget.style, iconButtonStyle)
+              }
+              onClick={() => setSidebarOpen((prev) => !prev)}
+              title={sidebarOpen ? "Hide Thumbnails" : "Show Thumbnails"}
+            >
+              <ViewVerticalIcon />
+            </button>
             {onClose && (
               <button
-                style={{
-                  padding: "4px 8px",
-                  border: "1px solid #ccc",
-                  backgroundColor: "#eee",
-                  cursor: "pointer",
-                }}
+                style={iconButtonStyle}
+                onMouseEnter={(e) =>
+                  Object.assign(e.currentTarget.style, iconButtonHoverStyle)
+                }
+                onMouseLeave={(e) =>
+                  Object.assign(e.currentTarget.style, iconButtonStyle)
+                }
                 onClick={onClose}
               >
                 Close
               </button>
             )}
-            <label style={{ marginRight: "16px" }}>
+          </div>
+
+          {/* Center group: highlight vs. sticky (icons only) */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
               <input
                 type="radio"
                 name="tool"
                 value="highlight"
                 checked={tool === "highlight"}
                 onChange={() => setTool("highlight")}
+                style={{ display: "none" }}
               />
-              Highlight
+              <button
+                style={{
+                  ...iconButtonStyle,
+                  background: tool === "highlight" ? "#ffe87c" : "transparent",
+                  color: tool === "highlight" ? "#000" : "#fff",
+                }}
+                onClick={() => setTool("highlight")}
+                onMouseEnter={(e) =>
+                  !tool.includes("highlight") &&
+                  Object.assign(e.currentTarget.style, iconButtonHoverStyle)
+                }
+                onMouseLeave={(e) =>
+                  !tool.includes("highlight") &&
+                  Object.assign(e.currentTarget.style, iconButtonStyle)
+                }
+              >
+                <Pencil2Icon />
+              </button>
             </label>
-            <label style={{ marginRight: "16px" }}>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
               <input
                 type="radio"
                 name="tool"
                 value="sticky"
                 checked={tool === "sticky"}
                 onChange={() => setTool("sticky")}
+                style={{ display: "none" }}
               />
-              Sticky Note
+              <button
+                style={{
+                  ...iconButtonStyle,
+                  background: tool === "sticky" ? "#ffe87c" : "transparent",
+                  color: tool === "sticky" ? "#000" : "#fff",
+                }}
+                onClick={() => setTool("sticky")}
+                onMouseEnter={(e) =>
+                  !tool.includes("sticky") &&
+                  Object.assign(e.currentTarget.style, iconButtonHoverStyle)
+                }
+                onMouseLeave={(e) =>
+                  !tool.includes("sticky") &&
+                  Object.assign(e.currentTarget.style, iconButtonStyle)
+                }
+              >
+                <DrawingPinIcon />
+              </button>
             </label>
-            <span style={{ fontWeight: "bold" }}>Mode: {tool}</span>
+          </div>
+
+          {/* Right group: zoom, page nav, search */}
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <button
+              style={iconButtonStyle}
+              onMouseEnter={(e) =>
+                Object.assign(e.currentTarget.style, iconButtonHoverStyle)
+              }
+              onMouseLeave={(e) =>
+                Object.assign(e.currentTarget.style, iconButtonStyle)
+              }
+              onClick={handleZoomOut}
+            >
+              <MinusIcon />
+            </button>
+            <button
+              style={iconButtonStyle}
+              onMouseEnter={(e) =>
+                Object.assign(e.currentTarget.style, iconButtonHoverStyle)
+              }
+              onMouseLeave={(e) =>
+                Object.assign(e.currentTarget.style, iconButtonStyle)
+              }
+              onClick={handleZoomIn}
+            >
+              <PlusIcon />
+            </button>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "transparent",
+                color: "#fff",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                transition: "background 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
+              onClick={handlePageNumberClick}
+            >
+              {editPageInput ? (
+                <input
+                  type="number"
+                  style={{
+                    width: "50px",
+                    textAlign: "center",
+                    border: "none",
+                    outline: "none",
+                  }}
+                  value={pageInputValue}
+                  onChange={handlePageInputChange}
+                  onBlur={handlePageInputBlur}
+                  autoFocus
+                />
+              ) : (
+                <span>
+                  {currentPage} / {pdfDoc?.numPages ?? 1}
+                </span>
+              )}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: "transparent",
+                borderRadius: "4px",
+                padding: "0 4px",
+                color: "#fff",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: "80px",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "#fff",
+                }}
+              />
+              <button
+                style={{ ...iconButtonStyle, padding: "0" }}
+                onMouseEnter={(e) =>
+                  Object.assign(e.currentTarget.style, iconButtonHoverStyle)
+                }
+                onMouseLeave={(e) =>
+                  Object.assign(e.currentTarget.style, iconButtonStyle)
+                }
+                onClick={handleSearch}
+              >
+                <MagnifyingGlassIcon />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -505,42 +802,42 @@ export const ContinuousPDFViewerWithSidebar: React.FC<
         <div
           ref={containerRef}
           style={{ flex: 1, overflow: "auto", background: "#e0e0e0" }}
-        >
-          {/* Pages are rendered dynamically */}
-        </div>
-      </div>
+        />
 
-      {/* Overlay for loading or error messages */}
-      {isLoading && !error && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "#eee",
-            padding: "16px",
-            borderRadius: "8px",
-          }}
-        >
-          Loading PDF...
-        </div>
-      )}
-      {error && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "#fdd",
-            padding: "16px",
-            borderRadius: "8px",
-          }}
-        >
-          <strong style={{ color: "red" }}>{error}</strong>
-        </div>
-      )}
+        {/* Loading Overlay */}
+        {isLoading && !error && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#eee",
+              padding: "16px",
+              borderRadius: "8px",
+            }}
+          >
+            Loading PDF...
+          </div>
+        )}
+
+        {/* Error Overlay */}
+        {error && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#fdd",
+              padding: "16px",
+              borderRadius: "8px",
+            }}
+          >
+            <strong style={{ color: "red" }}>{error}</strong>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
