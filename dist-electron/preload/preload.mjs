@@ -14,6 +14,8 @@ const FILE_CHANNELS = {
   CREATE_DIRECTORY: "file:create-dir",
   MOVE_FILE: "file:move",
   COPY_FILE: "file:copy",
+  WATCH_FILE: "file:watch",
+  GET_FILE_HASH: "file:hash",
   OPEN_FILE: "file:open"
 };
 electron.contextBridge.exposeInMainWorld("electronAPI", {
