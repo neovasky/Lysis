@@ -1,24 +1,7 @@
 import React, { useState, useCallback } from "react";
-import {
-  Box,
-  Card,
-  Text,
-  Heading,
-  Button,
-  TextArea,
-  Flex,
-  IconButton,
-  Badge,
-  ScrollArea,
-} from "@radix-ui/themes";
-import {
-  FileTextIcon,
-  PlusIcon,
-  Pencil2Icon,
-  TrashIcon,
-  Cross2Icon,
-  MagnifyingGlassIcon,
-} from "@radix-ui/react-icons";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { FileText, Plus, Pencil, Trash, X, Search } from "lucide-react";
 
 // Note type definition
 interface Note {
@@ -45,10 +28,11 @@ export const NotesPage = () => {
   });
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [newTagInput, setNewTagInput] = useState("");
 
-  // Save notes to localStorage whenever they change
+  // Persist notes to localStorage on change
   React.useEffect(() => {
     localStorage.setItem("research_notes", JSON.stringify(notes));
   }, [notes]);
@@ -63,6 +47,7 @@ export const NotesPage = () => {
     setNotes((prev) => [...prev, newNote]);
     setSelectedNote(newNote);
     setIsEditing(true);
+    setPreviewMode(false);
   };
 
   // Update note
@@ -89,6 +74,7 @@ export const NotesPage = () => {
       if (selectedNote?.id === noteId) {
         setSelectedNote(null);
         setIsEditing(false);
+        setPreviewMode(false);
       }
     }
   };
@@ -98,7 +84,7 @@ export const NotesPage = () => {
     if (!tag.trim()) return;
     setNotes((prev) =>
       prev.map((note) => {
-        if (note.id === noteId && !note.tags.includes(tag)) {
+        if (note.id === noteId && !note.tags.includes(tag.trim())) {
           return {
             ...note,
             tags: [...note.tags, tag.trim()],
@@ -137,7 +123,7 @@ export const NotesPage = () => {
       )
   );
 
-  // Format date
+  // Format date for display
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
       year: "numeric",
@@ -149,108 +135,96 @@ export const NotesPage = () => {
   };
 
   return (
-    <Box p="4">
-      {/* Header Card */}
-      <Card size="3" style={{ marginBottom: "24px" }}>
-        <Heading size="5" weight="bold" mb="2">
-          Research Notes
-        </Heading>
-        <Text color="gray" size="2">
+    <div className="p-4">
+      {/* Header */}
+      <div className="bg-white shadow rounded p-6 mb-6">
+        <h2 className="text-xl font-bold mb-2">Research Notes</h2>
+        <p className="text-gray-600 text-sm">
           Create and manage your investment research notes
-        </Text>
-      </Card>
+        </p>
+      </div>
 
-      <Flex gap="4" style={{ height: "calc(100vh - 200px)" }}>
+      <div className="flex gap-4 h-[calc(100vh-200px)]">
         {/* Notes List Panel */}
-        <Card style={{ width: "300px" }}>
-          <Flex direction="column" gap="3">
+        <div className="bg-white shadow rounded w-72 flex flex-col">
+          <div className="p-4 flex flex-col gap-3">
             {/* Search and New Note */}
-            <Flex gap="2">
-              <Box style={{ position: "relative", flex: 1 }}>
-                <MagnifyingGlassIcon
-                  style={{
-                    position: "absolute",
-                    left: "8px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "var(--gray-9)",
-                  }}
-                />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
                   type="text"
                   placeholder="Search notes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 8px 8px 32px",
-                    border: "1px solid var(--gray-5)",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                  }}
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 rounded text-sm"
                 />
-              </Box>
-              <Button onClick={handleCreateNote}>
-                <PlusIcon /> New
-              </Button>
-            </Flex>
+              </div>
+              <button
+                onClick={handleCreateNote}
+                className="flex items-center gap-1 bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
+              >
+                <Plus className="w-4 h-4" /> New
+              </button>
+            </div>
 
             {/* Notes List */}
-            <ScrollArea style={{ height: "calc(100vh - 280px)" }}>
-              <Flex direction="column" gap="2">
+            <div
+              className="overflow-y-auto"
+              style={{ height: "calc(100vh - 280px)" }}
+            >
+              <div className="flex flex-col gap-2">
                 {filteredNotes.map((note) => (
-                  <Card
+                  <div
                     key={note.id}
-                    style={{
-                      cursor: "pointer",
-                      backgroundColor:
-                        selectedNote?.id === note.id
-                          ? "var(--accent-3)"
-                          : undefined,
-                    }}
+                    className={`p-2 border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${
+                      selectedNote?.id === note.id ? "bg-blue-100" : ""
+                    }`}
                     onClick={() => {
                       setSelectedNote(note);
                       setIsEditing(false);
+                      setPreviewMode(false);
                     }}
                   >
-                    <Flex justify="between" align="start">
-                      <Box style={{ flex: 1 }}>
-                        <Text weight="bold">{note.title}</Text>
-                        <Text size="1" color="gray">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="font-bold">{note.title}</p>
+                        <p className="text-xs text-gray-500">
                           {formatDate(note.lastModified)}
-                        </Text>
-                        <Flex gap="1" mt="1" style={{ flexWrap: "wrap" }}>
+                        </p>
+                        <div className="flex flex-wrap gap-1 mt-1">
                           {note.tags.map((tag) => (
-                            <Badge key={tag} size="1">
+                            <span
+                              key={tag}
+                              className="bg-gray-200 text-xs px-2 py-0.5 rounded"
+                            >
                               {tag}
-                            </Badge>
+                            </span>
                           ))}
-                        </Flex>
-                      </Box>
-                      <IconButton
-                        size="1"
-                        variant="ghost"
-                        color="red"
+                        </div>
+                      </div>
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteNote(note.id);
                         }}
+                        className="p-1 text-red-500 hover:text-red-700"
                       >
-                        <TrashIcon />
-                      </IconButton>
-                    </Flex>
-                  </Card>
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </Flex>
-            </ScrollArea>
-          </Flex>
-        </Card>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Note Editor/Viewer Panel */}
-        <Card style={{ flex: 1 }}>
+        <div className="flex-1 bg-white shadow rounded p-6">
           {selectedNote ? (
-            <Flex direction="column" gap="3" style={{ height: "100%" }}>
-              <Flex justify="between" align="center">
+            <div className="flex flex-col gap-3 h-full">
+              <div className="flex justify-between items-center">
                 {isEditing ? (
                   <input
                     type="text"
@@ -258,55 +232,60 @@ export const NotesPage = () => {
                     onChange={(e) =>
                       handleUpdateNote({ title: e.target.value })
                     }
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "bold",
-                      padding: "4px 8px",
-                      border: "1px solid var(--gray-5)",
-                      borderRadius: "4px",
-                      width: "100%",
-                    }}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-lg font-bold"
                   />
                 ) : (
-                  <Heading size="4">{selectedNote.title}</Heading>
+                  <h2 className="text-lg font-bold">{selectedNote.title}</h2>
                 )}
-                <Flex gap="2">
-                  <Button
-                    variant={isEditing ? "solid" : "outline"}
-                    onClick={() => setIsEditing(!isEditing)}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setIsEditing(!isEditing);
+                      if (isEditing) setPreviewMode(false);
+                    }}
+                    className="flex items-center gap-1 border border-gray-300 rounded px-2 py-1 text-sm"
                   >
                     {isEditing ? (
                       <>
-                        <Cross2Icon /> Cancel
+                        <X className="w-4 h-4" /> Cancel
                       </>
                     ) : (
                       <>
-                        <Pencil2Icon /> Edit
+                        <Pencil className="w-4 h-4" /> Edit
                       </>
                     )}
-                  </Button>
-                </Flex>
-              </Flex>
+                  </button>
+                  {isEditing && (
+                    <button
+                      onClick={() => setPreviewMode((prev) => !prev)}
+                      className="flex items-center gap-1 border border-gray-300 rounded px-2 py-1 text-sm"
+                    >
+                      {previewMode ? "Edit Mode" : "Preview Mode"}
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {/* Tags Section */}
-              <Flex gap="2" align="center" style={{ flexWrap: "wrap" }}>
+              <div className="flex flex-wrap gap-2 items-center">
                 {selectedNote.tags.map((tag) => (
-                  <Badge key={tag}>
+                  <div
+                    key={tag}
+                    className="flex items-center bg-gray-200 text-xs px-2 py-0.5 rounded"
+                  >
                     {tag}
                     {isEditing && (
-                      <Button
-                        size="1"
-                        variant="ghost"
+                      <button
                         onClick={() => handleRemoveTag(selectedNote.id, tag)}
-                        style={{ marginLeft: "4px", padding: "0" }}
+                        className="ml-1 text-red-500 hover:text-red-700"
                       >
-                        <Cross2Icon />
-                      </Button>
+                        <X className="w-3 h-3" />
+                      </button>
                     )}
-                  </Badge>
+                  </div>
                 ))}
                 {isEditing && (
-                  <Flex gap="2" align="center">
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
                       value={newTagInput}
@@ -314,75 +293,66 @@ export const NotesPage = () => {
                       placeholder="Add tag..."
                       onKeyPress={(e) => {
                         if (e.key === "Enter") {
+                          e.preventDefault();
                           handleAddTag(selectedNote.id, newTagInput);
                         }
                       }}
-                      style={{
-                        padding: "4px 8px",
-                        border: "1px solid var(--gray-5)",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                      }}
+                      className="border border-gray-300 rounded px-2 py-1 text-xs"
                     />
-                    <Button
-                      size="1"
+                    <button
                       onClick={() => handleAddTag(selectedNote.id, newTagInput)}
+                      className="border border-gray-300 rounded px-2 py-1 text-xs"
                     >
                       Add
-                    </Button>
-                  </Flex>
+                    </button>
+                  </div>
                 )}
-              </Flex>
+              </div>
 
               {/* Content */}
-              <Box style={{ flex: 1 }}>
+              <div className="flex-1">
                 {isEditing ? (
-                  <TextArea
-                    value={selectedNote.content}
-                    onChange={(e) =>
-                      handleUpdateNote({ content: e.target.value })
-                    }
-                    style={{
-                      height: "100%",
-                      resize: "none",
-                      padding: "12px",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                    }}
-                  />
+                  previewMode ? (
+                    <div className="overflow-auto h-full p-3 border border-gray-300 rounded">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {selectedNote.content || "Nothing to preview."}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <textarea
+                      value={selectedNote.content}
+                      onChange={(e) =>
+                        handleUpdateNote({ content: e.target.value })
+                      }
+                      className="w-full h-full p-3 border border-gray-300 rounded resize-none text-sm"
+                    />
+                  )
                 ) : (
-                  <ScrollArea style={{ height: "100%" }}>
-                    <Box p="3" style={{ whiteSpace: "pre-wrap" }}>
+                  <div className="overflow-auto h-full p-3 border border-gray-300 rounded whitespace-pre-wrap">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {selectedNote.content || "No content yet..."}
-                    </Box>
-                  </ScrollArea>
+                    </ReactMarkdown>
+                  </div>
                 )}
-              </Box>
-            </Flex>
+              </div>
+            </div>
           ) : (
-            <Flex
-              direction="column"
-              align="center"
-              justify="center"
-              gap="4"
-              style={{ height: "100%" }}
-            >
-              <FileTextIcon
-                width={48}
-                height={48}
-                style={{ color: "var(--gray-8)" }}
-              />
-              <Text size="3" color="gray">
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <FileText className="w-12 h-12 text-gray-500" />
+              <p className="text-gray-600 text-lg">
                 Select a note or create a new one
-              </Text>
-              <Button onClick={handleCreateNote}>
-                <PlusIcon /> Create New Note
-              </Button>
-            </Flex>
+              </p>
+              <button
+                onClick={handleCreateNote}
+                className="flex items-center gap-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                <Plus className="w-4 h-4" /> Create New Note
+              </button>
+            </div>
           )}
-        </Card>
-      </Flex>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 };
 

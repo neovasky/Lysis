@@ -1,35 +1,19 @@
 /**
  * File: src/pages/Alerts/AlertsPage.tsx
- * Description: Alerts page component using Radix UI Themes
+ * Description: Alerts page component using shadcn styling with Tailwind CSS
  */
-
-import { Container, Card, Heading, Text } from "@radix-ui/themes";
-import { styled } from "@stitches/react";
-
-// Styled wrapper for page padding
-const PageWrapper = styled("div", {
-  padding: "24px",
-});
 
 export const AlertsPage = () => {
   return (
-    <PageWrapper>
-      <Container>
-        <Card
-          size="2"
-          style={{
-            backgroundColor: "var(--gray-2)",
-            marginBottom: "24px",
-          }}
-        >
-          <Heading as="h1" size="6" weight="bold" mb="2">
-            Alerts
-          </Heading>
-          <Text color="gray" size="3">
+    <div className="p-6">
+      <div className="container mx-auto p-4 max-w-4xl">
+        <div className="bg-gray-200 p-6 mb-6 rounded shadow">
+          <h1 className="text-3xl font-bold mb-2">Alerts</h1>
+          <p className="text-gray-700 text-base">
             This feature is coming soon.
-          </Text>
-        </Card>
-      </Container>
-    </PageWrapper>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };

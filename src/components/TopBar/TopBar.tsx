@@ -5,7 +5,8 @@
 
 import { Flex, Box, Text, IconButton } from "@radix-ui/themes";
 import { NotificationsMenu } from "../NotificationsMenu/NotificationsMenu";
-import { ViewVerticalIcon } from "@radix-ui/react-icons";
+// Replace Radix's ViewVerticalIcon with lucide-react's LayoutGrid
+import { LayoutGrid } from "lucide-react";
 
 interface TopBarProps {
   isSidebarOpen: boolean;
@@ -33,7 +34,7 @@ export const TopBar = ({ isSidebarOpen, onSidebarToggle }: TopBarProps) => {
             variant="ghost"
             onClick={() => onSidebarToggle(!isSidebarOpen)}
           >
-            <ViewVerticalIcon width={20} height={20} />
+            <LayoutGrid size={20} />
           </IconButton>
           <Text
             size="5"

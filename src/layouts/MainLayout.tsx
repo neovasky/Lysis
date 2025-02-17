@@ -1,13 +1,12 @@
 /**
  * File: src/layouts/MainLayout.tsx
- * Description: Main application layout with sidebar and top bar
+ * Description: Main application layout with sidebar and top bar, implemented with shadcn styling using Tailwind CSS
  */
 
-import { Box, Container } from "@radix-ui/themes";
 import { Outlet } from "react-router-dom";
+import { useState } from "react";
 import { Sidebar } from "../components/Sidebar/Sidebar";
 import { TopBar } from "../components/TopBar/TopBar";
-import { useState } from "react";
 
 const DRAWER_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
@@ -16,36 +15,26 @@ export const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <Box
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        backgroundColor: "var(--color-pageBackground)",
-      }}
-    >
+    <div className="flex min-h-screen bg-background">
       <TopBar
         isSidebarOpen={isSidebarOpen}
         onSidebarToggle={setIsSidebarOpen}
       />
       <Sidebar isOpen={isSidebarOpen} />
-      <Box
+      <div
+        className="flex-grow transition-all duration-200 ease-in-out mt-16 overflow-hidden"
         style={{
-          flexGrow: 1,
           width: `calc(100% - ${
             isSidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH
           }px)`,
           marginLeft: `${isSidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH}px`,
-          transition: "margin 0.2s ease-in-out, width 0.2s ease-in-out",
-          marginTop: "64px",
           minHeight: "calc(100vh - 64px)",
-          backgroundColor: "var(--color-pageBackground)",
-          overflow: "hidden",
         }}
       >
-        <Container p="4" size="4">
+        <div className="container mx-auto p-4 max-w-7xl">
           <Outlet />
-        </Container>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 };

@@ -1,33 +1,32 @@
 import { useState, useEffect } from "react";
 import {
-  Box,
-  Card,
-  Text,
-  Heading,
-  Flex,
-  Button,
-  Badge,
-} from "@radix-ui/themes";
-import {
-  GridIcon,
-  ListBulletIcon,
-  UploadIcon,
-  ReloadIcon,
-} from "@radix-ui/react-icons";
-import { FilesList } from "./FilesList";
-import { FilesGrid } from "./FilesGrid";
-import { FileUploadDialog } from "./FileUploadDialog";
-import { useFiles } from "./hooks/useFiles";
+  Upload,
+  LayoutGrid,
+  List as ListIcon,
+  RefreshCw,
+  ChevronLeft,
+} from "lucide-react";
+import FileUploadDialog from "../../components/Files/FileUploadDialog";
+import FilesList from "../../components/Files/FilesList";
+import FilesGrid from "../../components/Files/FilesGrid";
+import { useFiles } from "../../components/Files/hooks/useFiles";
+import FileService from "../../services/fileService";
+import { FILE_CONSTANTS } from "../../services/constants";
+
+// Import custom CSS if needed
+import "../../components/Files/dialogstyles.css";
 
 type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
 
+const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
+
 export const FilesLayout = () => {
+  const { files, loading, error, loadFiles, refreshFiles, currentDirectory } =
+    useFiles();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FileFilter>("all");
-  const { files, loading, error, loadFiles, refreshFiles, currentDirectory } =
-    useFiles();
 
   // Load initial files
   useEffect(() => {
@@ -56,120 +55,124 @@ export const FilesLayout = () => {
   };
 
   return (
-    <Box p="4">
+    <div className="p-4">
       {/* Header */}
-      <Card size="3" mb="4">
-        <Flex justify="between" align="center">
-          <Box>
-            <Heading size="5" weight="bold" mb="2">
-              Files
-            </Heading>
-            <Text color="gray" size="2">
-              {currentDirectory ? (
-                <>Current directory: {currentDirectory}</>
-              ) : (
-                "Select a directory to view files"
-              )}
-            </Text>
+      <div className="bg-white shadow rounded p-6 mb-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Files</h2>
+            <p className="text-sm text-gray-600">
+              {currentDirectory
+                ? `Current directory: ${currentDirectory}`
+                : "Select a directory to view files"}
+            </p>
             {error && (
-              <Text color="red" size="2" mt="2">
-                Error: {error}
-              </Text>
+              <p className="mt-2 text-sm text-red-600">Error: {error}</p>
             )}
-          </Box>
-          <Flex gap="2">
-            {/* Refresh Button */}
-            <Button
-              variant="soft"
+          </div>
+          <div className="flex gap-2">
+            <button
               onClick={handleRefresh}
               disabled={loading || !currentDirectory}
+              className="flex items-center gap-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
             >
-              <ReloadIcon />
+              <RefreshCw size={16} />
               Refresh
-            </Button>
-
-            {/* View Toggle */}
-            <Flex gap="1">
-              <Button
-                variant={viewMode === "list" ? "solid" : "surface"}
-                onClick={() => setViewMode("list")}
-              >
-                <ListBulletIcon />
-                List
-              </Button>
-              <Button
-                variant={viewMode === "grid" ? "solid" : "surface"}
-                onClick={() => setViewMode("grid")}
-              >
-                <GridIcon />
-                Grid
-              </Button>
-            </Flex>
-
-            {/* Upload Button */}
-            <Button onClick={() => setIsUploadOpen(true)}>
-              <UploadIcon />
-              Upload Files
-            </Button>
-          </Flex>
-        </Flex>
-      </Card>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Quick Filters */}
-      <Card mb="4">
-        <Flex gap="2" p="2">
-          <Badge
-            variant={activeFilter === "all" ? "solid" : "surface"}
-            onClick={() => setActiveFilter("all")}
-            style={{ cursor: "pointer" }}
+      <div className="bg-white shadow rounded p-4 mb-4">
+        <div className="flex gap-2">
+          {(["all", "recent", "pdf", "excel", "word"] as FileFilter[]).map(
+            (filter) => (
+              <span
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`cursor-pointer px-3 py-1 rounded ${
+                  activeFilter === filter
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+              </span>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between px-4 py-3 border-b border-gray-300 bg-gray-100 sticky top-0 z-10 mb-4">
+        {currentDirectory && (
+          <button
+            onClick={() => {
+              FileService.setCurrentDirectory(DEFAULT_BASE_DIRECTORY);
+              localStorage.setItem(LAST_DIRECTORY_KEY, DEFAULT_BASE_DIRECTORY);
+              loadFiles();
+            }}
+            className="mr-4 p-2 rounded hover:bg-gray-200"
           >
-            All Files
-          </Badge>
-          <Badge
-            variant={activeFilter === "recent" ? "solid" : "surface"}
-            onClick={() => setActiveFilter("recent")}
-            style={{ cursor: "pointer" }}
+            <ChevronLeft size={20} />
+          </button>
+        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="flex items-center gap-1 bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
           >
-            Recent
-          </Badge>
-          <Badge
-            variant={activeFilter === "pdf" ? "solid" : "surface"}
-            onClick={() => setActiveFilter("pdf")}
-            style={{ cursor: "pointer" }}
-          >
-            PDF
-          </Badge>
-          <Badge
-            variant={activeFilter === "excel" ? "solid" : "surface"}
-            onClick={() => setActiveFilter("excel")}
-            style={{ cursor: "pointer" }}
-          >
-            Excel
-          </Badge>
-          <Badge
-            variant={activeFilter === "word" ? "solid" : "surface"}
-            onClick={() => setActiveFilter("word")}
-            style={{ cursor: "pointer" }}
-          >
-            Word
-          </Badge>
-        </Flex>
-      </Card>
+            <Upload size={16} />
+            Upload Files
+          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-2 rounded ${
+                viewMode === "list"
+                  ? "bg-blue-500 text-white"
+                  : "bg-transparent text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <ListIcon size={20} />
+              List
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-2 rounded ${
+                viewMode === "grid"
+                  ? "bg-blue-500 text-white"
+                  : "bg-transparent text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <LayoutGrid size={20} />
+              Grid
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Files Display */}
-      <Card>
+      <div className="bg-white shadow rounded p-4">
         {loading ? (
-          <Flex align="center" justify="center" p="6">
-            <Text size="2" color="gray">
-              Loading files...
-            </Text>
-          </Flex>
+          <div className="flex items-center justify-center p-6">
+            <p className="text-sm text-gray-600">Loading files...</p>
+          </div>
         ) : viewMode === "list" ? (
-          <FilesList files={filteredFiles} />
+          <FilesList
+            files={filteredFiles}
+            onDelete={undefined}
+            onFileOpen={undefined}
+          />
         ) : (
-          <FilesGrid files={filteredFiles} />
+          <FilesGrid
+            files={filteredFiles}
+            onDelete={undefined}
+            onFileOpen={undefined}
+          />
         )}
-      </Card>
+      </div>
 
       {/* Upload Dialog */}
       <FileUploadDialog
@@ -177,6 +180,8 @@ export const FilesLayout = () => {
         onOpenChange={setIsUploadOpen}
         onUploadComplete={refreshFiles}
       />
-    </Box>
+    </div>
   );
 };
+
+export default FilesLayout;

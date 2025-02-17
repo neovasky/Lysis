@@ -1,15 +1,13 @@
-import { useCallback } from "react";
-import { Table, Button, Text, Box, Flex, DropdownMenu } from "@radix-ui/themes";
+import React, { useState, useCallback } from "react";
 import {
-  DotsVerticalIcon,
-  FileIcon,
-  FileTextIcon,
-  TableIcon,
-  Component1Icon,
-  TrashIcon,
-  DownloadIcon,
-  Pencil1Icon,
-} from "@radix-ui/react-icons";
+  FileText,
+  Table,
+  File,
+  Trash,
+  Download,
+  Pencil,
+  MoreVertical,
+} from "lucide-react";
 import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import { useFiles } from "./hooks/useFiles";
@@ -20,28 +18,28 @@ export interface FilesListProps {
   onDelete?: (folderPath: string) => Promise<void>;
 }
 
-export const FilesList: React.FC<FilesListProps> = ({
+const FilesList: React.FC<FilesListProps> = ({
   files,
   onFileOpen,
   onDelete,
 }) => {
   const { deleteFile } = useFiles();
 
-  // Get file icon based on type
+  // Return file icon based on type
   const getFileIcon = (type: FileMetadata["type"]) => {
     switch (type) {
       case "pdf":
-        return <FileTextIcon width="16" height="16" />;
+        return <FileText className="w-4 h-4" />;
       case "excel":
-        return <TableIcon width="16" height="16" />;
+        return <Table className="w-4 h-4" />;
       case "word":
-        return <Component1Icon width="16" height="16" />;
+        return <File className="w-4 h-4" />;
       default:
-        return <FileIcon width="16" height="16" />;
+        return <File className="w-4 h-4" />;
     }
   };
 
-  // Handle file deletion: use onDelete prop if provided; otherwise fall back.
+  // Handle file deletion
   const handleDelete = useCallback(
     async (file: FileMetadata) => {
       const confirmed = window.confirm(
@@ -67,122 +65,149 @@ export const FilesList: React.FC<FilesListProps> = ({
     [onFileOpen]
   );
 
-  // FileActions component to show dropdown actions including delete.
-  const FileActions = ({ file }: { file: FileMetadata }) => (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        <Button variant="ghost" size="1">
-          <DotsVerticalIcon />
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
-        <DropdownMenu.Item onClick={() => handleFileOpen(file)}>
-          <Flex gap="2" align="center">
-            <FileIcon />
-            <Text>Open</Text>
-          </Flex>
-        </DropdownMenu.Item>
-        <DropdownMenu.Item>
-          <Flex gap="2" align="center">
-            <DownloadIcon />
-            <Text>Download</Text>
-          </Flex>
-        </DropdownMenu.Item>
-        <DropdownMenu.Item>
-          <Flex gap="2" align="center">
-            <Pencil1Icon />
-            <Text>Rename</Text>
-          </Flex>
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item color="red" onClick={() => handleDelete(file)}>
-          <Flex gap="2" align="center">
-            <TrashIcon />
-            <Text>Delete</Text>
-          </Flex>
-        </DropdownMenu.Item>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-  );
+  // Custom dropdown for file actions
+  const FileActions = ({ file }: { file: FileMetadata }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div className="relative">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((prev) => !prev);
+          }}
+          className="p-1 rounded hover:bg-gray-100"
+        >
+          <MoreVertical className="w-4 h-4" />
+        </button>
+        {open && (
+          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow z-10">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleFileOpen(file);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+            >
+              <File className="w-4 h-4" />
+              Open
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("Downloading", file.name);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("Renaming", file.name);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+            >
+              <Pencil className="w-4 h-4" />
+              Rename
+            </button>
+            <div className="border-t border-gray-200"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(file);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm text-red-600"
+            >
+              <Trash className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <Table.Root>
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeaderCell>Name</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>Modified</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>Type</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>Size</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell>Tags</Table.ColumnHeaderCell>
-          <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
+    <table className="min-w-full border-collapse">
+      <thead>
+        <tr className="bg-gray-100">
+          <th className="border px-4 py-2 text-left text-sm font-bold">Name</th>
+          <th className="border px-4 py-2 text-left text-sm font-bold">
+            Modified
+          </th>
+          <th className="border px-4 py-2 text-left text-sm font-bold">Type</th>
+          <th className="border px-4 py-2 text-left text-sm font-bold">Size</th>
+          <th className="border px-4 py-2 text-left text-sm font-bold">Tags</th>
+          <th className="border px-4 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
         {files.length === 0 ? (
-          <Table.Row>
-            <Table.Cell colSpan={6}>
-              <Box p="4">
-                <Text align="center" color="gray">
+          <tr>
+            <td colSpan={6} className="border px-4 py-2">
+              <div className="p-4">
+                <p className="text-center text-sm text-gray-600">
                   No files found
-                </Text>
-              </Box>
-            </Table.Cell>
-          </Table.Row>
+                </p>
+              </div>
+            </td>
+          </tr>
         ) : (
           files.map((file) => (
-            <Table.Row
+            <tr
               key={file.id}
-              style={{ cursor: "pointer" }}
+              className="hover:bg-gray-50 cursor-pointer"
               onClick={() => handleFileOpen(file)}
             >
-              <Table.Cell>
-                <Flex align="center" gap="2">
+              <td className="border px-4 py-2">
+                <div className="flex items-center gap-2">
                   {getFileIcon(file.type)}
-                  <Text>{file.name}</Text>
-                </Flex>
-              </Table.Cell>
-              <Table.Cell>
-                <Text color="gray" size="2">
+                  <span className="text-sm font-medium">{file.name}</span>
+                </div>
+              </td>
+              <td className="border px-4 py-2">
+                <span className="text-xs text-gray-500">
                   {formatDistance(file.lastModified, new Date(), {
                     addSuffix: true,
                   })}
-                </Text>
-              </Table.Cell>
-              <Table.Cell>
-                <Text size="2" style={{ textTransform: "uppercase" }}>
-                  {file.type}
-                </Text>
-              </Table.Cell>
-              <Table.Cell>
-                <Text color="gray" size="2">
-                  {/* Optionally format file size here */}
-                </Text>
-              </Table.Cell>
-              <Table.Cell>
-                <Flex gap="1" wrap="wrap">
+                </span>
+              </td>
+              <td className="border px-4 py-2">
+                <span className="text-xs uppercase">{file.type}</span>
+              </td>
+              <td className="border px-4 py-2">
+                <span className="text-xs text-gray-500">
+                  {/* Size formatting here */}
+                </span>
+              </td>
+              <td className="border px-4 py-2">
+                <div className="flex flex-wrap gap-1">
                   {file.tags?.map((tag) => (
-                    <Text
+                    <span
                       key={tag}
-                      size="1"
-                      style={{
-                        padding: "2px 6px",
-                        backgroundColor: "var(--gray-3)",
-                        borderRadius: "4px",
-                      }}
+                      className="bg-gray-200 text-xs px-2 py-0.5 rounded"
                     >
                       {tag}
-                    </Text>
+                    </span>
                   ))}
-                </Flex>
-              </Table.Cell>
-              <Table.Cell onClick={(e) => e.stopPropagation()}>
+                </div>
+              </td>
+              <td
+                className="border px-4 py-2"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <FileActions file={file} />
-              </Table.Cell>
-            </Table.Row>
+              </td>
+            </tr>
           ))
         )}
-      </Table.Body>
-    </Table.Root>
+      </tbody>
+    </table>
   );
 };
 

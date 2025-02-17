@@ -1,28 +1,13 @@
-/**
- * File: src/pages/Settings/SettingsPage.tsx
- * Description: Application settings configuration page using Radix UI
- */
-
 import { useState } from "react";
 import {
-  Box,
-  Card,
-  Text,
-  Heading,
-  Flex,
-  Button,
-  Switch,
-  Select,
-} from "@radix-ui/themes";
-import {
-  BellIcon,
-  MoonIcon,
-  GlobeIcon,
-  ArchiveIcon,
-  ArrowUpIcon,
-  ClipboardIcon,
-  TrashIcon,
-} from "@radix-ui/react-icons";
+  Bell,
+  Moon,
+  Globe,
+  Archive,
+  ArrowUp,
+  Clipboard,
+  Trash,
+} from "lucide-react";
 
 interface SettingsState {
   notifications: boolean;
@@ -61,27 +46,26 @@ export const SettingsPage = () => {
     autoBackup: true,
     cloudSync: true,
   });
-
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   const settingsList: Setting[] = [
     {
       id: "notifications",
-      icon: <BellIcon width="20" height="20" />,
+      icon: <Bell className="w-5 h-5" />,
       title: "Notifications",
       description: "Enable alerts for market events and updates",
       type: "switch",
     },
     {
       id: "darkMode",
-      icon: <MoonIcon width="20" height="20" />,
+      icon: <Moon className="w-5 h-5" />,
       title: "Dark Mode",
       description: "Use dark theme across the application",
       type: "switch",
     },
     {
       id: "language",
-      icon: <GlobeIcon width="20" height="20" />,
+      icon: <Globe className="w-5 h-5" />,
       title: "Language",
       description: "Select your preferred language",
       type: "select",
@@ -93,14 +77,14 @@ export const SettingsPage = () => {
     },
     {
       id: "autoBackup",
-      icon: <ArchiveIcon width="20" height="20" />,
+      icon: <Archive className="w-5 h-5" />,
       title: "Auto Backup",
       description: "Automatically backup your data daily",
       type: "switch",
     },
     {
       id: "cloudSync",
-      icon: <ArrowUpIcon width="20" height="20" />,
+      icon: <ArrowUp className="w-5 h-5" />,
       title: "Cloud Sync",
       description: "Keep your data synchronized across devices",
       type: "switch",
@@ -111,10 +95,7 @@ export const SettingsPage = () => {
     setting: keyof SettingsState,
     value: boolean | string
   ) => {
-    setSettings((prev) => ({
-      ...prev,
-      [setting]: value,
-    }));
+    setSettings((prev) => ({ ...prev, [setting]: value }));
     setShowSaveSuccess(true);
     setTimeout(() => setShowSaveSuccess(false), 3000);
   };
@@ -129,122 +110,135 @@ export const SettingsPage = () => {
     console.log("Deleting data...");
   };
 
+  // Custom switch control
+  const SwitchControl = ({
+    checked,
+    onChange,
+  }: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+  }) => (
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only"
+      />
+      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:bg-gray-700"></div>
+      <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+    </label>
+  );
+
+  // Custom select control
+  const SelectControl = ({
+    value,
+    onChange,
+    options,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    options: { value: string; label: string }[];
+  }) => (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="p-2 border border-gray-300 rounded"
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+
   const renderSettingControl = (setting: Setting) => {
     if (setting.type === "switch") {
       return (
-        <Switch
+        <SwitchControl
           checked={settings[setting.id] as boolean}
-          onCheckedChange={(checked) =>
-            handleSettingChange(setting.id, checked)
-          }
+          onChange={(checked) => handleSettingChange(setting.id, checked)}
         />
       );
     }
-
     return (
-      <Select.Root
+      <SelectControl
         value={settings[setting.id] as string}
-        onValueChange={(value) => handleSettingChange(setting.id, value)}
-      >
-        <Select.Trigger />
-        <Select.Content>
-          {setting.options.map((option) => (
-            <Select.Item key={option.value} value={option.value}>
-              {option.label}
-            </Select.Item>
-          ))}
-        </Select.Content>
-      </Select.Root>
+        onChange={(value) => handleSettingChange(setting.id, value)}
+        options={setting.options}
+      />
     );
   };
 
   const SettingRow = ({ setting }: { setting: Setting }) => (
-    <Box>
-      <Flex justify="between" align="center" py="3">
-        <Flex gap="3" align="start">
-          <Box style={{ color: "var(--accent-9)" }}>{setting.icon}</Box>
-          <Box>
-            <Text weight="bold">{setting.title}</Text>
-            <Text size="2" color="gray">
-              {setting.description}
-            </Text>
-          </Box>
-        </Flex>
-        {renderSettingControl(setting)}
-      </Flex>
-    </Box>
+    <div className="py-3">
+      <div className="flex justify-between items-center">
+        <div className="flex items-start gap-3">
+          <div className="text-blue-500">{setting.icon}</div>
+          <div>
+            <p className="font-bold">{setting.title}</p>
+            <p className="text-sm text-gray-600">{setting.description}</p>
+          </div>
+        </div>
+        <div>{renderSettingControl(setting)}</div>
+      </div>
+      <div className="h-px bg-gray-300" />
+    </div>
   );
 
   return (
-    <Box style={{ padding: "24px" }}>
+    <div className="p-6">
       {/* Header */}
-      <Card size="3" style={{ marginBottom: "24px" }}>
-        <Heading size="5" weight="bold" mb="2">
-          Settings
-        </Heading>
-        <Text color="gray" size="2">
+      <div className="bg-white shadow rounded p-6 mb-6">
+        <h2 className="text-2xl font-bold mb-2">Settings</h2>
+        <p className="text-sm text-gray-600">
           Customize your application preferences
-        </Text>
-      </Card>
+        </p>
+      </div>
 
       {/* Settings List */}
-      <Card size="3" style={{ marginBottom: "24px" }}>
-        <Flex direction="column" gap="3">
-          {settingsList.map((setting, index) => (
-            <Box key={setting.id}>
-              <SettingRow setting={setting} />
-              {index < settingsList.length - 1 && (
-                <Box style={{ height: "1px", background: "var(--gray-5)" }} />
-              )}
-            </Box>
+      <div className="bg-white shadow rounded p-6 mb-6">
+        <div className="flex flex-col gap-3">
+          {settingsList.map((setting) => (
+            <SettingRow key={setting.id} setting={setting} />
           ))}
-        </Flex>
-      </Card>
+        </div>
+      </div>
 
       {/* Data Management */}
-      <Card size="3">
-        <Heading size="4" mb="4">
-          Data Management
-        </Heading>
-        <Flex direction="column" gap="4">
-          <Box>
-            <Text size="2" color="gray" mb="2">
-              Export your data
-            </Text>
-            <Button variant="soft" onClick={handleDataExport}>
-              <ClipboardIcon />
+      <div className="bg-white shadow rounded p-6">
+        <h3 className="text-xl font-bold mb-4">Data Management</h3>
+        <div className="flex flex-col gap-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-2">Export your data</p>
+            <button
+              onClick={handleDataExport}
+              className="flex items-center gap-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              <Clipboard className="w-4 h-4" />
               Export Data
-            </Button>
-          </Box>
-          <Box>
-            <Text size="2" color="gray" mb="2">
-              Delete all data
-            </Text>
-            <Button variant="soft" color="red" onClick={handleDataDelete}>
-              <TrashIcon />
+            </button>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600 mb-2">Delete all data</p>
+            <button
+              onClick={handleDataDelete}
+              className="flex items-center gap-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              <Trash className="w-4 h-4" />
               Delete All Data
-            </Button>
-          </Box>
-        </Flex>
-      </Card>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Success Toast */}
       {showSaveSuccess && (
-        <Box
-          style={{
-            position: "fixed",
-            bottom: "24px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            backgroundColor: "var(--green-3)",
-            padding: "12px 24px",
-            borderRadius: "6px",
-            border: "1px solid var(--green-6)",
-          }}
-        >
-          <Text color="green">Settings saved successfully</Text>
-        </Box>
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-green-200 border border-green-400 px-6 py-3 rounded">
+          <p className="text-green-700 text-sm">Settings saved successfully</p>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };

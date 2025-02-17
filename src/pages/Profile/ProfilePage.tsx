@@ -1,26 +1,6 @@
-/**
- * File: src/pages/Profile/ProfilePage.tsx
- * Description: User profile page component using Radix UI
- */
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Card,
-  Flex,
-  Text,
-  Heading,
-  Avatar,
-  Button,
-} from "@radix-ui/themes";
-import {
-  EnvelopeClosedIcon,
-  PersonIcon,
-  FileTextIcon,
-  Pencil1Icon,
-  ExitIcon,
-} from "@radix-ui/react-icons";
+import { Mail, User, FileText, Pencil, LogOut } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 
 interface ProfileFormData {
@@ -86,216 +66,146 @@ export const ProfilePage = () => {
   };
 
   return (
-    <Box style={{ padding: "24px" }}>
+    <div className="p-6">
       {/* Header */}
-      <Card size="3" style={{ marginBottom: "24px" }}>
-        <Heading size="6" weight="bold" mb="2">
-          Profile
-        </Heading>
-        <Text color="gray" size="2">
+      <div className="bg-white shadow rounded p-6 mb-6">
+        <h2 className="text-xl font-bold mb-2">Profile</h2>
+        <p className="text-gray-600 text-sm">
           Manage your personal information and preferences
-        </Text>
-      </Card>
+        </p>
+      </div>
 
       {/* Profile Content */}
-      <Card size="3" style={{ marginBottom: "24px" }}>
-        <Flex direction="column" gap="6">
-          {/* Profile Header */}
-          <Flex
-            direction={{ initial: "column", sm: "row" }}
-            gap="4"
-            align={{ initial: "center", sm: "start" }}
-          >
-            <Avatar
-              size="7"
-              fallback={`${profileData.firstName[0]}${profileData.lastName[0]}`}
-              radius="full"
-            />
-
-            <Box style={{ flex: 1 }}>
-              {isEditing ? (
-                <Flex direction="column" gap="3">
-                  <Flex gap="3">
-                    <input
-                      placeholder="First Name"
-                      value={profileData.firstName}
-                      onChange={handleChange("firstName")}
-                      className="rt-TextFieldInput"
-                      style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        border: "1px solid var(--gray-5)",
-                        borderRadius: "6px",
-                        backgroundColor: "var(--color-panel)",
-                        color: "var(--gray-12)",
-                      }}
-                    />
-                    <input
-                      placeholder="Last Name"
-                      value={profileData.lastName}
-                      onChange={handleChange("lastName")}
-                      className="rt-TextFieldInput"
-                      style={{
-                        flex: 1,
-                        padding: "8px 12px",
-                        border: "1px solid var(--gray-5)",
-                        borderRadius: "6px",
-                        backgroundColor: "var(--color-panel)",
-                        color: "var(--gray-12)",
-                      }}
-                    />
-                  </Flex>
-                  <Button onClick={handleSave}>Save Changes</Button>
-                </Flex>
-              ) : (
-                <>
-                  <Heading size="5" mb="2">
-                    {`${profileData.firstName} ${profileData.lastName}`}
-                  </Heading>
-                  <Button variant="soft" onClick={handleEdit}>
-                    <Pencil1Icon width="16" height="16" />
-                    Edit Profile
-                  </Button>
-                </>
-              )}
-            </Box>
-          </Flex>
-
-          {error && (
-            <Box
-              style={{
-                padding: "12px",
-                borderRadius: "6px",
-                backgroundColor: "var(--red-3)",
-                border: "1px solid var(--red-6)",
-              }}
-            >
-              <Text color="red" size="2">
-                {error}
-              </Text>
-            </Box>
-          )}
-
-          {success && (
-            <Box
-              style={{
-                padding: "12px",
-                borderRadius: "6px",
-                backgroundColor: "var(--green-3)",
-                border: "1px solid var(--green-6)",
-              }}
-            >
-              <Text color="green" size="2">
-                {success}
-              </Text>
-            </Box>
-          )}
-
-          <Box style={{ height: "1px", background: "var(--gray-5)" }} />
+      <div className="bg-white shadow rounded p-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4">
+          {/* Avatar */}
+          <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center text-xl font-bold mb-4 sm:mb-0">
+            {profileData.firstName[0]}
+            {profileData.lastName[0]}
+          </div>
 
           {/* Profile Details */}
-          <Flex direction="column" gap="4">
-            <Box>
-              <Flex align="center" gap="2" mb="2">
-                <EnvelopeClosedIcon width="16" height="16" />
-                <Text size="2" color="gray">
-                  Email
-                </Text>
-              </Flex>
-              {isEditing ? (
-                <input
-                  value={profileData.email}
-                  onChange={handleChange("email")}
-                  className="rt-TextFieldInput"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid var(--gray-5)",
-                    borderRadius: "6px",
-                    backgroundColor: "var(--color-panel)",
-                    color: "var(--gray-12)",
-                  }}
-                />
-              ) : (
-                <Text>{profileData.email}</Text>
-              )}
-            </Box>
+          <div className="flex-1">
+            {isEditing ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <input
+                    placeholder="First Name"
+                    value={profileData.firstName}
+                    onChange={handleChange("firstName")}
+                    className="flex-1 p-2 border border-gray-300 rounded bg-gray-100 text-gray-800"
+                  />
+                  <input
+                    placeholder="Last Name"
+                    value={profileData.lastName}
+                    onChange={handleChange("lastName")}
+                    className="flex-1 p-2 border border-gray-300 rounded bg-gray-100 text-gray-800"
+                  />
+                </div>
+                <button
+                  onClick={handleSave}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Save Changes
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-lg font-bold mb-2">
+                  {profileData.firstName} {profileData.lastName}
+                </h3>
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit Profile
+                </button>
+              </>
+            )}
+          </div>
+        </div>
 
-            <Box>
-              <Flex align="center" gap="2" mb="2">
-                <PersonIcon width="16" height="16" />
-                <Text size="2" color="gray">
-                  Company
-                </Text>
-              </Flex>
-              {isEditing ? (
-                <input
-                  value={profileData.company}
-                  onChange={handleChange("company")}
-                  className="rt-TextFieldInput"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid var(--gray-5)",
-                    borderRadius: "6px",
-                    backgroundColor: "var(--color-panel)",
-                    color: "var(--gray-12)",
-                  }}
-                />
-              ) : (
-                <Text>{profileData.company}</Text>
-              )}
-            </Box>
+        {error && (
+          <div className="mt-4 p-3 rounded bg-red-200 border border-red-400">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
 
-            <Box>
-              <Flex align="center" gap="2" mb="2">
-                <FileTextIcon width="16" height="16" />
-                <Text size="2" color="gray">
-                  Bio
-                </Text>
-              </Flex>
-              {isEditing ? (
-                <input
-                  value={profileData.bio}
-                  onChange={handleChange("bio")}
-                  className="rt-TextFieldInput"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid var(--gray-5)",
-                    borderRadius: "6px",
-                    backgroundColor: "var(--color-panel)",
-                    color: "var(--gray-12)",
-                  }}
-                />
-              ) : (
-                <Text>{profileData.bio}</Text>
-              )}
-            </Box>
-          </Flex>
-        </Flex>
-      </Card>
+        {success && (
+          <div className="mt-4 p-3 rounded bg-green-200 border border-green-400">
+            <p className="text-green-600 text-sm">{success}</p>
+          </div>
+        )}
+
+        <hr className="my-6 border-gray-300" />
+
+        {/* Profile Details */}
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Mail className="w-4 h-4" />
+              <span className="text-sm text-gray-600">Email</span>
+            </div>
+            {isEditing ? (
+              <input
+                value={profileData.email}
+                onChange={handleChange("email")}
+                className="w-full p-2 border border-gray-300 rounded bg-gray-100 text-gray-800 text-sm"
+              />
+            ) : (
+              <p>{profileData.email}</p>
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <User className="w-4 h-4" />
+              <span className="text-sm text-gray-600">Company</span>
+            </div>
+            {isEditing ? (
+              <input
+                value={profileData.company}
+                onChange={handleChange("company")}
+                className="w-full p-2 border border-gray-300 rounded bg-gray-100 text-gray-800 text-sm"
+              />
+            ) : (
+              <p>{profileData.company}</p>
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4" />
+              <span className="text-sm text-gray-600">Bio</span>
+            </div>
+            {isEditing ? (
+              <input
+                value={profileData.bio}
+                onChange={handleChange("bio")}
+                className="w-full p-2 border border-gray-300 rounded bg-gray-100 text-gray-800 text-sm"
+              />
+            ) : (
+              <p>{profileData.bio}</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Logout Section */}
-      <Card size="3">
-        <Flex direction="column" gap="2">
-          <Heading size="3" weight="medium">
-            Account
-          </Heading>
-          <Text size="2" color="gray">
-            Sign out of your account
-          </Text>
-          <Button
-            variant="soft"
-            color="red"
+      <div className="bg-white shadow rounded p-6">
+        <div className="flex flex-col gap-2">
+          <h4 className="text-lg font-medium">Account</h4>
+          <p className="text-sm text-gray-600">Sign out of your account</p>
+          <button
             onClick={handleLogout}
-            style={{ width: "fit-content" }}
+            className="flex items-center gap-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-fit"
           >
-            <ExitIcon />
+            <LogOut className="w-4 h-4" />
             Logout
-          </Button>
-        </Flex>
-      </Card>
-    </Box>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

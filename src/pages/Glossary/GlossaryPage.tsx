@@ -1,27 +1,16 @@
 /**
  * File: src/pages/Glossary/GlossaryPage.tsx
- * Description: Main glossary page component (converted from MUI to Radix UI)
+ * Description: Main glossary page component using shadcn styling with Tailwind CSS and lucide-react icons
  */
-
 import { useState, useCallback, useEffect } from "react";
 import {
-  Box,
-  Card,
-  Text,
-  Heading,
-  Flex,
-  Button,
-  IconButton,
-  ScrollArea,
-} from "@radix-ui/themes";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  Cross2Icon,
-  MagnifyingGlassIcon,
-  BookmarkIcon,
-  ReaderIcon,
-} from "@radix-ui/react-icons";
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Search,
+  Bookmark,
+  BookOpen,
+} from "lucide-react";
 import { terms } from "./data/terms";
 import { GlossaryTerm, Filter } from "./types";
 
@@ -36,32 +25,32 @@ export const GlossaryPage = () => {
   const [openTerms, setOpenTerms] = useState<GlossaryTerm[]>([]);
   const [activeTermIndex, setActiveTermIndex] = useState<number>(0);
 
-  // Define available filters with Radix icons (using ReaderIcon as a placeholder)
+  // Define available filters using lucide-react icons
   const availableFilters: Filter[] = [
     {
       id: "bookmarked",
       label: "Bookmarked",
-      icon: <BookmarkIcon style={{ fontSize: "16px" }} />,
+      icon: <Bookmark className="w-4 h-4" />,
     },
     {
       id: "ratios",
       label: "Financial Ratios",
-      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
+      icon: <BookOpen className="w-4 h-4" />,
     },
     {
       id: "market",
       label: "Market Analysis",
-      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
+      icon: <BookOpen className="w-4 h-4" />,
     },
     {
       id: "fundamentals",
       label: "Fundamentals",
-      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
+      icon: <BookOpen className="w-4 h-4" />,
     },
     {
       id: "accounting",
       label: "Accounting",
-      icon: <ReaderIcon style={{ fontSize: "16px" }} />,
+      icon: <BookOpen className="w-4 h-4" />,
     },
   ];
 
@@ -78,14 +67,11 @@ export const GlossaryPage = () => {
   };
 
   const filteredTerms = terms.filter((term) => {
-    // Search filter
     const matchesSearch =
       term.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
       term.shortDefinition.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (activeFilters.size === 0) {
-      return matchesSearch;
-    }
+    if (activeFilters.size === 0) return matchesSearch;
 
     const matchesBookmark = activeFilters.has("bookmarked")
       ? bookmarkedTerms.has(term.id)
@@ -137,26 +123,25 @@ export const GlossaryPage = () => {
 
   const renderLinkedDefinition = useCallback(
     (text: string, linkedTerms?: { term: string; definition: string }[]) => {
-      if (!linkedTerms) return <Text>{text}</Text>;
+      if (!linkedTerms) return <span>{text}</span>;
 
       let result = text;
       linkedTerms.forEach(({ term, definition }) => {
         const regex = new RegExp(`\\b${term}\\b`, "gi");
         result = result.replace(
           regex,
-          `<span class="linked-term" title="${definition}" style="color: var(--accent-9); cursor: pointer;">${term}</span>`
+          `<span class="linked-term text-accent-500 cursor-pointer" title="${definition}">${term}</span>`
         );
       });
 
       return (
-        <Text
-          as="span"
+        <span
           dangerouslySetInnerHTML={{ __html: result }}
           onClick={(e) => {
             const target = e.target as HTMLElement;
             if (target.classList.contains("linked-term")) {
-              const term = target.textContent;
-              if (term) handleRelatedTermClick(term);
+              const clickedTerm = target.textContent;
+              if (clickedTerm) handleRelatedTermClick(clickedTerm);
             }
           }}
         />
@@ -191,404 +176,258 @@ export const GlossaryPage = () => {
   };
 
   return (
-    <Flex style={{ gap: "16px", height: "calc(100vh - 100px)" }}>
+    <div className="flex gap-4 h-[calc(100vh-100px)]">
       {/* Terms List Section */}
-      <Card
-        style={{
-          width: "320px",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Flex style={{ padding: "16px", flexDirection: "column", gap: "16px" }}>
+      <div className="bg-white shadow rounded flex flex-col w-[320px]">
+        <div className="p-4 flex flex-col gap-4">
           {/* Search Field */}
-          <Flex
-            style={{
-              alignItems: "center",
-              border: "1px solid var(--gray-5)",
-              borderRadius: "4px",
-              padding: "8px",
-            }}
-          >
-            <MagnifyingGlassIcon
-              style={{ marginRight: "8px", color: "var(--gray-12)" }}
-            />
+          <div className="flex items-center border border-gray-300 rounded p-2">
+            <Search className="w-5 h-5 text-gray-500 mr-2" />
             <input
+              type="text"
               placeholder="Search terms..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                flex: 1,
-                border: "none",
-                outline: "none",
-                backgroundColor: "transparent",
-                color: "var(--gray-12)",
-              }}
+              className="flex-1 border-none outline-none bg-transparent text-gray-800"
             />
-          </Flex>
+          </div>
 
           {/* Filters Buttons */}
-          <Flex style={{ gap: "8px" }}>
-            <Button
-              variant="outline"
+          <div className="flex gap-2">
+            <button
               onClick={() => setShowFilters(!showFilters)}
-              style={{ height: "36px" }}
+              className="flex items-center gap-1 border border-gray-300 rounded px-3 py-1 text-sm"
             >
-              <ReaderIcon style={{ marginRight: "4px" }} />
+              <BookOpen className="w-4 h-4" />
               Filters {activeFilters.size > 0 ? `(${activeFilters.size})` : ""}
-            </Button>
+            </button>
             {activeFilters.size > 0 && (
-              <Button
+              <button
                 onClick={() => {
                   setActiveFilters(new Set());
                   setShowFilters(false);
                 }}
-                style={{ height: "36px" }}
+                className="border border-gray-300 rounded px-3 py-1 text-sm"
               >
                 Clear
-              </Button>
+              </button>
             )}
-          </Flex>
+          </div>
 
           {/* Filters Collapse */}
           {showFilters && (
-            <Card
-              variant="classic"
-              style={{
-                marginTop: "8px",
-                padding: "16px",
-                backgroundColor: "rgba(144,202,249,0.04)",
-                border: "1px solid var(--gray-5)",
-              }}
-            >
-              <Flex style={{ flexDirection: "column", gap: "16px" }}>
-                <Text size="2" style={{ color: "var(--gray-12)" }}>
-                  Select filters
-                </Text>
-                <Flex style={{ flexWrap: "wrap", gap: "8px" }}>
-                  {availableFilters.map((filter) => (
-                    <Button
-                      key={filter.id}
-                      onClick={() => toggleFilter(filter.id)}
-                      variant={
-                        activeFilters.has(filter.id) ? "solid" : "outline"
-                      }
-                      style={{
-                        borderColor: "var(--gray-5)",
-                        backgroundColor: activeFilters.has(filter.id)
-                          ? "var(--accent-9)"
-                          : undefined,
-                      }}
-                    >
-                      {filter.icon}
-                      {filter.label}
-                    </Button>
-                  ))}
-                </Flex>
-              </Flex>
-            </Card>
+            <div className="bg-white border border-gray-300 rounded p-4 mt-2">
+              <p className="text-sm text-gray-800 mb-4">Select filters</p>
+              <div className="flex flex-wrap gap-2">
+                {availableFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => toggleFilter(filter.id)}
+                    className={`flex items-center gap-1 px-3 py-1 rounded border border-gray-300 text-sm ${
+                      activeFilters.has(filter.id)
+                        ? "bg-accent-500 text-white"
+                        : "bg-transparent text-gray-700"
+                    }`}
+                  >
+                    {filter.icon}
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-        </Flex>
+        </div>
 
         {/* Terms List */}
-        <ScrollArea style={{ flex: 1 }}>
+        <div className="flex-1 overflow-y-auto">
           {filteredTerms.map((term) => (
-            <Flex
+            <div
               key={term.id}
-              style={{
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "8px",
-                borderBottom: "1px solid var(--gray-5)",
-              }}
+              className="flex items-center justify-between p-2 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+              onClick={() => handleTermSelect(term)}
             >
-              <div
-                onClick={() => handleTermSelect(term)}
-                style={{ cursor: "pointer", flex: 1 }}
-              >
-                <Heading size="5">{term.term}</Heading>
-                <Text size="2" style={{ color: "var(--gray-12)" }}>
-                  {term.shortDefinition}
-                </Text>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold">{term.term}</h3>
+                <p className="text-sm text-gray-600">{term.shortDefinition}</p>
               </div>
-              <IconButton
-                onClick={() => toggleBookmark(term.id)}
-                style={{ marginRight: "8px" }}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleBookmark(term.id);
+                }}
+                className="p-1"
               >
-                {bookmarkedTerms.has(term.id) ? (
-                  <BookmarkIcon style={{ color: "var(--accent-9)" }} />
-                ) : (
-                  <BookmarkIcon />
-                )}
-              </IconButton>
-            </Flex>
+                <Bookmark
+                  className={`w-5 h-5 ${
+                    bookmarkedTerms.has(term.id)
+                      ? "text-accent-500"
+                      : "text-gray-500"
+                  }`}
+                />
+              </button>
+            </div>
           ))}
-        </ScrollArea>
-      </Card>
+        </div>
+      </div>
 
       {/* Term Details Section */}
-      <Flex
-        style={{ flex: 1, gap: "16px", overflowX: "auto", padding: "16px" }}
-      >
+      <div className="flex-1 overflow-x-auto p-4">
         {openTerms.length > 0 ? (
-          <Card
-            style={{
-              flex: 1,
-              padding: "24px",
-              minWidth: "400px",
-              maxWidth: "600px",
-              overflow: "auto",
-              position: "relative",
-            }}
-          >
-            <Flex
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "16px",
-              }}
-            >
-              <Flex
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <IconButton
-                  onClick={() => {
-                    if (activeTermIndex > 0)
-                      setActiveTermIndex(activeTermIndex - 1);
-                  }}
+          <div className="bg-white shadow rounded p-6 min-w-[400px] max-w-[600px] relative">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    activeTermIndex > 0 &&
+                    setActiveTermIndex(activeTermIndex - 1)
+                  }
                   disabled={activeTermIndex === 0}
+                  className="p-2 rounded disabled:opacity-50"
                 >
-                  <ChevronLeftIcon />
-                </IconButton>
-                <Heading size="4">{openTerms[activeTermIndex].term}</Heading>
-                <IconButton
-                  onClick={() => {
-                    if (activeTermIndex < openTerms.length - 1)
-                      setActiveTermIndex(activeTermIndex + 1);
-                  }}
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-lg font-semibold">
+                  {openTerms[activeTermIndex].term}
+                </h2>
+                <button
+                  onClick={() =>
+                    activeTermIndex < openTerms.length - 1 &&
+                    setActiveTermIndex(activeTermIndex + 1)
+                  }
                   disabled={activeTermIndex === openTerms.length - 1}
+                  className="p-2 rounded disabled:opacity-50"
                 >
-                  <ChevronRightIcon />
-                </IconButton>
-              </Flex>
-              <IconButton onClick={handleCloseTerm}>
-                <Cross2Icon />
-              </IconButton>
-            </Flex>
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+              <button onClick={handleCloseTerm} className="p-2">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             {/* Definition Section */}
-            <Box style={{ marginBottom: "16px" }}>
-              <Heading
-                size="3"
-                style={{ marginBottom: "8px", color: "var(--gray-12)" }}
-              >
+            <div className="mb-4">
+              <h3 className="text-base font-semibold mb-2 text-gray-800">
                 Definition
-              </Heading>
-              {renderLinkedDefinition(
-                openTerms[activeTermIndex].fullDefinition,
-                openTerms[activeTermIndex].linkedTerms
-              )}
-            </Box>
+              </h3>
+              <div className="text-sm text-gray-700">
+                {renderLinkedDefinition(
+                  openTerms[activeTermIndex].fullDefinition,
+                  openTerms[activeTermIndex].linkedTerms
+                )}
+              </div>
+            </div>
 
             {/* Formula Section */}
             {openTerms[activeTermIndex].formula && (
-              <Box style={{ marginBottom: "16px" }}>
-                <Heading
-                  size="3"
-                  style={{ marginBottom: "8px", color: "var(--gray-12)" }}
-                >
+              <div className="mb-4">
+                <h3 className="text-base font-semibold mb-2 text-gray-800">
                   Formula
-                </Heading>
-                <Card
-                  variant="surface"
-                  style={{
-                    padding: "16px",
-                    backgroundColor: "rgba(144,202,249,0.04)",
-                    border: "1px solid var(--gray-5)",
-                  }}
-                >
-                  <Text
-                    as="p"
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "1.1rem",
-                      whiteSpace: "pre",
-                      color: "var(--gray-12)",
-                    }}
-                  >
-                    {openTerms[activeTermIndex].formula}
-                  </Text>
-                </Card>
-                <Text style={{ marginTop: "8px", color: "var(--gray-12)" }}>
+                </h3>
+                <div className="bg-gray-100 border border-gray-300 rounded p-4 font-mono text-sm text-gray-800 whitespace-pre">
+                  {openTerms[activeTermIndex].formula}
+                </div>
+                <p className="mt-2 text-sm text-gray-800">
                   {openTerms[activeTermIndex].formulaExplanation}
-                </Text>
-              </Box>
+                </p>
+              </div>
             )}
 
             {/* Related Terms Section */}
             {openTerms[activeTermIndex].relatedTerms && (
-              <Box style={{ marginBottom: "16px" }}>
-                <Heading
-                  size="3"
-                  style={{ marginBottom: "8px", color: "var(--gray-12)" }}
-                >
+              <div className="mb-4">
+                <h3 className="text-base font-semibold mb-2 text-gray-800">
                   Related Terms
-                </Heading>
-                <Flex style={{ flexWrap: "wrap", gap: "8px" }}>
+                </h3>
+                <div className="flex flex-wrap gap-2">
                   {openTerms[activeTermIndex].relatedTerms.map(
                     (relatedTerm) => (
-                      <Card
+                      <div
                         key={relatedTerm}
-                        variant="classic"
                         onClick={() => handleRelatedTermClick(relatedTerm)}
-                        style={{
-                          padding: "4px 8px",
-                          cursor: "pointer",
-                          border: "1px solid var(--gray-5)",
-                        }}
+                        className="cursor-pointer px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
                       >
-                        <Text size="2" style={{ color: "var(--gray-12)" }}>
-                          {relatedTerm}
-                        </Text>
-                      </Card>
+                        <p className="text-sm text-gray-800">{relatedTerm}</p>
+                      </div>
                     )
                   )}
-                </Flex>
-              </Box>
+                </div>
+              </div>
             )}
-          </Card>
+          </div>
         ) : (
           // Welcome Screen Content
-          <Card style={{ flex: 1, padding: "24px", overflow: "auto" }}>
-            <Flex
-              style={{
-                flexDirection: "column",
-                gap: "32px",
-                height: "100%",
-                padding: "32px",
-              }}
-            >
-              <Flex style={{ flexDirection: "column", gap: "16px" }}>
-                <Heading size="4">Financial Glossary</Heading>
-                <Text style={{ color: "var(--gray-12)" }}>
-                  Explore essential financial terms and concepts. Each entry
-                  includes detailed definitions, formulas, and related terms to
-                  help you understand market dynamics better.
-                </Text>
-              </Flex>
-
-              <Flex style={{ flexDirection: "column", gap: "16px" }}>
-                <Heading size="3">Your Bookmarked Terms</Heading>
-                <Flex style={{ flexWrap: "wrap", gap: "12px" }}>
-                  {terms
-                    .filter((term) => bookmarkedTerms.has(term.id))
-                    .map((term) => (
-                      <Card
-                        key={term.id}
-                        variant="classic"
-                        onClick={() => setSelectedTerm(term)}
-                        style={{
-                          padding: "8px 16px",
-                          cursor: "pointer",
-                          backgroundColor: "rgba(144,202,249,0.04)",
-                          border: "1px solid var(--gray-5)",
-                        }}
-                      >
-                        <Text size="2" style={{ color: "var(--gray-12)" }}>
-                          {term.term}
-                        </Text>
-                      </Card>
-                    ))}
-                </Flex>
-              </Flex>
-
-              <Flex style={{ flexDirection: "column", gap: "16px" }}>
-                <Heading size="3">Getting Started</Heading>
-                <Flex style={{ flexDirection: "column", gap: "16px" }}>
-                  <Card
-                    variant="classic"
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "rgba(144,202,249,0.04)",
-                      border: "1px solid var(--gray-5)",
-                    }}
-                  >
-                    <Flex style={{ alignItems: "center", gap: "16px" }}>
-                      <MagnifyingGlassIcon
-                        style={{ color: "var(--accent-9)" }}
-                      />
-                      <Flex style={{ flexDirection: "column" }}>
-                        <Text
-                          size="2"
-                          style={{ fontWeight: 500, color: "var(--gray-12)" }}
-                        >
-                          Search Terms
-                        </Text>
-                        <Text size="2" style={{ color: "var(--gray-12)" }}>
-                          Use the search bar to find specific terms or browse
-                          through the list
-                        </Text>
-                      </Flex>
-                    </Flex>
-                  </Card>
-
-                  <Card
-                    variant="classic"
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "rgba(144,202,249,0.04)",
-                      border: "1px solid var(--gray-5)",
-                    }}
-                  >
-                    <Flex style={{ alignItems: "center", gap: "16px" }}>
-                      <BookmarkIcon style={{ color: "var(--accent-9)" }} />
-                      <Flex style={{ flexDirection: "column" }}>
-                        <Text
-                          size="2"
-                          style={{ fontWeight: 500, color: "var(--gray-12)" }}
-                        >
-                          Bookmark for Quick Access
-                        </Text>
-                        <Text size="2" style={{ color: "var(--gray-12)" }}>
-                          Save important terms for quick reference using the
-                          bookmark icon
-                        </Text>
-                      </Flex>
-                    </Flex>
-                  </Card>
-
-                  <Card
-                    variant="classic"
-                    style={{
-                      padding: "16px",
-                      backgroundColor: "rgba(144,202,249,0.04)",
-                      border: "1px solid var(--gray-5)",
-                    }}
-                  >
-                    <Flex style={{ alignItems: "center", gap: "16px" }}>
-                      <ReaderIcon style={{ color: "var(--accent-9)" }} />
-                      <Flex style={{ flexDirection: "column" }}>
-                        <Text
-                          size="2"
-                          style={{ fontWeight: 500, color: "var(--gray-12)" }}
-                        >
-                          Explore Related Terms
-                        </Text>
-                        <Text size="2" style={{ color: "var(--gray-12)" }}>
-                          Click on highlighted terms in definitions to discover
-                          connected concepts
-                        </Text>
-                      </Flex>
-                    </Flex>
-                  </Card>
-                </Flex>
-              </Flex>
-            </Flex>
-          </Card>
+          <div className="bg-white shadow rounded p-8 flex flex-col gap-8 h-full">
+            <div className="flex flex-col gap-4">
+              <h2 className="text-2xl font-bold">Financial Glossary</h2>
+              <p className="text-gray-700">
+                Explore essential financial terms and concepts. Each entry
+                includes detailed definitions, formulas, and related terms to
+                help you understand market dynamics better.
+              </p>
+            </div>
+            <div className="flex flex-col gap-4">
+              <h3 className="text-lg font-semibold">Your Bookmarked Terms</h3>
+              <div className="flex flex-wrap gap-3">
+                {terms
+                  .filter((term) => bookmarkedTerms.has(term.id))
+                  .map((term) => (
+                    <div
+                      key={term.id}
+                      onClick={() => setSelectedTerm(term)}
+                      className="cursor-pointer px-4 py-2 bg-blue-100 border border-gray-300 rounded"
+                    >
+                      <p className="text-sm font-medium text-gray-800">
+                        {term.term}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-4">
+              <h3 className="text-lg font-semibold">Getting Started</h3>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4 p-4 bg-blue-50 border border-gray-300 rounded">
+                  <Search className="w-5 h-5 text-accent-500" />
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-800">
+                      Search Terms
+                    </p>
+                    <p className="text-sm text-gray-800">
+                      Use the search bar to find specific terms or browse
+                      through the list
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 bg-blue-50 border border-gray-300 rounded">
+                  <Bookmark className="w-5 h-5 text-accent-500" />
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-800">
+                      Bookmark for Quick Access
+                    </p>
+                    <p className="text-sm text-gray-800">
+                      Save important terms for quick reference using the
+                      bookmark icon
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 bg-blue-50 border border-gray-300 rounded">
+                  <BookOpen className="w-5 h-5 text-accent-500" />
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium text-gray-800">
+                      Explore Related Terms
+                    </p>
+                    <p className="text-sm text-gray-800">
+                      Click on highlighted terms in definitions to discover
+                      connected concepts
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
-      </Flex>
-    </Flex>
+      </div>
+    </div>
   );
 };

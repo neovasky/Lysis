@@ -12,23 +12,27 @@ import {
   TextContent as PdfTextContent,
 } from "pdfjs-dist/types/src/display/api";
 import "pdfjs-dist/web/pdf_viewer.css";
-
-// Import TextLayerBuilder from pdfjs-dist/web/pdf_viewer
 import { TextLayerBuilder } from "pdfjs-dist/web/pdf_viewer";
 
-// Radix UI icons
+// Extend PdfTextContent to include streamTextContent property
+interface ExtendedPdfTextContent extends PdfTextContent {
+  streamTextContent?: () => Promise<PdfTextContent>;
+}
+
+// Using lucide-react icons (only the ones used)
 import {
-  MinusIcon,
-  PlusIcon,
-  MagnifyingGlassIcon,
-  ViewVerticalIcon,
-  Pencil2Icon,
-  DrawingPinIcon,
-} from "@radix-ui/react-icons";
+  Minus as MinusIcon,
+  Plus as PlusIcon,
+  Search as MagnifyingGlassIcon,
+  Sidebar as ViewVerticalIcon,
+  Pencil as PencilIcon,
+  Pin as DrawingPinIcon,
+  X as CrossIcon,
+} from "lucide-react";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-// Minimal button styles for icons
+// Minimal button styles for icon buttons
 const iconButtonStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -46,7 +50,6 @@ const iconButtonHoverStyle: CSSProperties = {
   background: "rgba(255, 255, 255, 0.1)",
 };
 
-// Types
 interface Highlight {
   id: string;
   pageNumber: number;
@@ -79,7 +82,7 @@ interface ContinuousPDFViewerWithSidebarProps {
 const ContinuousPDFViewerWithSidebar: React.FC<
   ContinuousPDFViewerWithSidebarProps
 > = ({ pdfData, onClose }) => {
-  // State
+  // PDF and UI state
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [tool, setTool] = useState<AnnotationTool>("highlight");
@@ -88,12 +91,10 @@ const ContinuousPDFViewerWithSidebar: React.FC<
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // UI states
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [globalScale, setGlobalScale] = useState(1.2);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Page navigation
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [editPageInput, setEditPageInput] = useState(false);
   const [pageInputValue, setPageInputValue] = useState("");
@@ -102,7 +103,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
   const containerRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Load & Save Annotations (localStorage)
+  // Load & save annotations from localStorage
   useEffect(() => {
     const savedHighlights = localStorage.getItem("pdfHighlights");
     const savedSticky = localStorage.getItem("pdfStickyNotes");
@@ -118,7 +119,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     localStorage.setItem("pdfStickyNotes", JSON.stringify(stickyNotes));
   }, [stickyNotes]);
 
-  // Load PDF (using a copy of pdfData)
+  // Load PDF document
   useEffect(() => {
     if (!pdfData) return;
     setIsLoading(true);
@@ -149,19 +150,33 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     container: HTMLDivElement,
     pageIndex: number
   ) => {
-    // Retrieve the text content from the PDF page.
-    const textContent: PdfTextContent = await page.getTextContent();
+    let textContent: PdfTextContent;
+    try {
+      textContent = await page.getTextContent();
+    } catch (error) {
+      console.error(
+        "Error fetching text content for page",
+        pageIndex + 1,
+        error
+      );
+      return;
+    }
+    // Create an extended text content object with a streamTextContent property
+    const extendedTextContent: ExtendedPdfTextContent = {
+      ...textContent,
+      streamTextContent: () => Promise.resolve(textContent),
+    };
 
     container.innerHTML = "";
     const textLayer = new TextLayerBuilder({
       textLayerDiv: container,
-      pageIndex: pageIndex,
-      viewport: viewport,
+      pageIndex,
+      viewport,
       enhanceTextSelection: true,
     });
-    // Assign the text content to the text layer.
-    textLayer.textContent = textContent;
+    textLayer.textContent = extendedTextContent;
     textLayer.render();
+    container.style.userSelect = "text";
   };
 
   // Render a single page (canvas + text layer)
@@ -213,10 +228,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     containerRef.current.innerHTML = "";
     pages.forEach((pageInfo) => {
       const pageDiv = document.createElement("div");
-      pageDiv.style.position = "relative";
-      pageDiv.style.margin = "20px auto";
-      pageDiv.style.border = "1px solid #ccc";
-      pageDiv.style.background = "#fff";
+      pageDiv.className = "relative my-5 mx-auto border bg-white";
       pageDiv.style.width = "fit-content";
       pageDiv.dataset.pageIndex = pageInfo.pageIndex.toString();
       containerRef.current?.appendChild(pageDiv);
@@ -254,12 +266,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     sidebarRef.current.innerHTML = "";
     for (let i = 0; i < pdfDoc.numPages; i++) {
       const thumbDiv = document.createElement("div");
-      thumbDiv.style.margin = "8px";
-      thumbDiv.style.cursor = "pointer";
-      thumbDiv.style.border = "1px solid #aaa";
-      thumbDiv.style.padding = "2px";
-      thumbDiv.style.backgroundColor = "#f5f5f5";
-
+      thumbDiv.className = "m-2 cursor-pointer border p-1 bg-gray-100";
       const canvas = await renderThumbnail(i, 0.2);
       if (canvas) {
         thumbDiv.appendChild(canvas);
@@ -273,7 +280,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
           }
         });
       }
-      sidebarRef.current?.appendChild(thumbDiv);
+      sidebarRef.current.appendChild(thumbDiv);
     }
   }, [pdfDoc, renderThumbnail]);
 
@@ -292,7 +299,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     if (!selection || selection.isCollapsed) return;
     const selectedText = selection.toString().trim();
     if (!selectedText) return;
-
     const range = selection.getRangeAt(0);
     const clientRects = Array.from(range.getClientRects());
     const pageDiv = findPageDiv(selection.anchorNode as Node);
@@ -315,8 +321,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
       width: rect.width,
       height: rect.height,
     }));
-
-    const newHighlight: Highlight = {
+    const newHighlight = {
       id: generateId(),
       pageNumber: pageIndex + 1,
       text: selectedText,
@@ -325,7 +330,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     };
     setHighlights((prev) => [...prev, newHighlight]);
     selection.removeAllRanges();
-
     const comment = prompt("Add a note to this highlight?");
     if (comment) {
       setHighlights((prev) =>
@@ -343,15 +347,12 @@ const ContinuousPDFViewerWithSidebar: React.FC<
       ".textLayer"
     ) as HTMLDivElement | null;
     if (!textLayerEl) return;
-
     const box = textLayerEl.getBoundingClientRect();
     const x = e.clientX - box.left;
     const y = e.clientY - box.top;
-
     const noteComment = prompt("Enter sticky note text");
     if (!noteComment) return;
-
-    const newNote: StickyNote = {
+    const newNote = {
       id: generateId(),
       pageNumber: pageIndex + 1,
       x,
@@ -372,21 +373,18 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     return null;
   };
 
-  // Overlay for highlights/sticky notes
+  // Overlay for annotations
   useEffect(() => {
     if (!pdfDoc || !containerRef.current) return;
-
     pages.forEach((pageInfo) => {
       const pageDiv = containerRef.current?.querySelector(
         `div[data-page-index="${pageInfo.pageIndex}"]`
       ) as HTMLDivElement | null;
       if (!pageDiv) return;
-
       let overlay = pageDiv.querySelector(
         ".overlayLayer"
       ) as HTMLDivElement | null;
       if (overlay) overlay.remove();
-
       overlay = document.createElement("div");
       overlay.className = "overlayLayer";
       overlay.style.position = "absolute";
@@ -394,7 +392,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
       overlay.style.left = "0";
       overlay.style.pointerEvents = "none";
       pageDiv.appendChild(overlay);
-
       // Render highlights
       const pageHighlights = highlights.filter(
         (hl) => hl.pageNumber === pageInfo.pageIndex + 1
@@ -425,7 +422,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
             }
           });
           overlay!.appendChild(hlDiv);
-
           if (hl.comment) {
             const commentDiv = document.createElement("div");
             commentDiv.style.position = "absolute";
@@ -441,7 +437,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
           }
         });
       });
-
       // Render sticky notes
       const pageNotes = stickyNotes.filter(
         (n) => n.pageNumber === pageInfo.pageIndex + 1
@@ -472,7 +467,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
           }
         });
         overlay!.appendChild(noteDiv);
-
         const labelDiv = document.createElement("div");
         labelDiv.style.position = "absolute";
         labelDiv.style.top = "20px";
@@ -488,7 +482,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     });
   }, [highlights, stickyNotes, pages, pdfDoc]);
 
-  // Toolbar Handlers
   const handleZoomIn = () => {
     const newScale = globalScale + 0.2;
     setGlobalScale(newScale);
@@ -518,7 +511,6 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     alert(`Search for "${searchTerm}" not implemented yet.`);
   };
 
-  // Page navigation
   const totalPages = pdfDoc?.numPages ?? 1;
   const handlePageNumberClick = () => {
     if (!pdfDoc) return;
@@ -542,17 +534,9 @@ const ContinuousPDFViewerWithSidebar: React.FC<
     }
   };
 
-  // Render
   return (
     <div
-      style={{
-        display: "flex",
-        width: "100%",
-        height: "100%",
-        flexDirection: "row",
-        overflow: "hidden",
-        position: "relative",
-      }}
+      className="flex w-full h-full flex-row overflow-hidden relative"
       onMouseUp={handleMouseUp}
       onClick={handleClick}
     >
@@ -560,31 +544,16 @@ const ContinuousPDFViewerWithSidebar: React.FC<
       {sidebarOpen && (
         <div
           ref={sidebarRef}
-          style={{
-            width: "150px",
-            borderRight: "1px solid #ccc",
-            overflowY: "auto",
-            backgroundColor: "#f8f8f8",
-          }}
+          className="w-[150px] border-r border-gray-300 overflow-y-auto bg-gray-100"
         />
       )}
 
       {/* Main PDF content area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Top toolbar with a dark background */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "4px 8px",
-            background: "#3f4042",
-            borderBottom: "1px solid #ccc",
-            justifyContent: "space-between",
-            color: "#fff",
-          }}
-        >
+      <div className="flex-1 flex flex-col">
+        {/* Top toolbar */}
+        <div className="flex items-center justify-between px-2 py-1 bg-[#3f4042] border-b border-gray-300 text-white">
           {/* Left group: sidebar toggle + optional close */}
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div className="flex items-center gap-2">
             <button
               style={iconButtonStyle}
               onMouseEnter={(e) =>
@@ -596,7 +565,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
               onClick={() => setSidebarOpen((prev) => !prev)}
               title={sidebarOpen ? "Hide Thumbnails" : "Show Thumbnails"}
             >
-              <ViewVerticalIcon />
+              <ViewVerticalIcon className="w-5 h-5" />
             </button>
             {onClose && (
               <button
@@ -609,86 +578,37 @@ const ContinuousPDFViewerWithSidebar: React.FC<
                 }
                 onClick={onClose}
               >
-                Close
+                <CrossIcon className="w-5 h-5" />
               </button>
             )}
           </div>
 
-          {/* Center group: highlight vs. sticky (icons only) */}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <label
+          {/* Center group: highlight vs. sticky */}
+          <div className="flex items-center gap-4">
+            <button
               style={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
+                ...iconButtonStyle,
+                background: tool === "highlight" ? "#ffe87c" : "transparent",
+                color: tool === "highlight" ? "#000" : "#fff",
               }}
+              onClick={() => setTool("highlight")}
             >
-              <input
-                type="radio"
-                name="tool"
-                value="highlight"
-                checked={tool === "highlight"}
-                onChange={() => setTool("highlight")}
-                style={{ display: "none" }}
-              />
-              <button
-                style={{
-                  ...iconButtonStyle,
-                  background: tool === "highlight" ? "#ffe87c" : "transparent",
-                  color: tool === "highlight" ? "#000" : "#fff",
-                }}
-                onClick={() => setTool("highlight")}
-                onMouseEnter={(e) =>
-                  !tool.includes("highlight") &&
-                  Object.assign(e.currentTarget.style, iconButtonHoverStyle)
-                }
-                onMouseLeave={(e) =>
-                  !tool.includes("highlight") &&
-                  Object.assign(e.currentTarget.style, iconButtonStyle)
-                }
-              >
-                <Pencil2Icon />
-              </button>
-            </label>
-
-            <label
+              <PencilIcon className="w-5 h-5" />
+            </button>
+            <button
               style={{
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
+                ...iconButtonStyle,
+                background: tool === "sticky" ? "#ffe87c" : "transparent",
+                color: tool === "sticky" ? "#000" : "#fff",
               }}
+              onClick={() => setTool("sticky")}
             >
-              <input
-                type="radio"
-                name="tool"
-                value="sticky"
-                checked={tool === "sticky"}
-                onChange={() => setTool("sticky")}
-                style={{ display: "none" }}
-              />
-              <button
-                style={{
-                  ...iconButtonStyle,
-                  background: tool === "sticky" ? "#ffe87c" : "transparent",
-                  color: tool === "sticky" ? "#000" : "#fff",
-                }}
-                onClick={() => setTool("sticky")}
-                onMouseEnter={(e) =>
-                  !tool.includes("sticky") &&
-                  Object.assign(e.currentTarget.style, iconButtonHoverStyle)
-                }
-                onMouseLeave={(e) =>
-                  !tool.includes("sticky") &&
-                  Object.assign(e.currentTarget.style, iconButtonStyle)
-                }
-              >
-                <DrawingPinIcon />
-              </button>
-            </label>
+              <DrawingPinIcon className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Right group: zoom, page nav, search */}
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div className="flex items-center gap-2">
             <button
               style={iconButtonStyle}
               onMouseEnter={(e) =>
@@ -699,7 +619,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
               }
               onClick={handleZoomOut}
             >
-              <MinusIcon />
+              <MinusIcon className="w-5 h-5" />
             </button>
             <button
               style={iconButtonStyle}
@@ -711,20 +631,10 @@ const ContinuousPDFViewerWithSidebar: React.FC<
               }
               onClick={handleZoomIn}
             >
-              <PlusIcon />
+              <PlusIcon className="w-5 h-5" />
             </button>
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "transparent",
-                color: "#fff",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                transition: "background 0.2s ease",
-              }}
+              className="flex items-center justify-center bg-transparent text-white px-2 py-1 rounded cursor-pointer transition-colors"
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
               }}
@@ -736,12 +646,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
               {editPageInput ? (
                 <input
                   type="number"
-                  style={{
-                    width: "50px",
-                    textAlign: "center",
-                    border: "none",
-                    outline: "none",
-                  }}
+                  className="w-12 text-center border-none outline-none"
                   value={pageInputValue}
                   onChange={handlePageInputChange}
                   onBlur={handlePageInputBlur}
@@ -754,14 +659,7 @@ const ContinuousPDFViewerWithSidebar: React.FC<
               )}
             </div>
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                background: "transparent",
-                borderRadius: "4px",
-                padding: "0 4px",
-                color: "#fff",
-              }}
+              className="flex items-center bg-transparent rounded px-1 text-white"
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
               }}
@@ -772,15 +670,9 @@ const ContinuousPDFViewerWithSidebar: React.FC<
               <input
                 type="text"
                 placeholder="Search"
+                className="w-20 bg-transparent border-none outline-none text-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: "80px",
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  color: "#fff",
-                }}
               />
               <button
                 style={{ ...iconButtonStyle, padding: "0" }}
@@ -792,49 +684,26 @@ const ContinuousPDFViewerWithSidebar: React.FC<
                 }
                 onClick={handleSearch}
               >
-                <MagnifyingGlassIcon />
+                <MagnifyingGlassIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Container for full-size PDF pages */}
-        <div
-          ref={containerRef}
-          style={{ flex: 1, overflow: "auto", background: "#e0e0e0" }}
-        />
+        <div ref={containerRef} className="flex-1 overflow-auto bg-gray-200" />
 
         {/* Loading Overlay */}
         {isLoading && !error && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              background: "#eee",
-              padding: "16px",
-              borderRadius: "8px",
-            }}
-          >
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-100 p-4 rounded">
             Loading PDF...
           </div>
         )}
 
         {/* Error Overlay */}
         {error && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              background: "#fdd",
-              padding: "16px",
-              borderRadius: "8px",
-            }}
-          >
-            <strong style={{ color: "red" }}>{error}</strong>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-200 p-4 rounded">
+            <strong className="text-red-600">{error}</strong>
           </div>
         )}
       </div>

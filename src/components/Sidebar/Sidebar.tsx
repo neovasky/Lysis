@@ -6,17 +6,18 @@
 import { Box, Flex, Text, Avatar } from "@radix-ui/themes";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import {
-  HomeIcon,
-  ReaderIcon,
-  BarChartIcon,
-  FileIcon,
-  CalendarIcon,
-  FileTextIcon,
-  GearIcon,
-  PersonIcon,
-} from "@radix-ui/react-icons";
 import { useState } from "react";
+// Replace Radix icons with lucide-react icons
+import {
+  Home,
+  BookOpen,
+  BarChart,
+  File,
+  Calendar,
+  FileText,
+  Settings,
+  User,
+} from "lucide-react";
 
 const DRAWER_WIDTH = 240;
 const COLLAPSED_WIDTH = 72;
@@ -45,18 +46,18 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
     {
       title: "MAIN NAVIGATION",
       items: [
-        { text: "Dashboard", icon: <HomeIcon />, path: "/" },
-        { text: "Glossary", icon: <ReaderIcon />, path: "/glossary" },
-        { text: "Analysis", icon: <BarChartIcon />, path: "/analysis" },
+        { text: "Dashboard", icon: <Home size={24} />, path: "/" },
+        { text: "Glossary", icon: <BookOpen size={24} />, path: "/glossary" },
+        { text: "Analysis", icon: <BarChart size={24} />, path: "/analysis" },
       ],
     },
     {
       title: "RESOURCES",
       items: [
-        { text: "Files", icon: <FileIcon />, path: "/files", badge: 3 },
+        { text: "Files", icon: <File size={24} />, path: "/files", badge: 3 },
         {
           text: "Calendar",
-          icon: <CalendarIcon />,
+          icon: <Calendar size={24} />,
           path: "/calendar",
           badge: 2,
         },
@@ -67,7 +68,7 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
       items: [
         {
           text: "Research Notes",
-          icon: <FileTextIcon />,
+          icon: <FileText size={24} />,
           path: "/notes",
           badge: 5,
         },
@@ -193,7 +194,7 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
           <SidebarItem
             item={{
               text: "Settings",
-              icon: <GearIcon />,
+              icon: <Settings size={24} />,
               path: "/settings",
             }}
           />
@@ -210,7 +211,7 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
                   }}
                 />
               ) : (
-                <PersonIcon />
+                <User size={24} />
               ),
               path: "/profile",
             }}

@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { FileMetadata } from "../../store/slices/fileSlice";
-import { ViewerSwitcher } from "./ViewerSwitcher";
+import ViewerSwitcher from "./ViewerSwitcher";
 import FileService from "../../services/fileService";
 
-interface FileViewerProps {
-  file: FileMetadata;
-}
-
-export const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
+export const FileViewer: React.FC<{ file: FileMetadata }> = ({ file }) => {
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,26 +13,19 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
       try {
         setLoading(true);
         setError(null);
-
         const response = await FileService.readFile(file.path);
-
-        // Convert the file content to a data URL
         const blob = new Blob([response.content], {
           type: getContentType(file.name),
         });
         const reader = new FileReader();
-
         reader.onloadend = () => {
-          const dataUrl = reader.result as string;
-          setContent(dataUrl);
+          setContent(reader.result as string);
           setLoading(false);
         };
-
         reader.onerror = () => {
           setError("Failed to read file content");
           setLoading(false);
         };
-
         reader.readAsDataURL(blob);
       } catch (err) {
         console.error("Error loading file:", err);
@@ -69,17 +58,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
 
   if (loading) {
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#525659",
-          color: "#fff",
-        }}
-      >
+      <div className="w-full h-screen flex justify-center items-center bg-[#525659] text-white">
         Loading...
       </div>
     );
@@ -87,19 +66,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
 
   if (error) {
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#525659",
-          color: "#fff",
-          padding: "20px",
-          textAlign: "center",
-        }}
-      >
+      <div className="w-full h-screen flex justify-center items-center bg-[#525659] text-white p-5 text-center">
         <p>Error: {error}</p>
       </div>
     );
@@ -107,19 +74,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
 
   if (!content) {
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#525659",
-          color: "#fff",
-          padding: "20px",
-          textAlign: "center",
-        }}
-      >
+      <div className="w-full h-screen flex justify-center items-center bg-[#525659] text-white p-5 text-center">
         <p>No content available</p>
       </div>
     );
@@ -127,3 +82,5 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file }) => {
 
   return <ViewerSwitcher file={file} content={content} />;
 };
+
+export default FileViewer;

@@ -1,15 +1,17 @@
 /**
  * File: src/components/NotificationsMenu/NotificationsMenu.tsx
- * Description: Notifications dropdown menu using Radix UI primitives
+ * Description: Notifications dropdown menu using Radix UI primitives and lucide-react icons
  */
 
 import { useState } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import { BellIcon, ExternalLinkIcon } from "@radix-ui/react-icons";
+// Replace Radix icons with lucide-react icons:
+import { Bell, ExternalLink } from "lucide-react";
 import { Box, Flex, Text, Badge, Card } from "@radix-ui/themes";
 import styled from "styled-components";
 import { useTheme } from "../../theme/hooks/useTheme";
+
 interface Notification {
   id: string;
   type: "price_alert" | "earnings" | "news" | "watchlist" | "analysis";
@@ -90,7 +92,7 @@ export const NotificationsMenu = () => {
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         <Box
-          display="inline-block" // Changed from "flex" to "inline-block"
+          display="inline-block"
           px="2"
           py="1"
           style={{
@@ -99,7 +101,7 @@ export const NotificationsMenu = () => {
             color: theme.tokens.colors.focusRoot,
           }}
         >
-          <BellIcon width={24} height={24} />
+          <Bell size={24} />
           {unreadCount > 0 && (
             <Badge
               variant="solid"
@@ -155,9 +157,7 @@ export const NotificationsMenu = () => {
                     <Flex direction="column" gap="1">
                       <Flex justify="between" align="center">
                         <Text weight="bold">{notification.title}</Text>
-                        {notification.actionUrl && (
-                          <ExternalLinkIcon width={16} height={16} />
-                        )}
+                        {notification.actionUrl && <ExternalLink size={16} />}
                       </Flex>
                       <Text size="2" color="gray">
                         {notification.description}

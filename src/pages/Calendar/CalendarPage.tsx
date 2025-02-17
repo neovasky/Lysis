@@ -1,21 +1,15 @@
 /**
  * File: src/pages/Calendar/CalendarPage.tsx
- * Description: Calendar page component using Radix UI
+ * Description: Calendar page component using shadcn styling with Tailwind CSS
  */
-
-import { Card, Text, Heading, Box } from "@radix-ui/themes";
 
 export const CalendarPage = () => {
   return (
-    <Box>
-      <Card size="3" style={{ marginBottom: "24px" }}>
-        <Heading size="6" weight="bold" mb="2">
-          Calendar
-        </Heading>
-        <Text color="gray" size="2">
-          This feature is coming soon.
-        </Text>
-      </Card>
-    </Box>
+    <div className="p-6">
+      <div className="bg-white p-6 rounded shadow mb-6">
+        <h1 className="text-2xl font-bold mb-2">Calendar</h1>
+        <p className="text-gray-600 text-sm">This feature is coming soon.</p>
+      </div>
+    </div>
   );
 };

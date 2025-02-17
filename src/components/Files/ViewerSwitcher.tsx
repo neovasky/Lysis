@@ -1,17 +1,10 @@
-// File: src/components/Files/ViewerSwitcher.tsx
-import React, { useEffect, useState } from "react";
-import { FileMetadata } from "../../store/slices/fileSlice";
+import { useEffect, useState } from "react";
+import { ZoomIn, ZoomOut, Download, ExternalLink } from "lucide-react";
 import ContinuousPDFViewerWithSidebar from "../PDFViewer/ContinuousPDFViewerWithSidebar";
-import { Box, Button, Text, Flex } from "@radix-ui/themes";
-import {
-  ZoomInIcon,
-  ZoomOutIcon,
-  DownloadIcon,
-  ExternalLinkIcon,
-} from "@radix-ui/react-icons";
+import { FileMetadata } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 
-// Helper function to convert base64 to Uint8Array
+// Helper function to convert base64 string to Uint8Array
 function base64ToUint8Array(base64: string): Uint8Array {
   const raw = atob(base64);
   const arr = new Uint8Array(raw.length);
@@ -23,7 +16,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
 
 interface ViewerSwitcherProps {
   file: FileMetadata;
-  content: string; // Data URL for images/text or PDFs (with "data:" prefix)
+  content: string; // Data URL (e.g. "data:application/pdf;base64,...")
 }
 
 const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
@@ -34,7 +27,6 @@ const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
   useEffect(() => {
     setViewerError(null);
     setPdfData(null);
-    // Only process PDF if the filename ends with .pdf
     if (file.name.toLowerCase().endsWith(".pdf")) {
       try {
         const parts = content.split(",");
@@ -71,58 +63,34 @@ const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
   };
 
   const renderViewer = () => {
-    const fileExtension = file.name.split(".").pop()?.toLowerCase();
-
-    switch (fileExtension) {
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    switch (ext) {
       case "pdf":
         if (!pdfData && !viewerError) {
           return (
-            <Box
-              style={{
-                width: "100vw",
-                height: "100vh",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#333",
-              }}
-            >
-              <Text color="gray" size="3">
-                Loading PDF data...
-              </Text>
-            </Box>
+            <div className="w-full h-screen flex items-center justify-center bg-gray-800">
+              <p className="text-gray-300 text-lg">Loading PDF data...</p>
+            </div>
           );
         }
         if (viewerError) {
           return (
-            <Box
-              style={{ width: "100vw", height: "100vh", overflow: "hidden" }}
-            >
-              <Text color="red">{viewerError}</Text>
-            </Box>
+            <div className="w-full h-screen overflow-hidden">
+              <p className="text-red-500">{viewerError}</p>
+            </div>
           );
         }
         return (
-          <Box style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
+          <div className="w-full h-screen overflow-hidden">
             <ContinuousPDFViewerWithSidebar pdfData={pdfData as Uint8Array} />
-          </Box>
+          </div>
         );
       case "png":
       case "jpg":
       case "jpeg":
       case "gif":
         return (
-          <Box
-            style={{
-              width: "100vw",
-              height: "100vh",
-              overflow: "auto",
-              background: "#525659",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
+          <div className="w-full h-screen flex items-center justify-center bg-gray-800">
             <img
               src={content}
               alt={file.name}
@@ -132,88 +100,67 @@ const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
                 transition: "transform 0.2s ease",
               }}
             />
-          </Box>
+          </div>
         );
       case "txt":
       case "md":
         return (
-          <Box
-            style={{
-              width: "100vw",
-              height: "100vh",
-              padding: "40px",
-              background: "#525659",
-              color: "#fff",
-              fontFamily: "monospace",
-              whiteSpace: "pre-wrap",
-              overflow: "auto",
-            }}
-          >
+          <div className="w-full h-screen p-10 bg-gray-800 text-white font-mono whitespace-pre-wrap overflow-auto">
             {content}
-          </Box>
+          </div>
         );
       default:
         return (
-          <Flex
-            direction="column"
-            align="center"
-            justify="center"
-            style={{
-              width: "100vw",
-              height: "100vh",
-              background: "#525659",
-              color: "#fff",
-              padding: "20px",
-              textAlign: "center",
-              gap: "20px",
-            }}
-          >
-            <Text size="5">
-              No preview available for this file type ({fileExtension})
-            </Text>
-            <Button size="3" onClick={handleOpenInSystemApp}>
-              <ExternalLinkIcon />
+          <div className="w-full h-screen flex flex-col items-center justify-center bg-gray-800 text-white p-5 text-center gap-5">
+            <p className="text-xl">
+              No preview available for this file type ({ext})
+            </p>
+            <button
+              onClick={handleOpenInSystemApp}
+              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+            >
+              <ExternalLink size={20} />
               Open in System Application
-            </Button>
-          </Flex>
+            </button>
+          </div>
         );
     }
   };
 
   const controls = (
-    <Flex
-      gap="2"
-      style={{
-        position: "fixed",
-        top: "16px",
-        right: "16px",
-        zIndex: 1000,
-        background: "var(--gray-2)",
-        padding: "8px",
-        borderRadius: "8px",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-      }}
-    >
-      <Button size="2" variant="soft" onClick={handleZoomOut}>
-        <ZoomOutIcon />
-      </Button>
-      <Button size="2" variant="soft" onClick={handleZoomIn}>
-        <ZoomInIcon />
-      </Button>
-      <Button size="2" variant="soft" onClick={handleDownload}>
-        <DownloadIcon />
-      </Button>
-      <Button size="2" variant="soft" onClick={handleOpenInSystemApp}>
-        <ExternalLinkIcon />
-      </Button>
-    </Flex>
+    <div className="fixed top-4 right-4 z-50 bg-gray-200 p-2 rounded shadow flex gap-2">
+      <button
+        onClick={handleZoomOut}
+        className="p-2 bg-white rounded hover:bg-gray-100"
+      >
+        <ZoomOut size={16} />
+      </button>
+      <button
+        onClick={handleZoomIn}
+        className="p-2 bg-white rounded hover:bg-gray-100"
+      >
+        <ZoomIn size={16} />
+      </button>
+      <button
+        onClick={handleDownload}
+        className="p-2 bg-white rounded hover:bg-gray-100"
+      >
+        <Download size={16} />
+      </button>
+      <button
+        onClick={handleOpenInSystemApp}
+        className="p-2 bg-white rounded hover:bg-gray-100"
+      >
+        <ExternalLink size={16} />
+      </button>
+    </div>
   );
 
   return (
-    <Box style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
+    <div className="w-full h-screen overflow-hidden relative">
       {controls}
       {renderViewer()}
-    </Box>
+    </div>
   );
 };
 

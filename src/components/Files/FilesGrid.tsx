@@ -1,23 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  Grid,
-  Card,
-  Text,
-  Box,
-  Flex,
-  Button,
-  DropdownMenu,
-} from "@radix-ui/themes";
-import {
-  DotsVerticalIcon,
-  FileIcon,
-  FileTextIcon,
-  TableIcon,
-  Component1Icon,
-  TrashIcon,
-  DownloadIcon,
-  Pencil1Icon,
-} from "@radix-ui/react-icons";
+  FileText,
+  MoreVertical,
+  Table,
+  File,
+  Trash,
+  Download,
+  Pencil,
+} from "lucide-react";
 import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
 
@@ -27,7 +17,7 @@ export interface FilesGridProps {
   onDelete?: (folderPath: string) => Promise<void>;
 }
 
-export const FilesGrid: React.FC<FilesGridProps> = ({
+const FilesGrid: React.FC<FilesGridProps> = ({
   files,
   onFileOpen,
   onDelete,
@@ -36,13 +26,13 @@ export const FilesGrid: React.FC<FilesGridProps> = ({
   const getFileIcon = (type: FileMetadata["type"]) => {
     switch (type) {
       case "pdf":
-        return <FileTextIcon width="24" height="24" />;
+        return <FileText className="w-6 h-6" />;
       case "excel":
-        return <TableIcon width="24" height="24" />;
+        return <Table className="w-6 h-6" />;
       case "word":
-        return <Component1Icon width="24" height="24" />;
+        return <File className="w-6 h-6" />;
       default:
-        return <FileIcon width="24" height="24" />;
+        return <File className="w-6 h-6" />;
     }
   };
 
@@ -63,85 +53,103 @@ export const FilesGrid: React.FC<FilesGridProps> = ({
     }
   };
 
-  // Dropdown for file actions.
-  const FileActions = ({ file }: { file: FileMetadata }) => (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        <Button variant="ghost" size="1">
-          <DotsVerticalIcon />
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content>
-        <DropdownMenu.Item onClick={() => handleFileOpen(file)}>
-          <Flex gap="2" align="center">
-            <FileIcon width="16" height="16" />
-            <Text>Open</Text>
-          </Flex>
-        </DropdownMenu.Item>
-        <DropdownMenu.Item>
-          <Flex gap="2" align="center">
-            <DownloadIcon width="16" height="16" />
-            <Text>Download</Text>
-          </Flex>
-        </DropdownMenu.Item>
-        <DropdownMenu.Item>
-          <Flex gap="2" align="center">
-            <Pencil1Icon width="16" height="16" />
-            <Text>Rename</Text>
-          </Flex>
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item color="red" onClick={() => handleFileDelete(file)}>
-          <Flex gap="2" align="center">
-            <TrashIcon width="16" height="16" />
-            <Text>Delete</Text>
-          </Flex>
-        </DropdownMenu.Item>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-  );
+  // Minimal custom dropdown for file actions.
+  const FileActions = ({ file }: { file: FileMetadata }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <div className="relative">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((prev) => !prev);
+          }}
+          className="p-1 rounded hover:bg-gray-100"
+        >
+          <MoreVertical className="w-4 h-4" />
+        </button>
+        {open && (
+          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow z-10">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleFileOpen(file);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+            >
+              <File className="w-4 h-4" />
+              Open
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("Downloading", file.name);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("Renaming", file.name);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+            >
+              <Pencil className="w-4 h-4" />
+              Rename
+            </button>
+            <div className="border-t border-gray-200"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleFileDelete(file);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm text-red-600"
+            >
+              <Trash className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <Grid columns="4" gap="4" p="4">
+    <div className="grid grid-cols-4 gap-4 p-4">
       {files.map((file) => (
-        <Card
+        <div
           key={file.id}
-          style={{ cursor: "pointer" }}
+          className="bg-white rounded shadow p-4 cursor-pointer hover:shadow-lg"
           onClick={() => handleFileOpen(file)}
         >
           {/* Preview Section */}
-          <Box
-            style={{
-              height: "140px",
-              backgroundColor: "var(--gray-3)",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "12px",
-            }}
-          >
+          <div className="h-36 bg-gray-200 rounded flex items-center justify-center mb-3">
             {getFileIcon(file.type)}
-          </Box>
+          </div>
           {/* File Info Section */}
-          <Flex direction="column" gap="1">
-            <Flex justify="between" align="center">
-              <Text weight="bold" size="2" style={{ flex: 1 }}>
-                {file.name}
-              </Text>
-              <Box onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between items-center">
+              <p className="font-bold text-sm flex-1">{file.name}</p>
+              <div onClick={(e) => e.stopPropagation()}>
                 <FileActions file={file} />
-              </Box>
-            </Flex>
-            <Text size="1" color="gray">
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
               {formatDistance(file.lastModified, new Date(), {
                 addSuffix: true,
               })}
-            </Text>
-          </Flex>
-        </Card>
+            </p>
+          </div>
+        </div>
       ))}
-    </Grid>
+    </div>
   );
 };
 
