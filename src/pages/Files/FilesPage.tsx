@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { FileMetadata, FileType } from "@/store/slices/fileSlice";
 import FileService from "@/services/fileService";
 import { FILE_CONSTANTS } from "@/services/constants";
@@ -23,8 +23,8 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-// Import generated shadcn/ui components
-import { Button } from "@/components/ui/button";
+// Shadcn UI components (ensure you have them generated)
+import Button from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -41,6 +41,11 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip"; // for icon tooltips
 
 const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
 
@@ -96,6 +101,8 @@ export default function FilesPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
+
+  // PDF modal
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdfData, setSelectedPdfData] = useState<Uint8Array | null>(
     null
@@ -208,7 +215,7 @@ export default function FilesPage() {
               <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:;">
               <title>${file.name}</title>
               <style>
-                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; }
+                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #f1f5f9; }
                 embed { width: 100%; height: 100%; border: none; }
               </style>
             </head>
@@ -259,7 +266,21 @@ export default function FilesPage() {
     }
   }
 
-  // Combine directories and files.
+  // For demonstration: simple rename using prompt
+  async function handleRename(file: FileMetadata) {
+    const newName = prompt("Enter new name", file.name);
+    if (!newName || newName === file.name) return;
+    try {
+      // Placeholder rename logic
+      alert(`Pretending to rename ${file.name} to ${newName}`);
+      await loadDirectories(currentDirectory?.path);
+    } catch (err) {
+      console.error("Error renaming file:", err);
+      alert("Rename failed.");
+    }
+  }
+
+  // Combine directories and files
   const displayItems = useMemo(() => {
     const dirItems = directories.map((dir) => ({
       ...dir,
@@ -268,6 +289,7 @@ export default function FilesPage() {
     return [...dirItems, ...files];
   }, [directories, files]);
 
+  // Filter items
   const filteredItems = useCallback(() => {
     if (activeFilter === "all") {
       return displayItems;
@@ -279,9 +301,9 @@ export default function FilesPage() {
   }, [displayItems, activeFilter]);
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
+    <div className="mx-auto w-full max-w-6xl flex flex-col h-screen bg-white text-black">
       {/* Top Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300">
         <div className="flex items-center gap-2">
           {currentDirectory &&
             currentDirectory.path !== DEFAULT_BASE_DIRECTORY && (
@@ -300,41 +322,61 @@ export default function FilesPage() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === "grid" ? "solid" : "outline"}
-            onClick={() => setViewMode("grid")}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "solid" : "outline"}
-            onClick={() => setViewMode("list")}
-          >
-            <ListIcon className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => loadDirectories(currentDirectory?.path)}
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+          {/* Grid View Icon with Tooltip */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={viewMode === "grid" ? "solid" : "outline"}
+                onClick={() => setViewMode("grid")}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Switch to Grid View</TooltipContent>
+          </Tooltip>
+
+          {/* List View Icon with Tooltip */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={viewMode === "list" ? "solid" : "outline"}
+                onClick={() => setViewMode("list")}
+              >
+                <ListIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Switch to List View</TooltipContent>
+          </Tooltip>
+
+          {/* Refresh Icon with Tooltip */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => loadDirectories(currentDirectory?.path)}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       {/* Error Banner */}
       {error && (
-        <div className="p-2 bg-destructive/20 text-destructive m-4 rounded-md">
+        <div className="p-2 bg-red-100 text-red-800 m-4 rounded-md">
           Error: {error}
         </div>
       )}
 
       {/* Filter Bar */}
       {currentDirectory && (
-        <div className="px-4 py-3 border-b border-border">
+        <div className="px-4 py-3 border-b border-gray-300">
           <ToggleGroup
             type="single"
             value={activeFilter}
-            onValueChange={(val: string) => {
+            onValueChange={(val) => {
               if (val) setActiveFilter(val as FileFilter);
             }}
             className="flex space-x-2"
@@ -356,6 +398,7 @@ export default function FilesPage() {
               files={filteredItems()}
               onFileOpen={handleOpenItem}
               onDelete={handleDeleteItem}
+              onRename={handleRename}
             />
           ) : (
             <GridView files={filteredItems()} onFileOpen={handleOpenItem} />
@@ -365,7 +408,7 @@ export default function FilesPage() {
             {directories.map((dir) => (
               <Card
                 key={dir.path}
-                className="cursor-pointer p-4"
+                className="cursor-pointer p-4 hover:opacity-90 transition"
                 onClick={() =>
                   handleFolderOpen({
                     ...dir,
@@ -377,7 +420,7 @@ export default function FilesPage() {
                   <Folder className="text-blue-500" size={20} />
                   <span className="font-medium">{dir.name}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Folder</p>
+                <p className="text-sm text-gray-600">Folder</p>
               </Card>
             ))}
           </div>
@@ -401,7 +444,7 @@ export default function FilesPage() {
       {/* PDF Modal */}
       {showPdfModal && selectedPdfData && (
         <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
-          <div className="flex justify-end p-2 bg-neutral-800">
+          <div className="flex justify-end p-2 bg-gray-200">
             <Button
               variant="outline"
               onClick={() => {
@@ -421,17 +464,25 @@ export default function FilesPage() {
   );
 }
 
+/* ---------------------------------------------------------------------------
+   SUBCOMPONENTS: 
+   1) ListView (table-based)
+   2) GridView (card-based)
+--------------------------------------------------------------------------- */
+
 function ListView({
   files,
   onFileOpen,
   onDelete,
+  onRename,
 }: {
   files: FileMetadata[];
   onFileOpen: (item: FileMetadata) => void;
   onDelete: (path: string) => void;
+  onRename: (file: FileMetadata) => void;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-2">
+    <div className="rounded-lg border border-gray-300 bg-white p-2">
       <Table>
         <TableHeader>
           <TableRow>
@@ -447,7 +498,7 @@ function ListView({
           {files.map((file) => (
             <TableRow
               key={file.path}
-              className="hover:bg-accent cursor-pointer"
+              className="hover:bg-gray-100 cursor-pointer"
               onClick={() => onFileOpen(file)}
             >
               <TableCell className="flex items-center gap-2">
@@ -466,13 +517,13 @@ function ListView({
               <TableCell className="max-w-[150px] truncate">
                 {file.tags?.join(", ") || ""}
               </TableCell>
-              <TableCell className="text-right relative">
+              <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      onClick={(e) => {
                         e.stopPropagation();
                       }}
                     >
@@ -481,12 +532,20 @@ function ListView({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                      onClick={(e) => {
                         e.stopPropagation();
                         onDelete(file.path);
                       }}
                     >
                       Delete
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRename(file);
+                      }}
+                    >
+                      Rename
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -511,14 +570,14 @@ function GridView({
       {files.map((file) => (
         <Card
           key={file.path}
-          className="cursor-pointer p-4 hover:opacity-90 transition"
+          className="cursor-pointer p-4 hover:opacity-90 transition bg-white border border-gray-300"
           onClick={() => onFileOpen(file)}
         >
           <div className="flex items-center gap-2 mb-2">
             {renderIcon(file, 24)}
             <span className="font-medium truncate">{file.name}</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-600">
             {file.isDirectory ? "Folder" : file.type?.toUpperCase() || "File"}
           </p>
         </Card>
@@ -527,6 +586,7 @@ function GridView({
   );
 }
 
+/* Helper for rendering icons */
 function renderIcon(file: FileMetadata, iconSize = 16) {
   if (file.isDirectory)
     return <Folder size={iconSize} className="text-blue-500" />;

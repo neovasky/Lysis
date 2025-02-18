@@ -54,6 +54,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-toggle": "^1.1.2",
     "@radix-ui/react-toggle-group": "^1.1.2",
+    "@radix-ui/react-tooltip": "^1.1.8",
     "@radix-ui/themes": "^3.2.0",
     "@reduxjs/toolkit": "^2.5.1",
     "@stitches/react": "^1.2.8",
