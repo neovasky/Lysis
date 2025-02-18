@@ -15,7 +15,7 @@ import { useFiles } from "../../components/Files/hooks/useFiles";
 import { FileMetadata, FileType } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 import { FILE_CONSTANTS } from "../../services/constants";
-import ContinuousPDFViewerWithSidebar from "../../components/PDFViewer/ContinuousPDFViewerWithSidebar";
+import ContinuousPDFViewerWithSidebar from "../../components/PDFViewer/PDFViewer";
 
 // Import custom CSS (if needed)
 import "../../components/Files/dialogstyles.css";

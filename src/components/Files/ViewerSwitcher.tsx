@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ZoomIn, ZoomOut, Download, ExternalLink } from "lucide-react";
-import ContinuousPDFViewerWithSidebar from "../PDFViewer/ContinuousPDFViewerWithSidebar";
+import ContinuousPDFViewerWithSidebar from "../PDFViewer/PDFViewer";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
 
