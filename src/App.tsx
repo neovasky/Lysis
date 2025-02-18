@@ -10,7 +10,7 @@ import { ProfilePage } from "./pages/Profile/ProfilePage";
 import { SettingsPage } from "./pages/Settings/SettingsPage";
 import { AuthPage } from "./pages/Auth/AuthPage";
 import { AlertsPage } from "./pages/Alerts/AlertsPage";
-import { FilesPage } from "./pages/Files/FilesPage";
+import FilesPage from "./pages/Files/FilesPage"; // default import for FilesPage
 import { CalendarPage } from "./pages/Calendar/CalendarPage";
 import { NotesPage } from "./pages/Notes/NotesPage";
 import { AnalysisPage } from "./pages/Analysis/AnalysisPage";
@@ -25,8 +25,8 @@ import "@radix-ui/themes/styles.css";
 
 /**
  * ProtectedRoute:
- *   - if user is logged in, show children
- *   - if not logged in, redirect to /auth
+ *   - If the user is logged in, show the children.
+ *   - Otherwise, redirect to /auth.
  */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export function App() {
-  // Detect initial light/dark mode
+  // Detect initial light/dark mode from localStorage or matchMedia.
   const getInitialTheme = (): ThemeMode => {
     const savedMode = localStorage.getItem("theme-mode") as ThemeMode | null;
     if (savedMode === "light" || savedMode === "dark") {
@@ -54,7 +54,7 @@ export function App() {
       : "light";
   };
 
-  // Detect initial accent color
+  // Detect initial accent color.
   const getInitialAccent = (): ThemeAccent => {
     const savedAccent = localStorage.getItem(
       "theme-accent"
@@ -71,10 +71,10 @@ export function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public route for authentication */}
+              {/* Public route */}
               <Route path="/auth" element={<AuthPage />} />
 
-              {/* Protected routes require user login */}
+              {/* Protected routes */}
               <Route
                 path="/"
                 element={
@@ -94,7 +94,7 @@ export function App() {
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
 
-              {/* Catch-all route: if not matched, go home */}
+              {/* Catch-all route */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </BrowserRouter>

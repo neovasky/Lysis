@@ -52,6 +52,8 @@
     "@radix-ui/react-navigation-menu": "^1.2.5",
     "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-toggle": "^1.1.2",
+    "@radix-ui/react-toggle-group": "^1.1.2",
     "@radix-ui/themes": "^3.2.0",
     "@reduxjs/toolkit": "^2.5.1",
     "@stitches/react": "^1.2.8",
