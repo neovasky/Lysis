@@ -1,93 +1,142 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import { Button } from "@/components/ui/button";
-import Label from "../ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-// Use Vite to bundle the worker dynamically
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).href;
-
+// 1) Copy pdf.worker.min.mjs from react-pdf’s pdfjs-dist@4.8.69 into your public folder.
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-function App() {
-  const [pdfFile, setPdfFile] = useState<string>("");
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
+interface ContinuousPDFViewerWithSidebarProps {
+  pdfData: Uint8Array; // The original typed array from your FilesPage
+  onClose?: () => void;
+}
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPdfFile(URL.createObjectURL(file));
-      setPageNumber(1);
-    }
-  }
+const ContinuousPDFViewerWithSidebar: React.FC<
+  ContinuousPDFViewerWithSidebarProps
+> = ({ pdfData, onClose }) => {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [scale, setScale] = useState<number>(1.0);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  /**
+   * 2) We create two new ArrayBuffer copies:
+   *    - one for thumbnails
+   *    - one for the main PDF
+   * This prevents the buffer from getting detached
+   * because each Document has its own copy.
+   */
+  const fileForThumbnails = useMemo(() => {
+    // Make a new copy of the underlying ArrayBuffer
+    const bufferCopy = pdfData.buffer.slice(0);
+    // Convert to a new typed array
+    const typedArray = new Uint8Array(bufferCopy);
+    return { data: typedArray };
+  }, [pdfData]);
+
+  const fileForMain = useMemo(() => {
+    const bufferCopy = pdfData.buffer.slice(0);
+    const typedArray = new Uint8Array(bufferCopy);
+    return { data: typedArray };
+  }, [pdfData]);
 
   const onDocumentLoadSuccess: React.ComponentProps<
     typeof Document
   >["onLoadSuccess"] = (pdf) => {
     setNumPages(pdf.numPages);
+    pageRefs.current = Array(pdf.numPages).fill(null);
   };
 
-  const goToPrevPage = () => setPageNumber((prev) => Math.max(prev - 1, 1));
-  const goToNextPage = () =>
-    setPageNumber((prev) => Math.min(prev + 1, numPages));
+  const handleZoomIn = () => setScale((s) => s + 0.2);
+  const handleZoomOut = () => setScale((s) => Math.max(0.2, s - 0.2));
+
+  const handleThumbClick = (pageIndex: number) => {
+    const ref = pageRefs.current[pageIndex];
+    if (ref) {
+      ref.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   return (
-    <div className="min-h-screen p-6 flex flex-col gap-4 bg-gray-50">
-      <Card className="max-w-lg mx-auto w-full">
-        <CardHeader>
-          <CardTitle>PDF Runner</CardTitle>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <Card className="max-w-5xl mx-auto w-full">
+        <CardHeader className="flex items-center justify-between">
+          <CardTitle>PDF Viewer</CardTitle>
+          {onClose && (
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <div>
-            <Label htmlFor="pdfInput" className="mb-2 block">
-              Upload a PDF
-            </Label>
-            <input
-              id="pdfInput"
-              type="file"
-              accept="application/pdf"
-              onChange={onFileChange}
-              className="border p-2 rounded w-full"
-            />
-          </div>
-          {pdfFile ? (
-            <>
-              <Document file={pdfFile} onLoadSuccess={onDocumentLoadSuccess}>
-                <Page pageNumber={pageNumber} />
+          <div className="flex gap-4">
+            {/* Sidebar Thumbnails */}
+            <div className="w-[150px] shrink-0 border-r border-gray-300 overflow-y-auto bg-gray-100 p-2">
+              <Document
+                file={fileForThumbnails}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={(err) =>
+                  console.error("Thumbnail load error:", err)
+                }
+                loading={<p className="p-2">Loading thumbnails...</p>}
+              >
+                {Array.from({ length: numPages }, (_, i) => (
+                  <div
+                    key={`thumb-${i}`}
+                    className="cursor-pointer mb-4 border"
+                    onClick={() => handleThumbClick(i)}
+                  >
+                    <Page
+                      pageNumber={i + 1}
+                      scale={0.2}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  </div>
+                ))}
               </Document>
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  onClick={goToPrevPage}
-                  disabled={pageNumber <= 1}
-                >
-                  Prev
-                </Button>
-                <p>
-                  Page {pageNumber} of {numPages}
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={goToNextPage}
-                  disabled={pageNumber >= numPages}
-                >
-                  Next
-                </Button>
-              </div>
-            </>
-          ) : (
-            <p>No PDF selected.</p>
-          )}
+            </div>
+
+            {/* Main PDF area: continuous scroll */}
+            <div
+              className="flex-1 overflow-auto border rounded p-2"
+              style={{ maxHeight: "80vh" }}
+            >
+              <Document
+                file={fileForMain}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={(err) =>
+                  console.error("Main doc load error:", err)
+                }
+                loading={<p>Loading PDF...</p>}
+              >
+                {Array.from({ length: numPages }, (_, i) => (
+                  <div
+                    key={`page-${i}`}
+                    ref={(el) => (pageRefs.current[i] = el)}
+                    className="mb-8"
+                  >
+                    <Page pageNumber={i + 1} scale={scale} />
+                  </div>
+                ))}
+              </Document>
+            </div>
+          </div>
+
+          {/* Zoom Controls */}
+          <div className="flex items-center justify-center gap-4">
+            <Button variant="outline" onClick={handleZoomOut}>
+              Zoom Out
+            </Button>
+            <Button variant="outline" onClick={handleZoomIn}>
+              Zoom In
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
-}
+};
 
-export default App;
+export default ContinuousPDFViewerWithSidebar;

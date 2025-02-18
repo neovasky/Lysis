@@ -1,33 +1,28 @@
-/**
- * File: src/components/ui/button.tsx
- * Description: Reusable button component using class variance authority for styling
- */
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "./buttonvariants";
+import { FC, ButtonHTMLAttributes } from "react";
 
-// Minimal Slot implementation to support polymorphic 'asChild' behavior
-const Slot = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
-
-export type ButtonProps = React.ComponentPropsWithoutRef<"button"> &
-  React.ComponentPropsWithoutRef<typeof buttonVariants> & {
-    asChild?: boolean;
-  };
-
-export function Button({
-  className,
-  variant,
-  size,
-  asChild = false,
-  ...props
-}: ButtonProps) {
-  const Comp = asChild ? Slot : "button";
-
-  return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  );
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "outline" | "solid";
 }
+
+const Button: FC<ButtonProps> = ({
+  variant = "solid",
+  className = "",
+  children,
+  ...props
+}) => {
+  const baseClasses = "px-4 py-2 rounded focus:outline-none";
+  const variantClasses =
+    variant === "outline"
+      ? "border border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+      : "bg-blue-500 text-white hover:bg-blue-600";
+  return (
+    <button
+      className={`${baseClasses} ${variantClasses} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+export { Button };

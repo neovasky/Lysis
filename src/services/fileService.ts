@@ -1,26 +1,19 @@
-// File: src/services/fileService.ts
 import { FileMetadata, FileType } from "../store/slices/fileSlice";
 import { FileInfo } from "../types/files";
 
 interface FileSelection {
   multiple?: boolean;
   directory?: boolean;
-  filters?: Array<{
-    name: string;
-    extensions: string[];
-  }>;
+  filters?: Array<{ name: string; extensions: string[] }>;
 }
 
-// Removed duplicate FileOperationResult declaration here.
-
-export class FileService {
+class FileService {
   private static instance: FileService;
   private currentDirectory: string | undefined = undefined;
   static readonly DEFAULT_BASE_DIRECTORY = "BaseDirectory";
   static readonly LAST_DIRECTORY_KEY = "lysis_last_directory";
 
   private constructor() {
-    // Initialize currentDirectory from storage on instantiation
     const storedDir = localStorage.getItem(FileService.LAST_DIRECTORY_KEY);
     this.currentDirectory = storedDir || FileService.DEFAULT_BASE_DIRECTORY;
   }
@@ -32,10 +25,6 @@ export class FileService {
     return FileService.instance;
   }
 
-  /**
-   * Get or select current working directory.
-   * If no directory is set, return the default directory.
-   */
   async getCurrentDirectory(): Promise<string> {
     if (!this.currentDirectory) {
       try {
@@ -60,9 +49,6 @@ export class FileService {
     return this.currentDirectory;
   }
 
-  /**
-   * Set current working directory.
-   */
   setCurrentDirectory(path: string | undefined) {
     this.currentDirectory = path;
     if (path) {
@@ -70,16 +56,11 @@ export class FileService {
     }
   }
 
-  /**
-   * Select files or directories.
-   */
   async selectFiles(options?: FileSelection): Promise<string[]> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.selectFile !== "function") {
-        // In simulation mode, return default directory
         return [FileService.DEFAULT_BASE_DIRECTORY];
       }
-
       const paths = await window.fileAPI.selectFile(options);
       if (options?.directory && paths.length > 0) {
         this.setCurrentDirectory(paths[0]);
@@ -91,35 +72,24 @@ export class FileService {
     }
   }
 
-  /**
-   * Read file content.
-   */
   async readFile(path: string) {
     try {
       if (!window.fileAPI || typeof window.fileAPI.readFile !== "function") {
-        // In simulation mode, try to get file from localStorage
         const fileContentKey = `fileContent_${path}`;
         const storedContent = localStorage.getItem(fileContentKey);
         if (!storedContent) {
           throw new Error("File not found in storage");
         }
-
-        // Parse the stored data URL
         const parts = storedContent.split(",");
         if (parts.length < 2) {
           throw new Error("Invalid data URL stored");
         }
-
-        // Extract the content
         const base64Content = parts[1];
-
-        // Convert base64 to binary
         const binaryString = atob(base64Content);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-
         return {
           content: bytes,
           name: path.split("/").pop() || "",
@@ -128,7 +98,6 @@ export class FileService {
           lastModified: new Date(),
         };
       }
-
       return await window.fileAPI.readFile(path);
     } catch (error) {
       console.error("File read error:", error);
@@ -136,13 +105,22 @@ export class FileService {
     }
   }
 
-  /**
-   * Get all files in a directory.
-   * If window.fileAPI isn't available, return simulated folders stored in localStorage.
-   */
+  async readFileAsArrayBuffer(path: string): Promise<ArrayBuffer> {
+    try {
+      if (!window.fileAPI || typeof window.fileAPI.readFile !== "function") {
+        const fileData = await this.readFile(path);
+        return fileData.content.buffer;
+      }
+      const file = await window.fileAPI.readFile(path);
+      return file.content.buffer;
+    } catch (error) {
+      console.error("readFileAsArrayBuffer error:", error);
+      throw new Error("Failed to read file as ArrayBuffer");
+    }
+  }
+
   async getFiles(dirPath: string): Promise<FileMetadata[]> {
     if (!window.fileAPI || typeof window.fileAPI.getFiles !== "function") {
-      // Simulation: read from localStorage using the provided directory path
       const storageKey = `simulatedFolders_${dirPath}`;
       const stored = localStorage.getItem(storageKey);
       const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
@@ -157,18 +135,12 @@ export class FileService {
     }
   }
 
-  /**
-   * Write file content.
-   */
-  // Inside FileService.writeFile(...)
   async writeFile(path: string, content: Uint8Array): Promise<FileMetadata> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.writeFile !== "function") {
-        // In simulation mode, store the file info in localStorage.
         const pathParts = path.split("/");
         const fileName = pathParts.pop() || "";
         const dirPath = pathParts.join("/");
-
         const fileMetadata: FileMetadata = {
           id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: fileName,
@@ -179,16 +151,12 @@ export class FileService {
           isDirectory: false,
           tags: [],
         };
-
         const storageKey = `simulatedFolders_${dirPath}`;
         const stored = localStorage.getItem(storageKey);
         const files: FileMetadata[] = stored ? JSON.parse(stored) : [];
-        // Remove any existing file with same name and add the new one.
         const filtered = files.filter((f) => f.name !== fileName);
         filtered.push(fileMetadata);
         localStorage.setItem(storageKey, JSON.stringify(filtered));
-
-        // Determine the MIME type based on the file extension.
         const extension = fileName.split(".").pop()?.toLowerCase();
         let mime = "application/octet-stream";
         if (extension === "pdf") mime = "application/pdf";
@@ -197,26 +165,16 @@ export class FileService {
           mime = "image/jpeg";
         else if (extension === "gif") mime = "image/gif";
         else if (extension === "txt") mime = "text/plain";
-        // Add additional types as needed.
-
-        // Create a Blob with the proper MIME type.
         const blob = new Blob([content], { type: mime });
-        // Use FileReader to get a full data URL.
         const dataUrl: string = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve(reader.result as string); // This returns something like "data:application/pdf;base64,..."
-          };
+          reader.onloadend = () => resolve(reader.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
-        // Store the complete data URL.
         localStorage.setItem(`fileContent_${path}`, dataUrl);
-
         return fileMetadata;
       }
-
-      // Production branch (actual file system)
       const buffer = Buffer.from(content);
       await window.fileAPI.writeFile({ filePath: path, content: buffer });
       const info = await window.fileAPI.getFileInfo(path);
@@ -227,10 +185,6 @@ export class FileService {
     }
   }
 
-  /**
-   * Create new directory.
-   * If window.fileAPI is not available, simulate folder creation and persist it in localStorage.
-   */
   async createDirectory(name: string): Promise<FileOperationResult> {
     try {
       if (!this.currentDirectory) {
@@ -244,7 +198,6 @@ export class FileService {
         const storageKey = `simulatedFolders_${this.currentDirectory}`;
         const stored = localStorage.getItem(storageKey);
         const folders: FileMetadata[] = stored ? JSON.parse(stored) : [];
-        // Check for duplicate folder names
         if (folders.some((folder) => folder.name === name)) {
           return {
             success: false,
@@ -267,10 +220,7 @@ export class FileService {
       }
       await window.fileAPI.createDirectory(path);
       const info = await window.fileAPI.getFileInfo(path);
-      return {
-        success: true,
-        metadata: this.convertFileInfo(info),
-      };
+      return { success: true, metadata: this.convertFileInfo(info) };
     } catch (error) {
       console.error("Failed to create directory:", error);
       return {
@@ -281,10 +231,6 @@ export class FileService {
     }
   }
 
-  /**
-   * Delete file or directory.
-   * When fileAPI is not available, simulate deletion by updating localStorage.
-   */
   async deleteItem(path: string): Promise<FileOperationResult> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.deleteFile !== "function") {
@@ -307,9 +253,6 @@ export class FileService {
     }
   }
 
-  /**
-   * Open file in default system application
-   */
   async openFile(path: string): Promise<void> {
     try {
       if (!window.fileAPI || typeof window.fileAPI.openFile !== "function") {
@@ -322,10 +265,6 @@ export class FileService {
     }
   }
 
-  /**
-   * Rename file or directory.
-   * When fileAPI is not available, simulate renaming by updating localStorage.
-   */
   async renameItem(
     oldPath: string,
     newName: string
@@ -351,17 +290,11 @@ export class FileService {
         });
         localStorage.setItem(storageKey, JSON.stringify(updatedItems));
         const updatedItem = updatedItems.find((item) => item.path === newPath);
-        return {
-          success: true,
-          metadata: updatedItem,
-        };
+        return { success: true, metadata: updatedItem };
       }
       await window.fileAPI.renameFile(oldPath, newPath);
       const info = await window.fileAPI.getFileInfo(newPath);
-      return {
-        success: true,
-        metadata: this.convertFileInfo(info),
-      };
+      return { success: true, metadata: this.convertFileInfo(info) };
     } catch (error) {
       return {
         success: false,
@@ -370,9 +303,6 @@ export class FileService {
     }
   }
 
-  /**
-   * Move file or directory.
-   */
   async moveItem(
     sourcePath: string,
     targetPath: string
@@ -386,10 +316,7 @@ export class FileService {
       }
       await window.fileAPI.moveFile({ sourcePath, targetPath });
       const info = await window.fileAPI.getFileInfo(targetPath);
-      return {
-        success: true,
-        metadata: this.convertFileInfo(info),
-      };
+      return { success: true, metadata: this.convertFileInfo(info) };
     } catch (error) {
       return {
         success: false,
@@ -398,9 +325,6 @@ export class FileService {
     }
   }
 
-  /**
-   * Convert FileInfo to FileMetadata.
-   */
   private convertFileInfo(info: FileInfo): FileMetadata {
     return {
       id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -414,9 +338,6 @@ export class FileService {
     };
   }
 
-  /**
-   * Get file type from extension.
-   */
   private getFileType(filename: string): FileType {
     const ext = filename.toLowerCase().split(".").pop() || "";
     switch (ext) {

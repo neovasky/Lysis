@@ -1,5 +1,6 @@
-// src/components/ui/label.tsx
-const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({
+import { FC, LabelHTMLAttributes } from "react";
+
+const Label: FC<LabelHTMLAttributes<HTMLLabelElement>> = ({
   className = "",
   children,
   ...props
@@ -8,4 +9,5 @@ const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({
     {children}
   </label>
 );
+
 export default Label;
