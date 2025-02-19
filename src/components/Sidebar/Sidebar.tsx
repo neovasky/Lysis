@@ -1,7 +1,11 @@
+// File: src/components/Sidebar/Sidebar.tsx
+"use client";
+
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/theme/hooks/useTheme";
+import { useSidebar } from "@/components/Sidebar/sidebar-layout";
 import {
   Home,
   BookOpen,
@@ -14,10 +18,6 @@ import {
 } from "lucide-react";
 import cn from "classnames";
 
-interface SidebarProps {
-  isOpen: boolean;
-}
-
 interface MenuItem {
   text: string;
   icon: JSX.Element;
@@ -25,111 +25,134 @@ interface MenuItem {
   badge?: number;
 }
 
-interface MenuSection {
-  title: string;
-  items: MenuItem[];
-}
+const mainItems: MenuItem[] = [
+  { text: "Dashboard", icon: <Home size={24} />, path: "/" },
+  { text: "Glossary", icon: <BookOpen size={24} />, path: "/glossary" },
+  { text: "Analysis", icon: <BarChart size={24} />, path: "/analysis" },
+];
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const resourceItems: MenuItem[] = [
+  { text: "Files", icon: <Folder size={24} />, path: "/files", badge: 3 },
+  { text: "Calendar", icon: <Calendar size={24} />, path: "/calendar" },
+];
+
+const researchItems: MenuItem[] = [
+  { text: "Research Notes", icon: <FileText size={24} />, path: "/notes" },
+];
+
+function SidebarItem({ item }: { item: MenuItem }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
   const { accent } = useTheme();
+  const { isOpen } = useSidebar();
 
-  const menuSections: MenuSection[] = [
-    {
-      title: "MAIN NAVIGATION",
-      items: [
-        { text: "Dashboard", icon: <Home size={24} />, path: "/" },
-        { text: "Glossary", icon: <BookOpen size={24} />, path: "/glossary" },
-        { text: "Analysis", icon: <BarChart size={24} />, path: "/analysis" },
-      ],
-    },
-    {
-      title: "RESOURCES",
-      items: [
-        { text: "Files", icon: <Folder size={24} />, path: "/files", badge: 3 },
-        { text: "Calendar", icon: <Calendar size={24} />, path: "/calendar" },
-      ],
-    },
-    {
-      title: "RESEARCH",
-      items: [
+  const isActive = location.pathname === item.path;
+
+  return (
+    <div
+      onClick={() => navigate(item.path)}
+      className={cn(
+        "flex items-center rounded-md cursor-pointer transition-all duration-300 ease-in-out",
         {
-          text: "Research Notes",
-          icon: <FileText size={24} />,
-          path: "/notes",
-        },
-      ],
-    },
-  ];
+          "p-2 gap-3 justify-start": isOpen,
+          "p-2 justify-center": !isOpen,
+          [`bg-[hsl(var(--${accent}-700))] text-[hsl(var(--${accent}-900))]`]:
+            isActive,
+        }
+      )}
+    >
+      <div className="shrink-0">{item.icon}</div>
 
-  const SidebarItem = ({ item }: { item: MenuItem }) => {
-    const isActive = location.pathname === item.path;
-    return (
+      {/* Animated text container */}
       <div
-        onClick={() => navigate(item.path)}
-        className={cn(
-          "flex items-center p-2 rounded-md transition-colors cursor-pointer",
-          {
-            "gap-3": isOpen, // add gap when sidebar is open
-            "justify-center": !isOpen, // center icon when collapsed
-          }
-        )}
+        className="ml-1 overflow-hidden whitespace-nowrap"
         style={{
-          backgroundColor: isActive ? `hsl(var(--${accent}-700))` : undefined,
-          color: isActive ? `hsl(var(--${accent}-900))` : undefined,
+          maxWidth: isOpen ? "150px" : "0px",
+          opacity: isOpen ? 1 : 0,
+          transition:
+            "max-width 300ms ease-in-out, opacity 300ms ease-in-out 100ms",
         }}
       >
-        <div className="shrink-0">{item.icon}</div>
-        {isOpen && (
-          <>
-            <span
-              className={cn(
-                "text-sm truncate",
-                isActive ? "font-bold" : "text-foreground"
-              )}
-            >
-              {item.text}
-            </span>
-            {item.badge && (
-              <span
-                className="ml-auto text-white text-xs px-2 py-1 rounded-full"
-                style={{ backgroundColor: `hsl(var(--${accent}-900))` }}
-              >
-                {item.badge}
-              </span>
-            )}
-          </>
-        )}
+        <span className="text-sm">{item.text}</span>
       </div>
-    );
-  };
+
+      {item.badge && (
+        <div
+          className="overflow-hidden whitespace-nowrap ml-auto"
+          style={{
+            maxWidth: isOpen ? "50px" : "0px",
+            opacity: isOpen ? 1 : 0,
+            transition:
+              "max-width 300ms ease-in-out, opacity 300ms ease-in-out 100ms",
+            backgroundColor: `hsl(var(--${accent}-900))`,
+          }}
+        >
+          <span className="text-white text-xs px-2 py-1 rounded-full">
+            {item.badge}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SidebarSection({
+  heading,
+  items,
+}: {
+  heading: string;
+  items: MenuItem[];
+}) {
+  const { isOpen } = useSidebar();
+
+  return (
+    <div
+      className={cn("transition-all duration-300 ease-in-out", {
+        "mb-4": isOpen,
+        "mb-2": !isOpen,
+      })}
+    >
+      <h3
+        className="text-xs font-bold uppercase text-foreground/80 overflow-hidden whitespace-nowrap"
+        style={{
+          opacity: isOpen ? 1 : 0,
+          maxHeight: isOpen ? "1rem" : "0",
+          transition: "max-height 300ms ease-in-out, opacity 300ms ease-in-out",
+          marginBottom: isOpen ? "0.5rem" : "0",
+        }}
+      >
+        {heading}
+      </h3>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <SidebarItem key={item.path} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export const Sidebar: React.FC = () => {
+  const { user } = useAuth();
+  const { accent } = useTheme();
+  const { isOpen } = useSidebar();
 
   return (
     <div
       className={cn(
-        "fixed top-16 left-0 bottom-0 border-r border-gray-300 transition-all duration-200 overflow-hidden",
-        isOpen ? "w-60" : "w-16"
+        "fixed top-0 left-0 bottom-0 border-r border-gray-300 overflow-hidden z-40",
+        "transition-all duration-300 ease-in-out",
+        // Use a custom class for rounding the right corners to 0.3rem
+        isOpen ? "w-60 rounded-r-[0.3rem]" : "w-16 rounded-r-[0.3rem]"
       )}
       style={{ backgroundColor: `hsl(var(--${accent}-500))` }}
     >
-      <div className="p-4 overflow-y-auto h-full flex flex-col">
-        {menuSections.map((section) => (
-          <div key={section.title} className="mb-4">
-            {isOpen && (
-              <h3 className="text-xs font-bold uppercase mb-2 text-foreground/80">
-                {section.title}
-              </h3>
-            )}
-            <div>
-              {section.items.map((item) => (
-                <SidebarItem key={item.path} item={item} />
-              ))}
-            </div>
-          </div>
-        ))}
-        <div className="mt-auto border-t border-gray-300 pt-4">
+      <div className="p-3 overflow-y-auto h-full flex flex-col">
+        <SidebarSection heading="MAIN" items={mainItems} />
+        <SidebarSection heading="RESOURCES" items={resourceItems} />
+        <SidebarSection heading="RESEARCH" items={researchItems} />
+
+        <div className="mt-auto border-t border-gray-300 pt-3 space-y-2">
           <SidebarItem
             item={{
               text: "Settings",
@@ -149,3 +172,5 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     </div>
   );
 };
+
+export default Sidebar;

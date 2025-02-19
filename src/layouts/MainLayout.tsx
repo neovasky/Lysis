@@ -1,44 +1,44 @@
-// File: src/layouts/MainLayout.tsx
-import { Outlet } from "react-router-dom";
-import { useState } from "react";
-import { Sidebar } from "../components/Sidebar/Sidebar";
-import { TopBar } from "../components/TopBar/TopBar";
+"use client";
 
-const DRAWER_WIDTH = 240;
-const COLLAPSED_WIDTH = 72;
+import "react";
+import { Outlet } from "react-router-dom";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/Sidebar/sidebar-layout";
+import { Sidebar } from "@/components/Sidebar/Sidebar";
+import { ModeToggle } from "@/components/ThemeSwitcher/ModeToggle";
 
 export const MainLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   return (
-    <div
-      // Remove "bg-background" class so that inline style is not overridden.
-      style={{ backgroundColor: "var(--color-pageBackground)" }}
-      className="flex min-h-screen text-foreground"
-    >
-      <TopBar
-        isSidebarOpen={isSidebarOpen}
-        onSidebarToggle={setIsSidebarOpen}
-      />
-      <Sidebar isOpen={isSidebarOpen} />
-      <div
-        className="relative flex-grow mt-16 overflow-auto transition-all duration-200"
-        style={{
-          width: `calc(100% - ${
-            isSidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH
-          }px)`,
-          marginLeft: `${isSidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH}px`,
-          minHeight: "calc(100vh - 64px)",
-          backgroundColor: "var(--color-pageBackground)",
-        }}
-      >
-        <div
-          className="w-full h-full p-4"
+    <SidebarProvider>
+      {/* Render the collapsible sidebar */}
+      <Sidebar />
+
+      {/* Content area automatically inset by sidebar */}
+      <SidebarInset>
+        {/* Header */}
+        <header
+          className="flex h-16 shrink-0 items-center gap-2 px-4 transition-all duration-300 ease-in-out border-b-0"
+          style={{ backgroundColor: "var(--color-pageBackground)" }}
+        >
+          {/* Sidebar trigger (with updated icon) */}
+          <SidebarTrigger className="mr-2" />
+          <div className="flex-1" />
+          <ModeToggle />
+        </header>
+
+        {/* Main Content */}
+        <main
+          className="flex flex-1 flex-col gap-4 p-4 transition-all duration-300 ease-in-out"
           style={{ backgroundColor: "var(--color-pageBackground)" }}
         >
           <Outlet />
-        </div>
-      </div>
-    </div>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
+
+export default MainLayout;
