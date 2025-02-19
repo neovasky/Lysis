@@ -59,7 +59,7 @@ export function App() {
     const savedAccent = localStorage.getItem(
       "theme-accent"
     ) as ThemeAccent | null;
-    return savedAccent || "blue";
+    return savedAccent || "slate";
   };
 
   return (

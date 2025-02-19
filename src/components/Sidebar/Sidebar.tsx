@@ -1,7 +1,7 @@
-// File: src/components/Sidebar/Sidebar.tsx
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/theme/hooks/useTheme";
 import {
   Home,
   BookOpen,
@@ -34,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { accent } = useTheme();
 
   const menuSections: MenuSection[] = [
     {
@@ -65,33 +66,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
 
   const SidebarItem = ({ item }: { item: MenuItem }) => {
     const isActive = location.pathname === item.path;
-
     return (
       <div
         onClick={() => navigate(item.path)}
         className={cn(
-          "flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer",
+          "flex items-center p-2 rounded-md transition-colors cursor-pointer",
           {
-            "bg-accent-2 text-accent-9": isActive,
-            "hover:bg-accent-1 hover:text-accent-9": !isActive,
+            "gap-3": isOpen, // add gap when sidebar is open
+            "justify-center": !isOpen, // center icon when collapsed
           }
         )}
+        style={{
+          backgroundColor: isActive ? `hsl(var(--${accent}-700))` : undefined,
+          color: isActive ? `hsl(var(--${accent}-900))` : undefined,
+        }}
       >
-        <div className={cn("shrink-0", isActive ? "text-accent-9" : "")}>
-          {item.icon}
-        </div>
+        <div className="shrink-0">{item.icon}</div>
         {isOpen && (
           <>
             <span
               className={cn(
                 "text-sm truncate",
-                isActive ? "font-bold text-accent-9" : "text-foreground"
+                isActive ? "font-bold" : "text-foreground"
               )}
             >
               {item.text}
             </span>
             {item.badge && (
-              <span className="ml-auto bg-accent-9 text-white text-xs px-2 py-1 rounded-full">
+              <span
+                className="ml-auto text-white text-xs px-2 py-1 rounded-full"
+                style={{ backgroundColor: `hsl(var(--${accent}-900))` }}
+              >
                 {item.badge}
               </span>
             )}
@@ -105,9 +110,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     <div
       className={cn(
         "fixed top-16 left-0 bottom-0 border-r border-gray-300 transition-all duration-200 overflow-hidden",
-        "bg-background text-foreground",
         isOpen ? "w-60" : "w-16"
       )}
+      style={{ backgroundColor: `hsl(var(--${accent}-500))` }}
     >
       <div className="p-4 overflow-y-auto h-full flex flex-col">
         {menuSections.map((section) => (

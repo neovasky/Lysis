@@ -11,38 +11,36 @@ import "./globalStyles.css";
 interface ThemeProviderProps {
   children: React.ReactNode;
   defaultMode?: ThemeMode; // "light" | "dark"
-  defaultAccent?: ThemeAccent; // e.g. "blue", "red", ...
+  defaultAccent?: ThemeAccent; // e.g. "blue", "red", etc.
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultMode = "dark",
-  defaultAccent = "blue",
+  defaultAccent = "slate",
 }) => {
   const [mode, setMode] = useState<ThemeMode>(defaultMode);
   const [accent, setAccent] = useState<ThemeAccent>(defaultAccent);
 
-  // This effect toggles the .dark class for Tailwind
-  // and sets a data-accent attribute for your accent color.
   useEffect(() => {
     const root = document.documentElement;
 
-    // 1) Toggle .dark for Tailwind dark mode
+    // Toggle dark mode class for Tailwind
     if (mode === "dark") {
       root.classList.add("dark");
     } else {
       root.classList.remove("dark");
     }
 
-    // 2) (Optional) Set a data-accent attribute you can read in CSS
+    // Set the data-accent attribute and log the change
     root.setAttribute("data-accent", accent);
-
-    // 3) (Optional) If you want to set custom CSS vars, do so here:
-    // Example:
-    // root.style.setProperty("--my-accent-color", pickAccentHex(accent));
+    console.log("ThemeProvider update:", {
+      mode,
+      accent,
+      dataAccent: root.getAttribute("data-accent"),
+    });
   }, [mode, accent]);
 
-  // We still expose the context if other hooks (like useColorMode) want to read them
   const contextValue: ThemeContextValue = {
     mode,
     accent,

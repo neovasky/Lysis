@@ -1,8 +1,17 @@
 // File: src/components/SettingsPage.tsx
 import { useState } from "react";
-import { Bell, Globe, Archive, ArrowUp, Clipboard, Trash } from "lucide-react";
-
+import {
+  Bell,
+  Globe,
+  Archive,
+  ArrowUp,
+  Clipboard,
+  Trash,
+  Palette,
+} from "lucide-react";
 import { ThemeCustomizer } from "@/components/ThemeSwitcher/ThemeCustomizer";
+import { useTheme } from "@/theme/hooks/useTheme";
+import type { ThemeAccent } from "@/theme/types";
 
 interface SettingsState {
   notifications: boolean;
@@ -10,12 +19,13 @@ interface SettingsState {
   language: string;
   autoBackup: boolean;
   cloudSync: boolean;
+  // accent is managed by theme context
 }
 
 type SettingType = "switch" | "select";
 
 interface BaseSetting {
-  id: keyof SettingsState;
+  id: keyof SettingsState | "accent"; // extend to include accent
   icon: JSX.Element;
   title: string;
   description: string;
@@ -33,6 +43,32 @@ interface SelectSetting extends BaseSetting {
 
 type Setting = SwitchSetting | SelectSetting;
 
+// Update AVAILABLE_ACCENTS to include all accent names from your globalStyles.css
+const AVAILABLE_ACCENTS: readonly ThemeAccent[] = [
+  "slate",
+  "gray",
+  "zinc",
+  "neutral",
+  "stone",
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "lime",
+  "green",
+  "emerald",
+  "teal",
+  "cyan",
+  "sky",
+  "blue",
+  "indigo",
+  "violet",
+  "purple",
+  "fuchsia",
+  "pink",
+  "rose",
+];
+
 export const SettingsPage = () => {
   const [settings, setSettings] = useState<SettingsState>({
     notifications: true,
@@ -42,6 +78,9 @@ export const SettingsPage = () => {
     cloudSync: true,
   });
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+
+  // Pull the current accent and setter from the theme context
+  const { accent, setAccent, mode, setMode } = useTheme();
 
   const settingsList: Setting[] = [
     {
@@ -77,23 +116,35 @@ export const SettingsPage = () => {
       description: "Keep your data synchronized across devices",
       type: "switch",
     },
+    {
+      id: "accent",
+      icon: <Palette className="w-5 h-5 text-accent" />,
+      title: "Accent Color",
+      description: "Select your preferred accent color",
+      type: "select",
+      options: AVAILABLE_ACCENTS.map((color) => ({
+        value: color,
+        label: color.charAt(0).toUpperCase() + color.slice(1),
+      })),
+    },
   ];
 
+  // Use a single signature for handleSettingChange.
   const handleSettingChange = (
-    setting: keyof SettingsState,
+    setting: keyof SettingsState | "accent",
     value: boolean | string
-  ) => {
-    setSettings((prev) => ({ ...prev, [setting]: value }));
+  ): void => {
+    if (setting === "accent") {
+      // We assume value is one of the allowed ThemeAccent strings.
+      setAccent(value as ThemeAccent);
+    } else if (setting === "darkMode" && typeof value === "boolean") {
+      setMode(value ? "dark" : "light");
+      setSettings((prev) => ({ ...prev, [setting]: value }));
+    } else {
+      setSettings((prev) => ({ ...prev, [setting]: value }));
+    }
     setShowSaveSuccess(true);
     setTimeout(() => setShowSaveSuccess(false), 3000);
-  };
-
-  const handleDataExport = () => {
-    console.log("Exporting data...");
-  };
-
-  const handleDataDelete = () => {
-    console.log("Deleting data...");
   };
 
   // Custom switch control using Tailwind
@@ -146,14 +197,22 @@ export const SettingsPage = () => {
     if (setting.type === "switch") {
       return (
         <SwitchControl
-          checked={settings[setting.id] as boolean}
+          checked={
+            setting.id === "darkMode"
+              ? mode === "dark"
+              : (settings[setting.id as keyof SettingsState] as boolean)
+          }
           onChange={(checked) => handleSettingChange(setting.id, checked)}
         />
       );
     }
     return (
       <SelectControl
-        value={settings[setting.id] as string}
+        value={
+          setting.id === "accent"
+            ? accent
+            : (settings[setting.id as keyof SettingsState] as string)
+        }
         onChange={(value) => handleSettingChange(setting.id, value)}
         options={setting.options}
       />
@@ -175,10 +234,18 @@ export const SettingsPage = () => {
     </div>
   );
 
+  const handleDataExport = () => {
+    console.log("Exporting data...");
+  };
+
+  const handleDataDelete = () => {
+    console.log("Deleting data...");
+  };
+
   return (
-    <div className="p-6 bg-background text-foreground">
+    <div className="p-6 bg-color-pageBackground text-color-text-primary">
       {/* Header */}
-      <div className="bg-background shadow rounded p-6 mb-6">
+      <div className="bg-color-pageBackground shadow rounded p-6 mb-6">
         <h2 className="text-2xl font-bold mb-2">Settings</h2>
         <p className="text-sm text-gray-600">
           Customize your application preferences
@@ -186,7 +253,7 @@ export const SettingsPage = () => {
       </div>
 
       {/* Settings List */}
-      <div className="bg-background shadow rounded p-6 mb-6">
+      <div className="bg-color-pageBackground shadow rounded p-6 mb-6">
         <div className="flex flex-col gap-3">
           {settingsList.map((setting) => (
             <SettingRow key={setting.id} setting={setting} />
@@ -195,7 +262,7 @@ export const SettingsPage = () => {
       </div>
 
       {/* Data Management */}
-      <div className="bg-background shadow rounded p-6">
+      <div className="bg-color-pageBackground shadow rounded p-6">
         <h3 className="text-xl font-bold mb-4">Data Management</h3>
         <div className="flex flex-col gap-4">
           <div>
@@ -221,7 +288,7 @@ export const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Theme Customizer */}
+      {/* Theme Customizer (alternative UI) */}
       <div className="mt-6">
         <ThemeCustomizer />
       </div>

@@ -1,6 +1,7 @@
 import "react";
 import { PanelLeft } from "lucide-react";
 import { ModeToggle } from "../ThemeSwitcher/ModeToggle";
+import { useTheme } from "@/theme/hooks/useTheme";
 
 interface TopBarProps {
   isSidebarOpen: boolean;
@@ -8,8 +9,13 @@ interface TopBarProps {
 }
 
 export const TopBar = ({ isSidebarOpen, onSidebarToggle }: TopBarProps) => {
+  const { accent } = useTheme();
+
   return (
-    <div className="fixed top-0 left-0 right-0 h-16 bg-panelSolid dark:bg-[#18181b] border-b border-gray-300 z-50">
+    <div
+      className="fixed top-0 left-0 right-0 h-16 border-b border-gray-300 z-50"
+      style={{ backgroundColor: `hsl(var(--${accent}-700))` }}
+    >
       <div className="flex items-center justify-between px-4 h-full">
         <div className="flex items-center gap-4">
           <button
@@ -19,11 +25,11 @@ export const TopBar = ({ isSidebarOpen, onSidebarToggle }: TopBarProps) => {
           >
             <PanelLeft className="h-6 w-6" />
           </button>
-          {/* You can add more left-side elements here */}
+          {/* Additional left-side elements */}
         </div>
         <div className="flex items-center gap-4">
           <ModeToggle />
-          {/* You can add more right-side elements here */}
+          {/* Additional right-side elements */}
         </div>
       </div>
     </div>

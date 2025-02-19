@@ -5,19 +5,31 @@
 
 export type ThemeMode = "light" | "dark";
 
-// These match Radix UI's supported accent colors
+// Updated ThemeAccent union to include all desired accent colors
 export type ThemeAccent =
-  | "indigo"
-  | "tomato"
-  | "blue"
+  | "slate"
+  | "gray"
+  | "zinc"
+  | "neutral"
+  | "stone"
   | "red"
-  | "green"
   | "orange"
-  | "purple"
-  | "yellow"
   | "amber"
+  | "yellow"
+  | "lime"
+  | "green"
+  | "emerald"
+  | "teal"
+  | "cyan"
+  | "sky"
+  | "blue"
+  | "indigo"
+  | "violet"
+  | "purple"
+  | "fuchsia"
   | "pink"
-  | "violet";
+  | "rose"
+  | "tomato";
 
 export interface ThemeColors {
   pageBackground: string;

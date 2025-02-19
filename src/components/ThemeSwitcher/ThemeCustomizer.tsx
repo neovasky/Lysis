@@ -4,20 +4,40 @@ import { useTheme } from "@/theme/hooks/useTheme";
 import { Moon, Sun } from "lucide-react";
 
 const AVAILABLE_ACCENTS = [
-  "blue",
+  "slate",
+  "gray",
+  "zinc",
+  "neutral",
+  "stone",
   "red",
-  "green",
   "orange",
-  "purple",
-  "pink",
+  "amber",
   "yellow",
+  "lime",
+  "green",
+  "emerald",
+  "teal",
+  "cyan",
+  "sky",
+  "blue",
+  "indigo",
   "violet",
+  "purple",
+  "fuchsia",
+  "pink",
+  "rose",
 ] as const;
 
 export const ThemeCustomizer = () => {
   const { mode, setMode, accent, setAccent } = useTheme();
 
   const handleModeToggle = () => {
+    console.log(
+      "Toggling mode from",
+      mode,
+      "to",
+      mode === "dark" ? "light" : "dark"
+    );
     setMode(mode === "dark" ? "light" : "dark");
   };
 
@@ -50,13 +70,16 @@ export const ThemeCustomizer = () => {
           {AVAILABLE_ACCENTS.map((color) => (
             <button
               key={color}
-              onClick={() => setAccent(color)}
+              onClick={() => {
+                console.log("Setting accent to", color);
+                setAccent(color);
+              }}
               className={`
                 w-8 h-8 rounded-full border-2 hover:opacity-80
                 ${accent === color ? "border-accent-9" : "border-transparent"}
               `}
               style={{
-                backgroundColor: `hsl(var(--${color}-6))`,
+                backgroundColor: `hsl(var(--${color}-600))`,
               }}
               aria-label={`Set accent color to ${color}`}
             />
