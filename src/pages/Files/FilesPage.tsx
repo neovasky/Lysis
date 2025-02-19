@@ -6,7 +6,7 @@ import FileService from "@/services/fileService";
 import { FILE_CONSTANTS } from "@/services/constants";
 import { CreateFolderDialog } from "@/components/Files/CreateFolderDialog";
 import FileUploadDialog from "@/components/Files/FileUploadDialog";
-import ContinuousPDFViewerWithSidebar from "@/components/PDFViewer/PDFViewer";
+import PDFViewer from "@/components/PDFViewer/PDFViewer";
 import { useFiles } from "@/components/Files/hooks/useFiles";
 
 import {
@@ -452,7 +452,13 @@ export default function FilesPage() {
             </Button>
           </div>
           <div className="flex-1 overflow-auto">
-            <ContinuousPDFViewerWithSidebar pdfData={selectedPdfData} />
+            <PDFViewer
+              pdfData={selectedPdfData}
+              onClose={() => {
+                setShowPdfModal(false);
+                setSelectedPdfData(null);
+              }}
+            />
           </div>
         </div>
       )}
