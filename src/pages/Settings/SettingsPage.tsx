@@ -1,13 +1,8 @@
+// File: src/components/SettingsPage.tsx
 import { useState } from "react";
-import {
-  Bell,
-  Moon,
-  Globe,
-  Archive,
-  ArrowUp,
-  Clipboard,
-  Trash,
-} from "lucide-react";
+import { Bell, Globe, Archive, ArrowUp, Clipboard, Trash } from "lucide-react";
+
+import { ThemeCustomizer } from "@/components/ThemeSwitcher/ThemeCustomizer";
 
 interface SettingsState {
   notifications: boolean;
@@ -51,21 +46,14 @@ export const SettingsPage = () => {
   const settingsList: Setting[] = [
     {
       id: "notifications",
-      icon: <Bell className="w-5 h-5" />,
+      icon: <Bell className="w-5 h-5 text-accent" />,
       title: "Notifications",
       description: "Enable alerts for market events and updates",
       type: "switch",
     },
     {
-      id: "darkMode",
-      icon: <Moon className="w-5 h-5" />,
-      title: "Dark Mode",
-      description: "Use dark theme across the application",
-      type: "switch",
-    },
-    {
       id: "language",
-      icon: <Globe className="w-5 h-5" />,
+      icon: <Globe className="w-5 h-5 text-accent" />,
       title: "Language",
       description: "Select your preferred language",
       type: "select",
@@ -77,14 +65,14 @@ export const SettingsPage = () => {
     },
     {
       id: "autoBackup",
-      icon: <Archive className="w-5 h-5" />,
+      icon: <Archive className="w-5 h-5 text-accent" />,
       title: "Auto Backup",
       description: "Automatically backup your data daily",
       type: "switch",
     },
     {
       id: "cloudSync",
-      icon: <ArrowUp className="w-5 h-5" />,
+      icon: <ArrowUp className="w-5 h-5 text-accent" />,
       title: "Cloud Sync",
       description: "Keep your data synchronized across devices",
       type: "switch",
@@ -101,16 +89,14 @@ export const SettingsPage = () => {
   };
 
   const handleDataExport = () => {
-    // Implementation for data export
     console.log("Exporting data...");
   };
 
   const handleDataDelete = () => {
-    // Implementation for data deletion
     console.log("Deleting data...");
   };
 
-  // Custom switch control
+  // Custom switch control using Tailwind
   const SwitchControl = ({
     checked,
     onChange,
@@ -125,12 +111,15 @@ export const SettingsPage = () => {
         onChange={(e) => onChange(e.target.checked)}
         className="sr-only"
       />
-      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:bg-gray-700"></div>
-      <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></span>
+      <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+      <span
+        className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200"
+        style={{ transform: checked ? "translateX(20px)" : "translateX(0)" }}
+      ></span>
     </label>
   );
 
-  // Custom select control
+  // Custom select control using Tailwind
   const SelectControl = ({
     value,
     onChange,
@@ -143,7 +132,7 @@ export const SettingsPage = () => {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="p-2 border border-gray-300 rounded"
+      className="p-2 border border-gray-300 rounded bg-background text-foreground"
     >
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -172,25 +161,24 @@ export const SettingsPage = () => {
   };
 
   const SettingRow = ({ setting }: { setting: Setting }) => (
-    <div className="py-3">
+    <div className="py-3 border-b border-gray-300">
       <div className="flex justify-between items-center">
         <div className="flex items-start gap-3">
-          <div className="text-blue-500">{setting.icon}</div>
+          <div>{setting.icon}</div>
           <div>
-            <p className="font-bold">{setting.title}</p>
+            <p className="font-bold text-foreground">{setting.title}</p>
             <p className="text-sm text-gray-600">{setting.description}</p>
           </div>
         </div>
         <div>{renderSettingControl(setting)}</div>
       </div>
-      <div className="h-px bg-gray-300" />
     </div>
   );
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-background text-foreground">
       {/* Header */}
-      <div className="bg-white shadow rounded p-6 mb-6">
+      <div className="bg-background shadow rounded p-6 mb-6">
         <h2 className="text-2xl font-bold mb-2">Settings</h2>
         <p className="text-sm text-gray-600">
           Customize your application preferences
@@ -198,7 +186,7 @@ export const SettingsPage = () => {
       </div>
 
       {/* Settings List */}
-      <div className="bg-white shadow rounded p-6 mb-6">
+      <div className="bg-background shadow rounded p-6 mb-6">
         <div className="flex flex-col gap-3">
           {settingsList.map((setting) => (
             <SettingRow key={setting.id} setting={setting} />
@@ -207,7 +195,7 @@ export const SettingsPage = () => {
       </div>
 
       {/* Data Management */}
-      <div className="bg-white shadow rounded p-6">
+      <div className="bg-background shadow rounded p-6">
         <h3 className="text-xl font-bold mb-4">Data Management</h3>
         <div className="flex flex-col gap-4">
           <div>
@@ -231,6 +219,11 @@ export const SettingsPage = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Theme Customizer */}
+      <div className="mt-6">
+        <ThemeCustomizer />
       </div>
 
       {/* Success Toast */}

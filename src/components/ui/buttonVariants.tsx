@@ -1,33 +1,38 @@
+/**
+ * File: src/components/ui/buttonVariants.ts
+ * Description: Button variant definitions with an updated "icon" variant that removes background color.
+ */
 "use client";
 
 import { cva } from "class-variance-authority";
 
-// Updated buttonVariants with the new "solid" variant:
 export const buttonVariants = cva(
-  // Base styles:
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 ring-ring/10 dark:ring-ring/20 dark:outline-ring/40 outline-ring/50 focus-visible:ring-4 focus-visible:outline-1 aria-invalid:focus-visible:ring-0",
+  [
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium",
+    "transition-colors disabled:pointer-events-none disabled:opacity-50",
+    "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-7",
+  ],
   {
     variants: {
       variant: {
-        default:
-          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
-        // New "solid" variant added:
-        solid: "bg-solid text-solid-foreground shadow-sm hover:bg-solid/90",
-        destructive:
-          "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90",
+        default: "bg-accent-6 text-white hover:bg-accent-7",
+        solid: "bg-accent-6 text-white hover:bg-accent-7",
+        destructive: "bg-red-500 text-white hover:bg-red-600",
         outline:
-          "border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
+          "border border-accent-6 bg-background hover:bg-accent-1 hover:text-accent-9",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        icon: "bg-transparent text-white border border-transparent hover:bg-white/10 hover:border-gray-400",
+          "bg-gray-200 dark:bg-gray-700 text-foreground hover:bg-gray-300 dark:hover:bg-gray-600",
+        ghost:
+          "bg-transparent hover:bg-accent-1 hover:text-accent-9 dark:hover:bg-accent-2",
+        link: "text-accent-9 underline-offset-4 hover:underline",
+        // Updated icon variant: force transparent background and no border.
+        icon: "bg-transparent border-0 !bg-transparent text-foreground hover:bg-transparent hover:text-foreground",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "h-8 w-8",
+        default: "h-9 px-4 py-2",
+        sm: "h-8 rounded-md px-3",
+        lg: "h-10 rounded-md px-6",
+        icon: "h-8 w-8 p-0",
       },
     },
     defaultVariants: {

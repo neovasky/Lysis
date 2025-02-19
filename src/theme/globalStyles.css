@@ -1,13 +1,15 @@
-/* 
- * File: src/theme/globalStyles.css 
- * Description: Global theme styles and overrides
- */
+/* File: src/theme/globalStyles.css */
+/* Global theme styles and overrides */
 
+/* Theme Variables */
 :root {
   color-scheme: light dark;
-}
 
-:root[data-accent="blue"] {
+  /* Base color variables using HSL (for easy theming) */
+  --background: 0 0% 100%; /* white */
+  --foreground: 222.2 47.4% 11.2%; /* dark text */
+
+  /* Default accent colors for blue (fallback values) */
   --accent-1: #eff6ff;
   --accent-2: #dbeafe;
   --accent-3: #bfdbfe;
@@ -18,69 +20,84 @@
   --accent-8: #1d4ed8;
   --accent-9: #1e40af;
   --accent-10: #1e3a8a;
-}
 
-body {
-  margin: 0;
-  background-color: var(--color-pageBackground);
-  color: var(--color-text-primary);
-  font-family: var(--font-family);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  /* Derived color variables used in your app */
+  --color-pageBackground: hsl(var(--background));
+  --color-text-primary: hsl(var(--foreground));
+  --color-surface1: #f1f5f9; /* light surface background */
+  --color-surface2: #e2e8f0;
+  --color-borderCard: rgba(0, 0, 0, 0.08);
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.radix-themes {
-  --default-font-family: "Plus Jakarta Sans", system-ui, -apple-system,
+  /* Font settings */
+  --font-family: "Plus Jakarta Sans", system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-surface1);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-surface2);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-borderCard);
-} /* 
- * File: src/theme/globalStyles.css 
- * Description: Global theme styles and overrides
- */
-
-:root {
-  color-scheme: light dark;
-}
-
+/* Accent color overrides */
 :root[data-accent="blue"] {
-  --accent-1: #eff6ff;
-  --accent-2: #dbeafe;
-  --accent-3: #bfdbfe;
-  --accent-4: #93c5fd;
-  --accent-5: #60a5fa;
-  --accent-6: #3b82f6;
-  --accent-7: #2563eb;
-  --accent-8: #1d4ed8;
-  --accent-9: #1e40af;
-  --accent-10: #1e3a8a;
+  --accent-1: 210 100% 98%;
+  --accent-2: 210 100% 95%;
+  --accent-3: 210 98% 86%;
+  --accent-4: 210 95% 78%;
+  --accent-5: 210 90% 64%;
+  --accent-6: 210 90% 56%;
+  --accent-7: 210 85% 47%;
+  --accent-8: 210 80% 37%;
+  --accent-9: 210 80% 27%;
 }
 
-body {
+:root[data-accent="red"] {
+  --accent-1: 0 100% 98%;
+  --accent-2: 0 100% 94%;
+  --accent-3: 0 90% 78%;
+  --accent-4: 0 85% 67%;
+  --accent-5: 0 85% 58%;
+  --accent-6: 0 80% 48%;
+  --accent-7: 0 72% 40%;
+  --accent-8: 0 72% 30%;
+  --accent-9: 0 70% 20%;
+}
+
+:root[data-accent="pink"] {
+  --accent-1: 330 100% 98%;
+  --accent-2: 330 90% 95%;
+  --accent-3: 330 90% 88%;
+  --accent-4: 330 85% 78%;
+  --accent-5: 330 80% 66%;
+  --accent-6: 330 80% 56%;
+  --accent-7: 330 70% 44%;
+  --accent-8: 330 70% 32%;
+  --accent-9: 330 60% 20%;
+}
+
+:root[data-accent="violet"] {
+  --accent-1: 258 100% 98%;
+  --accent-2: 258 95% 90%;
+  --accent-3: 258 90% 82%;
+  --accent-4: 258 90% 70%;
+  --accent-5: 258 85% 60%;
+  --accent-6: 258 75% 50%;
+  --accent-7: 258 70% 40%;
+  --accent-8: 258 70% 30%;
+  --accent-9: 258 65% 20%;
+}
+
+/* Add additional accent overrides for green, orange, yellow, etc. as needed */
+
+/* Dark mode overrides */
+.dark {
+  --background: 0 0% 10%; /* dark background */
+  --foreground: 210 40% 98%; /* light text */
+}
+
+/* Global Element Styles */
+html,
+body,
+#root {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
   background-color: var(--color-pageBackground);
   color: var(--color-text-primary);
   font-family: var(--font-family);
@@ -88,15 +105,55 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Use this #root style for full-viewport layouts */
 #root {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.radix-themes {
-  --default-font-family: "Plus Jakarta Sans", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+/* Optional: Container class for centered content */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Additional utility classes */
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
 }
 
 /* Scrollbar styles */

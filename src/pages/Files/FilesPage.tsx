@@ -23,7 +23,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-// Shadcn UI components (ensure you have them generated)
+// Updated Button import (with updated variants):
 import Button from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -45,7 +45,7 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from "@/components/ui/tooltip"; // for icon tooltips
+} from "@/components/ui/tooltip";
 
 const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
 
@@ -271,7 +271,6 @@ export default function FilesPage() {
     const newName = prompt("Enter new name", file.name);
     if (!newName || newName === file.name) return;
     try {
-      // Placeholder rename logic
       alert(`Pretending to rename ${file.name} to ${newName}`);
       await loadDirectories(currentDirectory?.path);
     } catch (err) {
@@ -301,9 +300,9 @@ export default function FilesPage() {
   }, [displayItems, activeFilter]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl flex flex-col h-screen bg-white text-black">
+    <div className="mx-auto w-full max-w-6xl flex flex-col h-screen bg-background text-foreground">
       {/* Top Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-borderCard">
         <div className="flex items-center gap-2">
           {currentDirectory &&
             currentDirectory.path !== DEFAULT_BASE_DIRECTORY && (
@@ -312,17 +311,16 @@ export default function FilesPage() {
                 Root
               </Button>
             )}
-          <Button variant="solid" onClick={() => setIsNewFolderOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button variant="icon" onClick={() => setIsNewFolderOpen(true)}>
+            <Plus className="h-4 w-4" />
             New Folder
           </Button>
-          <Button variant="solid" onClick={() => setIsUploadOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" />
+          <Button variant="icon" onClick={() => setIsUploadOpen(true)}>
+            <Upload className="h-4 w-4" />
             Upload Files
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          {/* Grid View Icon with Tooltip */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -335,7 +333,6 @@ export default function FilesPage() {
             <TooltipContent>Switch to Grid View</TooltipContent>
           </Tooltip>
 
-          {/* List View Icon with Tooltip */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -348,7 +345,6 @@ export default function FilesPage() {
             <TooltipContent>Switch to List View</TooltipContent>
           </Tooltip>
 
-          {/* Refresh Icon with Tooltip */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -372,7 +368,7 @@ export default function FilesPage() {
 
       {/* Filter Bar */}
       {currentDirectory && (
-        <div className="px-4 py-3 border-b border-gray-300">
+        <div className="px-4 py-3 border-b border-borderCard">
           <ToggleGroup
             type="single"
             value={activeFilter}
@@ -417,10 +413,10 @@ export default function FilesPage() {
                 }
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Folder className="text-blue-500" size={20} />
+                  <Folder className="text-accent-6" size={20} />
                   <span className="font-medium">{dir.name}</span>
                 </div>
-                <p className="text-sm text-gray-600">Folder</p>
+                <p className="text-sm text-foreground/70">Folder</p>
               </Card>
             ))}
           </div>
@@ -444,7 +440,7 @@ export default function FilesPage() {
       {/* PDF Modal */}
       {showPdfModal && selectedPdfData && (
         <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
-          <div className="flex justify-end p-2 bg-gray-200">
+          <div className="flex justify-end p-2 bg-surface1">
             <Button
               variant="outline"
               onClick={() => {
@@ -482,7 +478,7 @@ function ListView({
   onRename: (file: FileMetadata) => void;
 }) {
   return (
-    <div className="rounded-lg border border-gray-300 bg-white p-2">
+    <div className="rounded-lg border border-borderCard bg-background p-2">
       <Table>
         <TableHeader>
           <TableRow>
@@ -498,7 +494,7 @@ function ListView({
           {files.map((file) => (
             <TableRow
               key={file.path}
-              className="hover:bg-gray-100 cursor-pointer"
+              className="hover:bg-accent-1 cursor-pointer"
               onClick={() => onFileOpen(file)}
             >
               <TableCell className="flex items-center gap-2">
@@ -521,7 +517,7 @@ function ListView({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
+                      variant="icon"
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -570,14 +566,14 @@ function GridView({
       {files.map((file) => (
         <Card
           key={file.path}
-          className="cursor-pointer p-4 hover:opacity-90 transition bg-white border border-gray-300"
+          className="cursor-pointer p-4 hover:opacity-90 transition bg-background border border-borderCard"
           onClick={() => onFileOpen(file)}
         >
           <div className="flex items-center gap-2 mb-2">
             {renderIcon(file, 24)}
             <span className="font-medium truncate">{file.name}</span>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-foreground/70">
             {file.isDirectory ? "Folder" : file.type?.toUpperCase() || "File"}
           </p>
         </Card>
@@ -586,13 +582,13 @@ function GridView({
   );
 }
 
-/* Helper for rendering icons */
+/* Helper to render correct icon */
 function renderIcon(file: FileMetadata, iconSize = 16) {
   if (file.isDirectory)
-    return <Folder size={iconSize} className="text-blue-500" />;
+    return <Folder size={iconSize} className="text-accent-6" />;
   if (file.name.toLowerCase().endsWith(".pdf"))
     return <FileText size={iconSize} className="text-red-500" />;
   if (/\.(png|jpe?g|gif)$/i.test(file.name))
     return <FileImage size={iconSize} className="text-green-500" />;
-  return <FileIcon size={iconSize} className="text-gray-500" />;
+  return <FileIcon size={iconSize} className="text-foreground/70" />;
 }

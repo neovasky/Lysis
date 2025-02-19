@@ -1,20 +1,17 @@
 /**
  * File: src/theme/ThemeProvider.tsx
- * Description: Theme provider component
+ * Description: Minimal theme provider for dark/light mode and accent color
  */
 
 import React, { useState, useEffect } from "react";
-import { Theme as RadixTheme } from "@radix-ui/themes";
-import { Theme, ThemeMode, ThemeAccent } from "./types";
 import { ThemeContext, ThemeContextValue } from "./context";
-import { defaultDarkTheme } from "./variants/dark";
-import { defaultLightTheme } from "./variants/light";
+import { ThemeMode, ThemeAccent } from "./types";
 import "./globalStyles.css";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
-  defaultMode?: ThemeMode;
-  defaultAccent?: ThemeAccent;
+  defaultMode?: ThemeMode; // "light" | "dark"
+  defaultAccent?: ThemeAccent; // e.g. "blue", "red", ...
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
@@ -24,65 +21,38 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 }) => {
   const [mode, setMode] = useState<ThemeMode>(defaultMode);
   const [accent, setAccent] = useState<ThemeAccent>(defaultAccent);
-  const [theme, setTheme] = useState<Theme>(
-    mode === "dark" ? defaultDarkTheme : defaultLightTheme
-  );
 
+  // This effect toggles the .dark class for Tailwind
+  // and sets a data-accent attribute for your accent color.
   useEffect(() => {
-    const newTheme = mode === "dark" ? defaultDarkTheme : defaultLightTheme;
-    setTheme(newTheme);
-    applyTheme(newTheme, mode, accent);
-  }, [mode, accent]);
-
-  const applyTheme = (theme: Theme, mode: ThemeMode, accent: ThemeAccent) => {
     const root = document.documentElement;
 
-    // Set theme mode and accent
-    root.setAttribute("data-theme", mode);
+    // 1) Toggle .dark for Tailwind dark mode
+    if (mode === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    // 2) (Optional) Set a data-accent attribute you can read in CSS
     root.setAttribute("data-accent", accent);
 
-    // Apply colors
-    Object.entries(theme.tokens.colors).forEach(([key, value]) => {
-      if (value && typeof value === "object") {
-        // Handle nested color objects (like text: { primary, secondary })
-        Object.entries(value as Record<string, string>).forEach(
-          ([subKey, subValue]) => {
-            root.style.setProperty(`--color-${key}-${subKey}`, subValue);
-          }
-        );
-      } else if (typeof value === "string") {
-        // Handle direct color values
-        root.style.setProperty(`--color-${key}`, value);
-      }
-    });
+    // 3) (Optional) If you want to set custom CSS vars, do so here:
+    // Example:
+    // root.style.setProperty("--my-accent-color", pickAccentHex(accent));
+  }, [mode, accent]);
 
-    // Apply shadows
-    Object.entries(theme.tokens.shadows).forEach(([key, value]) => {
-      if (typeof value === "string") {
-        root.style.setProperty(`--shadow-${key}`, value);
-      }
-    });
-  };
-
+  // We still expose the context if other hooks (like useColorMode) want to read them
   const contextValue: ThemeContextValue = {
     mode,
     accent,
-    theme,
     setMode,
     setAccent,
   };
 
   return (
     <ThemeContext.Provider value={contextValue}>
-      <RadixTheme
-        appearance={mode}
-        accentColor={accent}
-        grayColor={theme.config.grayColor}
-        radius={theme.config.radius}
-        scaling={theme.config.scaling}
-      >
-        {children}
-      </RadixTheme>
+      {children}
     </ThemeContext.Provider>
   );
 };

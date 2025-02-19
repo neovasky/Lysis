@@ -15,7 +15,9 @@ export type ThemeAccent =
   | "orange"
   | "purple"
   | "yellow"
-  | "amber";
+  | "amber"
+  | "pink"
+  | "violet";
 
 export interface ThemeColors {
   pageBackground: string;

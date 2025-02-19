@@ -1,11 +1,13 @@
+/**
+ * File: src/components/ui/button.tsx
+ * Description: Button component that applies variant and size classes from buttonVariants.
+ */
 "use client";
 
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import type { VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-
-// Import from the new separate file with correct casing:
 import { buttonVariants } from "@/components/ui/buttonVariants";
 
 export interface ButtonProps
@@ -29,6 +31,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 Button.displayName = "Button";
 
-// Export Button as both named and default export
 export { Button };
 export default Button;

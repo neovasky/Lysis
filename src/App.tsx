@@ -19,9 +19,9 @@ import { Provider } from "react-redux";
 import { store } from "./store/store";
 import { useAuth } from "./hooks/useAuth";
 import { ThemeMode, ThemeAccent } from "./theme/types";
+import { TooltipProvider } from "@/components/ui/tooltip"; // important for shadcn tooltips
 
-// Radix UI Themes styles
-import "@radix-ui/themes/styles.css";
+import "@radix-ui/themes/styles.css"; // optional if you have Radix UI themes
 
 /**
  * ProtectedRoute:
@@ -69,35 +69,37 @@ export function App() {
         defaultAccent={getInitialAccent()}
       >
         <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Public route */}
-              <Route path="/auth" element={<AuthPage />} />
+          <TooltipProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public route */}
+                <Route path="/auth" element={<AuthPage />} />
 
-              {/* Protected routes */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <MainLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<HomePage />} />
-                <Route path="glossary" element={<GlossaryPage />} />
-                <Route path="analysis" element={<AnalysisPage />} />
-                <Route path="alerts" element={<AlertsPage />} />
-                <Route path="files" element={<FilesPage />} />
-                <Route path="calendar" element={<CalendarPage />} />
-                <Route path="notes" element={<NotesPage />} />
-                <Route path="profile" element={<ProfilePage />} />
-                <Route path="settings" element={<SettingsPage />} />
-              </Route>
+                {/* Protected routes */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <MainLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<HomePage />} />
+                  <Route path="glossary" element={<GlossaryPage />} />
+                  <Route path="analysis" element={<AnalysisPage />} />
+                  <Route path="alerts" element={<AlertsPage />} />
+                  <Route path="files" element={<FilesPage />} />
+                  <Route path="calendar" element={<CalendarPage />} />
+                  <Route path="notes" element={<NotesPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
 
-              {/* Catch-all route */}
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </BrowserRouter>
+                {/* Catch-all route */}
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
     </Provider>

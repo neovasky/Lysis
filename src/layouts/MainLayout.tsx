@@ -15,14 +15,14 @@ export const MainLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background text-foreground">
       <TopBar
         isSidebarOpen={isSidebarOpen}
         onSidebarToggle={setIsSidebarOpen}
       />
       <Sidebar isOpen={isSidebarOpen} />
       <div
-        className="flex-grow transition-all duration-200 ease-in-out mt-16 overflow-hidden"
+        className="relative flex-grow mt-16 overflow-auto transition-all duration-200"
         style={{
           width: `calc(100% - ${
             isSidebarOpen ? DRAWER_WIDTH : COLLAPSED_WIDTH
@@ -31,7 +31,8 @@ export const MainLayout = () => {
           minHeight: "calc(100vh - 64px)",
         }}
       >
-        <div className="container mx-auto p-4 max-w-7xl">
+        {/* Fill the entire space with background color */}
+        <div className="w-full h-full p-4">
           <Outlet />
         </div>
       </div>

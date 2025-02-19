@@ -4,12 +4,11 @@
  */
 
 import { createContext } from "react";
-import { Theme, ThemeMode, ThemeAccent } from "./types";
+import { ThemeMode, ThemeAccent } from "./types";
 
 export interface ThemeContextValue {
   mode: ThemeMode;
   accent: ThemeAccent;
-  theme: Theme;
   setMode: (mode: ThemeMode) => void;
   setAccent: (accent: ThemeAccent) => void;
 }
