@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { ZoomIn, ZoomOut, Download, ExternalLink } from "lucide-react";
-import ContinuousPDFViewerWithSidebar from "../PDFViewer/PDFViewer";
+import PDFViewer from "../PDFViewer/PDFViewer";
 import { FileMetadata } from "../../store/slices/fileSlice";
 import FileService from "../../services/fileService";
+import { Button } from "@/components/ui/button";
 
 // Helper function to convert base64 string to Uint8Array
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -17,9 +18,14 @@ function base64ToUint8Array(base64: string): Uint8Array {
 interface ViewerSwitcherProps {
   file: FileMetadata;
   content: string; // Data URL (e.g. "data:application/pdf;base64,...")
+  onClose: () => void;
 }
 
-const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
+const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
+  file,
+  content,
+  onClose,
+}) => {
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
@@ -82,7 +88,7 @@ const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
         }
         return (
           <div className="w-full h-screen overflow-hidden">
-            <ContinuousPDFViewerWithSidebar pdfData={pdfData as Uint8Array} />
+            <PDFViewer pdfData={pdfData as Uint8Array} onClose={onClose} />
           </div>
         );
       case "png":
@@ -115,13 +121,14 @@ const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
             <p className="text-xl">
               No preview available for this file type ({ext})
             </p>
-            <button
+            <Button
+              variant="default"
               onClick={handleOpenInSystemApp}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded"
+              className="flex items-center gap-2"
             >
               <ExternalLink size={20} />
               Open in System Application
-            </button>
+            </Button>
           </div>
         );
     }
@@ -129,30 +136,38 @@ const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({ file, content }) => {
 
   const controls = (
     <div className="fixed top-4 right-4 z-50 bg-gray-200 p-2 rounded shadow flex gap-2">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleZoomOut}
         className="p-2 bg-white rounded hover:bg-gray-100"
       >
         <ZoomOut size={16} />
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleZoomIn}
         className="p-2 bg-white rounded hover:bg-gray-100"
       >
         <ZoomIn size={16} />
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleDownload}
         className="p-2 bg-white rounded hover:bg-gray-100"
       >
         <Download size={16} />
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleOpenInSystemApp}
         className="p-2 bg-white rounded hover:bg-gray-100"
       >
         <ExternalLink size={16} />
-      </button>
+      </Button>
     </div>
   );
 

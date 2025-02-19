@@ -4,6 +4,7 @@ import React, { useState, useRef, useMemo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
+import { useTheme } from "@/theme/hooks/useTheme";
 
 import {
   Sidebar as SidebarIcon,
@@ -24,27 +25,22 @@ type SidebarTab = "thumbnails" | "notes" | "outline";
 
 interface PDFViewerProps {
   pdfData: Uint8Array;
-  onClose?: () => void;
+  onClose: () => void; // onClose is required
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
+
   // Main PDF state
   const [numPages, setNumPages] = useState<number>(0);
-
-  // Thumbnails state
   const [thumbNumPages, setThumbNumPages] = useState<number>(0);
   const [pageDimensions, setPageDimensions] = useState<
     { width: number; height: number }[]
   >([]);
-
-  // Zoom state
   const [scale, setScale] = useState<number>(1.0);
-
-  // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("thumbnails");
-
-  // Search / Page navigation state
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [editPageInput, setEditPageInput] = useState(false);
@@ -125,42 +121,75 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     }
   };
 
-  // Selected style for sidebar tabs
-  const selectedStyle = "border border-accent-7";
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white text-black">
+    <div
+      className={`fixed inset-0 z-50 flex flex-col ${
+        isDark ? "bg-background text-foreground" : "bg-white text-black"
+      }`}
+    >
       {/* PDF Top Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-300 bg-white">
-        {/* Left: Sidebar Toggle, Zoom, Page Navigation */}
+      <div
+        className={`flex items-center justify-between px-4 py-2 border-b ${
+          isDark ? "border-gray-700 bg-background" : "border-gray-300 bg-white"
+        }`}
+      >
+        {/* Left: Sidebar Toggle, Search, Zoom, Page Navigation */}
         <div className="flex items-center gap-2">
           <Button
-            variant="icon"
-            size="icon"
+            variant="ghost"
+            size="sm"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            className={`p-2 rounded ${
+              isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+            }`}
           >
-            <SidebarIcon
-              className="h-5 w-5 text-black stroke-current"
-              stroke="currentColor"
-              fill="none"
-              style={{ display: "block" }}
-            />
+            <SidebarIcon className="h-5 w-5" />
           </Button>
-          <Button variant="icon" size="icon" onClick={handleZoomOut}>
-            <ZoomOut
-              className="h-4 w-4 text-black stroke-current"
-              stroke="currentColor"
-              fill="none"
-              style={{ display: "block" }}
+
+          {/* Search moved to left */}
+          <div className="flex items-center rounded">
+            <input
+              type="text"
+              placeholder="Search"
+              className={`w-32 border rounded-l px-2 py-1 text-sm ${
+                isDark
+                  ? "bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  : "bg-white border-gray-300 text-black placeholder-gray-500"
+              }`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSearch}
+              className={`p-2 rounded-r ${
+                isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+              }`}
+            >
+              <SearchIcon className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleZoomOut}
+            className={`p-2 rounded ${
+              isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+            }`}
+          >
+            <ZoomOut className="h-4 w-4" />
           </Button>
-          <Button variant="icon" size="icon" onClick={handleZoomIn}>
-            <ZoomIn
-              className="h-4 w-4 text-black stroke-current"
-              stroke="currentColor"
-              fill="none"
-              style={{ display: "block" }}
-            />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleZoomIn}
+            className={`p-2 rounded ${
+              isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+            }`}
+          >
+            <ZoomIn className="h-4 w-4" />
           </Button>
           <div
             className="cursor-pointer px-2 py-1"
@@ -169,45 +198,36 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
             {editPageInput ? (
               <input
                 type="number"
-                className="w-14 text-center border border-gray-300 bg-transparent outline-none text-black"
+                className={`w-14 text-center border rounded ${
+                  isDark
+                    ? "border-gray-700 bg-gray-800 text-white"
+                    : "border-gray-300 bg-white text-black"
+                }`}
                 value={pageInputValue}
                 onChange={handlePageInputChange}
                 onBlur={handlePageInputBlur}
                 autoFocus
               />
             ) : (
-              <span className="text-black">
+              <span>
                 {currentPage} / {numPages}
               </span>
             )}
           </div>
         </div>
-        {/* Right: Search and Close Button */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded">
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-20 bg-transparent border border-gray-300 outline-none px-1 py-0.5 text-black"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Button variant="icon" size="icon" onClick={handleSearch}>
-              <SearchIcon
-                className="h-4 w-4 text-black stroke-current"
-                stroke="currentColor"
-                fill="none"
-                style={{ display: "block" }}
-              />
-            </Button>
-          </div>
-          <Button variant="icon" size="icon" onClick={onClose}>
-            <XIcon
-              className="h-5 w-5 text-black stroke-current"
-              stroke="currentColor"
-              fill="none"
-              style={{ display: "block" }}
-            />
+
+        {/* Right: Close Button */}
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              console.log("Close button clicked");
+              onClose();
+            }}
+            className="p-2 rounded hover:bg-gray-800 hover:bg-opacity-50"
+          >
+            <XIcon className="h-5 w-5 text-current" strokeWidth={2} />
           </Button>
         </div>
       </div>
@@ -216,58 +236,74 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar */}
         <div
-          className="transition-all flex flex-col border-r border-gray-300"
+          className={`transition-all flex flex-col border-r ${
+            isDark
+              ? "border-gray-700 bg-background"
+              : "border-gray-300 bg-white"
+          }`}
           style={{
             width: sidebarOpen ? "240px" : "0px",
-            backgroundColor: "#fff",
             overflowY: sidebarOpen ? "auto" : "hidden",
           }}
         >
           {/* Sidebar Tabs */}
-          <div className="flex justify-around border-b border-gray-300 p-2">
+          <div
+            className={`flex justify-around border-b p-2 ${
+              isDark ? "border-gray-700" : "border-gray-300"
+            }`}
+          >
             <Button
-              variant="icon"
-              size="icon"
+              variant="ghost"
+              size="sm"
               onClick={() => setSidebarTab("thumbnails")}
-              className={sidebarTab === "thumbnails" ? selectedStyle : ""}
+              className={`p-2 rounded transition-all ${
+                sidebarTab === "thumbnails"
+                  ? isDark
+                    ? "bg-gray-800 text-blue-400"
+                    : "bg-blue-100 text-blue-600"
+                  : isDark
+                  ? "hover:bg-gray-800 text-gray-300"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
             >
-              <LayoutGrid
-                className="h-4 w-4 text-black stroke-current"
-                stroke="currentColor"
-                fill="none"
-                style={{ display: "block" }}
-              />
+              <LayoutGrid className="h-4 w-4" />
             </Button>
             <Button
-              variant="icon"
-              size="icon"
+              variant="ghost"
+              size="sm"
               onClick={() => setSidebarTab("notes")}
-              className={sidebarTab === "notes" ? selectedStyle : ""}
+              className={`p-2 rounded transition-all ${
+                sidebarTab === "notes"
+                  ? isDark
+                    ? "bg-gray-800 text-blue-400"
+                    : "bg-blue-100 text-blue-600"
+                  : isDark
+                  ? "hover:bg-gray-800 text-gray-300"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
             >
-              <FileText
-                className="h-4 w-4 text-black stroke-current"
-                stroke="currentColor"
-                fill="none"
-                style={{ display: "block" }}
-              />
+              <FileText className="h-4 w-4" />
             </Button>
             <Button
-              variant="icon"
-              size="icon"
+              variant="ghost"
+              size="sm"
               onClick={() => setSidebarTab("outline")}
-              className={sidebarTab === "outline" ? selectedStyle : ""}
+              className={`p-2 rounded transition-all ${
+                sidebarTab === "outline"
+                  ? isDark
+                    ? "bg-gray-800 text-blue-400"
+                    : "bg-blue-100 text-blue-600"
+                  : isDark
+                  ? "hover:bg-gray-800 text-gray-300"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
             >
-              <BookOpen
-                className="h-4 w-4 text-black stroke-current"
-                stroke="currentColor"
-                fill="none"
-                style={{ display: "block" }}
-              />
+              <BookOpen className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Sidebar Content */}
-          <div className="relative flex-1 text-black">
+          <div className="relative flex-1">
             {/* Thumbnails */}
             <div
               className={`absolute inset-0 overflow-y-auto p-2 ${
@@ -286,7 +322,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                   return (
                     <div
                       key={`thumb-${i}`}
-                      className="m-2 cursor-pointer border border-transparent hover:border-blue-500 p-1 bg-gray-100 text-black"
+                      className={`m-2 cursor-pointer border border-transparent hover:border-blue-500 p-1 ${
+                        isDark ? "bg-gray-800" : "bg-gray-100"
+                      }`}
                       onClick={() => handleThumbClick(i)}
                     >
                       <Page
@@ -323,7 +361,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
 
         {/* Main PDF Content */}
         <div
-          className="relative flex-1 overflow-auto bg-white text-black"
+          className={`relative flex-1 overflow-auto ${
+            isDark ? "bg-gray-900" : "bg-gray-100"
+          }`}
           ref={mainContainerRef}
         >
           <Document
@@ -336,7 +376,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
               <div
                 key={`page-${i}`}
                 data-page-index={i}
-                className="my-4 mx-auto border border-gray-300 bg-white"
+                className={`my-4 mx-auto border ${
+                  isDark ? "border-gray-700" : "border-gray-300"
+                } bg-white`}
                 style={{ width: "fit-content" }}
               >
                 <Page pageNumber={i + 1} scale={scale} />

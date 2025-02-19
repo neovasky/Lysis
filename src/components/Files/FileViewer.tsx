@@ -3,7 +3,12 @@ import { FileMetadata } from "../../store/slices/fileSlice";
 import ViewerSwitcher from "./ViewerSwitcher";
 import FileService from "../../services/fileService";
 
-export const FileViewer: React.FC<{ file: FileMetadata }> = ({ file }) => {
+interface FileViewerProps {
+  file: FileMetadata;
+  onClose: () => void;
+}
+
+export const FileViewer: React.FC<FileViewerProps> = ({ file, onClose }) => {
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +85,7 @@ export const FileViewer: React.FC<{ file: FileMetadata }> = ({ file }) => {
     );
   }
 
-  return <ViewerSwitcher file={file} content={content} />;
+  return <ViewerSwitcher file={file} content={content} onClose={onClose} />;
 };
 
 export default FileViewer;
