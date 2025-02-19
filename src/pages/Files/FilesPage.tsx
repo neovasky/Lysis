@@ -23,7 +23,6 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-// Updated Button import (with updated variants):
 import Button from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -266,7 +265,6 @@ export default function FilesPage() {
     }
   }
 
-  // For demonstration: simple rename using prompt
   async function handleRename(file: FileMetadata) {
     const newName = prompt("Enter new name", file.name);
     if (!newName || newName === file.name) return;
@@ -279,7 +277,6 @@ export default function FilesPage() {
     }
   }
 
-  // Combine directories and files
   const displayItems = useMemo(() => {
     const dirItems = directories.map((dir) => ({
       ...dir,
@@ -288,7 +285,6 @@ export default function FilesPage() {
     return [...dirItems, ...files];
   }, [directories, files]);
 
-  // Filter items
   const filteredItems = useCallback(() => {
     if (activeFilter === "all") {
       return displayItems;
@@ -300,7 +296,10 @@ export default function FilesPage() {
   }, [displayItems, activeFilter]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl flex flex-col h-screen bg-background text-foreground">
+    <div
+      className="mx-auto w-full max-w-6xl flex flex-col h-screen text-foreground"
+      style={{ backgroundColor: "var(--color-pageBackground)" }}
+    >
       {/* Top Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-borderCard">
         <div className="flex items-center gap-2">
@@ -332,7 +331,6 @@ export default function FilesPage() {
             </TooltipTrigger>
             <TooltipContent>Switch to Grid View</TooltipContent>
           </Tooltip>
-
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -344,7 +342,6 @@ export default function FilesPage() {
             </TooltipTrigger>
             <TooltipContent>Switch to List View</TooltipContent>
           </Tooltip>
-
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -404,7 +401,7 @@ export default function FilesPage() {
             {directories.map((dir) => (
               <Card
                 key={dir.path}
-                className="cursor-pointer p-4 hover:opacity-90 transition"
+                className="cursor-pointer p-4 hover:opacity-90 transition border border-borderCard"
                 onClick={() =>
                   handleFolderOpen({
                     ...dir,
@@ -467,24 +464,19 @@ export default function FilesPage() {
 }
 
 /* ---------------------------------------------------------------------------
-   SUBCOMPONENTS: 
-   1) ListView (table-based)
-   2) GridView (card-based)
+   SUBCOMPONENTS
 --------------------------------------------------------------------------- */
 
-function ListView({
-  files,
-  onFileOpen,
-  onDelete,
-  onRename,
-}: {
+interface ListViewProps {
   files: FileMetadata[];
   onFileOpen: (item: FileMetadata) => void;
   onDelete: (path: string) => void;
   onRename: (file: FileMetadata) => void;
-}) {
+}
+
+function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
   return (
-    <div className="rounded-lg border border-borderCard bg-background p-2">
+    <div className="rounded-lg border border-borderCard p-2">
       <Table>
         <TableHeader>
           <TableRow>
@@ -560,19 +552,18 @@ function ListView({
   );
 }
 
-function GridView({
-  files,
-  onFileOpen,
-}: {
+interface GridViewProps {
   files: FileMetadata[];
   onFileOpen: (item: FileMetadata) => void;
-}) {
+}
+
+function GridView({ files, onFileOpen }: GridViewProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {files.map((file) => (
         <Card
           key={file.path}
-          className="cursor-pointer p-4 hover:opacity-90 transition bg-background border border-borderCard"
+          className="cursor-pointer p-4 hover:opacity-90 transition border border-borderCard"
           onClick={() => onFileOpen(file)}
         >
           <div className="flex items-center gap-2 mb-2">
@@ -588,7 +579,6 @@ function GridView({
   );
 }
 
-/* Helper to render correct icon */
 function renderIcon(file: FileMetadata, iconSize = 16) {
   if (file.isDirectory)
     return <Folder size={iconSize} className="text-accent-6" />;

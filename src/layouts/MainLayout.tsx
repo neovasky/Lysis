@@ -12,7 +12,7 @@ export const MainLayout = () => {
 
   return (
     <div
-      // Instead of using a static bg-background class, we use inline style referencing our CSS variable.
+      // Remove "bg-background" class so that inline style is not overridden.
       style={{ backgroundColor: "var(--color-pageBackground)" }}
       className="flex min-h-screen text-foreground"
     >

@@ -2,7 +2,6 @@
  * File: src/theme/ThemeProvider.tsx
  * Description: Minimal theme provider for dark/light mode and accent color
  */
-
 import React, { useState, useEffect } from "react";
 import { ThemeContext, ThemeContextValue } from "./context";
 import { ThemeMode, ThemeAccent } from "./types";
@@ -17,19 +16,24 @@ interface ThemeProviderProps {
   defaultAccent?: ThemeAccent; // e.g. "blue", "red", etc.
 }
 
+// Use a helper function to safely read localStorage (since it only exists in the browser)
+function getStoredValue(key: string) {
+  return typeof window !== "undefined" ? localStorage.getItem(key) : null;
+}
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultMode = "dark",
   defaultAccent = "slate",
 }) => {
-  // 1) On initial render, read saved mode/accent from localStorage if present.
-  const storedMode = localStorage.getItem(MODE_KEY) as ThemeMode | null;
-  const storedAccent = localStorage.getItem(ACCENT_KEY) as ThemeAccent | null;
+  // Initialize state from localStorage if available
+  const initialMode =
+    (getStoredValue(MODE_KEY) as ThemeMode | null) || defaultMode;
+  const initialAccent =
+    (getStoredValue(ACCENT_KEY) as ThemeAccent | null) || defaultAccent;
 
-  const [mode, setMode] = useState<ThemeMode>(storedMode || defaultMode);
-  const [accent, setAccent] = useState<ThemeAccent>(
-    storedAccent || defaultAccent
-  );
+  const [mode, setMode] = useState<ThemeMode>(initialMode);
+  const [accent, setAccent] = useState<ThemeAccent>(initialAccent);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -44,15 +48,36 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     // Set the data-accent attribute so CSS can pick up accent overrides
     root.setAttribute("data-accent", accent);
 
-    // 2) Whenever mode or accent changes, save them to localStorage
+    // Set page background based on mode and accent
+    if (mode === "dark") {
+      root.style.setProperty(
+        "--color-pageBackground",
+        `hsl(var(--${accent}-950) / 1)`
+      );
+    } else {
+      root.style.setProperty(
+        "--color-pageBackground",
+        `hsl(var(--${accent}-50) / 1)`
+      );
+    }
+
+    // Save updates to localStorage
     localStorage.setItem(MODE_KEY, mode);
     localStorage.setItem(ACCENT_KEY, accent);
 
+    // Debug logs
     console.log("ThemeProvider update:", {
       mode,
       accent,
       dataAccent: root.getAttribute("data-accent"),
+      inlinePageBackground: root.style.getPropertyValue(
+        "--color-pageBackground"
+      ),
     });
+    const computedBackground = getComputedStyle(root)
+      .getPropertyValue("--color-pageBackground")
+      .trim();
+    console.log("Computed --color-pageBackground:", computedBackground);
   }, [mode, accent]);
 
   const contextValue: ThemeContextValue = {

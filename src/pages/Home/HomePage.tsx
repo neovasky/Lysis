@@ -68,10 +68,13 @@ export const HomePage = () => {
   ];
 
   return (
-    // Remove the extra bg-background and let MainLayout’s background show through
     <div className="w-full h-full overflow-auto">
       {/* Hero / Banner */}
-      <div className="p-6 bg-[hsl(var(--accent-700))] text-white">
+      <div
+        className="p-6 bg-[hsl(var(--accent-700))]"
+        // Use a dynamic text color. Adjust the variable to one defined in your design tokens.
+        style={{ color: "var(--accent-foreground)" }}
+      >
         <h1 className="text-3xl font-bold mb-2">Welcome to Lysis</h1>
         <p className="text-sm">
           Your personal investment research and analysis workspace
@@ -79,7 +82,6 @@ export const HomePage = () => {
       </div>
 
       {/* Main Content */}
-      {/* Use a container-like approach (mx-auto, max-w, etc.) if you want a centered layout */}
       <div className="p-6 max-w-6xl mx-auto grid grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="flex flex-col gap-6">
