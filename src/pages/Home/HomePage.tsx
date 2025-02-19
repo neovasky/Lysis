@@ -68,9 +68,10 @@ export const HomePage = () => {
   ];
 
   return (
-    <div className="w-full h-full bg-background text-foreground overflow-auto">
+    // Remove the extra bg-background and let MainLayout’s background show through
+    <div className="w-full h-full overflow-auto">
       {/* Hero / Banner */}
-      <div className="p-6 bg-accent-9 text-white">
+      <div className="p-6 bg-[hsl(var(--accent-700))] text-white">
         <h1 className="text-3xl font-bold mb-2">Welcome to Lysis</h1>
         <p className="text-sm">
           Your personal investment research and analysis workspace
@@ -78,11 +79,12 @@ export const HomePage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="p-6 grid grid-cols-2 gap-6">
+      {/* Use a container-like approach (mx-auto, max-w, etc.) if you want a centered layout */}
+      <div className="p-6 max-w-6xl mx-auto grid grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="flex flex-col gap-6">
           {/* Quick Access */}
-          <section className="bg-card text-card-foreground rounded-md shadow p-4">
+          <section className="rounded-md p-4 bg-[hsl(var(--accent-50))] text-foreground shadow-sm">
             <h2 className="text-xl font-semibold mb-3">Quick Access</h2>
             <div className="grid grid-cols-3 gap-3">
               {quickAccessItems.map((item) => (
@@ -101,7 +103,7 @@ export const HomePage = () => {
           </section>
 
           {/* Market Overview */}
-          <section className="bg-card text-card-foreground rounded-md shadow p-4">
+          <section className="rounded-md p-4 bg-[hsl(var(--accent-50))] text-foreground shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Market Overview</h2>
             <div className="grid grid-cols-3 gap-3">
               {/* Market Trend */}
@@ -135,7 +137,7 @@ export const HomePage = () => {
         {/* Right Column */}
         <div className="flex flex-col gap-6">
           {/* Recently Viewed Terms */}
-          <section className="bg-card text-card-foreground rounded-md shadow p-4">
+          <section className="rounded-md p-4 bg-[hsl(var(--accent-50))] text-foreground shadow-sm">
             <h2 className="text-xl font-semibold mb-3">
               Recently Viewed Terms
             </h2>
@@ -155,7 +157,7 @@ export const HomePage = () => {
           </section>
 
           {/* Upcoming Events */}
-          <section className="bg-card text-card-foreground rounded-md shadow p-4">
+          <section className="rounded-md p-4 bg-[hsl(var(--accent-50))] text-foreground shadow-sm">
             <h2 className="text-xl font-semibold mb-3">Upcoming Events</h2>
             <div className="flex flex-col gap-2">
               {upcomingEvents.map((event) => (
