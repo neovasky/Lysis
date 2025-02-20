@@ -23,7 +23,9 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-import Button from "@/components/ui/button";
+// Use a named import for Button
+import { Button } from "@/components/ui/button";
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -305,7 +307,13 @@ export default function FilesPage() {
         <div className="flex items-center gap-2">
           {currentDirectory &&
             currentDirectory.path !== DEFAULT_BASE_DIRECTORY && (
-              <Button variant="outline" onClick={handleBackToRoot}>
+              <Button
+                variant="outline"
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.stopPropagation();
+                  handleBackToRoot();
+                }}
+              >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Root
               </Button>
@@ -476,8 +484,14 @@ interface ListViewProps {
 
 function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
   return (
-    <div className="rounded-lg border border-borderCard p-2">
-      <Table>
+    <div
+      className="rounded-lg p-2"
+      style={{
+        border: "1px solid hsl(var(--accent-700))",
+        color: "var(--list-text-color)",
+      }}
+    >
+      <Table className="w-full">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
@@ -517,7 +531,7 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
                     <Button
                       variant="icon"
                       size="icon"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                       }}
                     >
@@ -526,7 +540,7 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
                         e.stopPropagation();
                         onDelete(file.path);
                       }}
@@ -534,7 +548,7 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
                       Delete
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
                         e.stopPropagation();
                         onRename(file);
                       }}

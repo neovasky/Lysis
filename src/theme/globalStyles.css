@@ -6,12 +6,11 @@
 */
 @layer base {
   :root {
+    /* General Colors */
     --background: 0 0% 100%; /* white */
-    --foreground: 240 10% 3.9%;
+    --foreground: 0 0% 100%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
     --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
@@ -31,15 +30,34 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --list-text-color: hsl(var(--accent-800));
+
+    /* Text tokens for light mode */
+    --body-text-light: hsl(0, 0%, 10%); /* near-black for non-card text */
+    --card-text-light: hsl(0, 0%, 100%); /* white for card text */
+    --body-foreground: var(--body-text-light);
+    --card-foreground: var(--card-text-light);
+
+    /* Card background in light mode */
+    --card-background: 0 0% 100%; /* white */
+
+    /* Button tokens for light mode */
+    --btn-solid-bg-light: hsl(240, 80%, 40%); /* bold accent */
+    --btn-solid-text-light: hsl(0, 0%, 98%); /* near-white text */
+    --btn-ghost-text-light: hsl(0, 0%, 10%); /* near-black text */
+
+    /* Default to light mode tokens */
+    --btn-solid-bg: var(--btn-solid-bg-light);
+    --btn-solid-text: var(--btn-solid-text-light);
+    --btn-ghost-text: var(--btn-ghost-text-light);
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* General Colors for dark mode */
+    --background: 0 0% 10%; /* near-black */
+    --foreground: 0 0% 100%;
     --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
     --secondary: 240 3.7% 15.9%;
@@ -58,6 +76,28 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --list-text-color: hsl(var(--accent-50));
+
+    /* Text tokens for dark mode */
+    --body-text-dark: hsl(0, 0%, 90%); /* near-white for non-card text */
+    --card-text-dark: hsl(
+      var(--accent-50)
+    ); /* white (or accent-based) for card text */
+    --body-foreground: var(--body-text-dark);
+    --card-foreground: var(--card-text-dark);
+
+    /* Card background in dark mode */
+    --card-background: 240 10% 10%; /* dark tinted background for cards */
+
+    /* Button tokens for dark mode */
+    --btn-solid-bg-dark: hsl(240, 80%, 20%); /* deeper accent */
+    --btn-solid-text-dark: hsl(0, 0%, 98%); /* near-white text */
+    --btn-ghost-text-dark: hsl(0, 0%, 90%); /* near-white text */
+
+    /* Override defaults for dark mode */
+    --btn-solid-bg: var(--btn-solid-bg-dark);
+    --btn-solid-text: var(--btn-solid-text-dark);
+    --btn-ghost-text: var(--btn-ghost-text-dark);
   }
 }
 
@@ -841,9 +881,9 @@ body,
   padding: 0;
   height: 100%;
   width: 100%;
-  background-color: var(--color-pageBackground);
-  color: var(--color-text-primary);
-  font-family: var(--font-family);
+  background-color: hsl(var(--background));
+  color: var(--text-body);
+  font-family: var(--font-family, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -892,13 +932,16 @@ body,
 }
 
 .card {
-  padding: 2em;
+  background-color: hsl(var(--card-background));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--card-border));
+  border-radius: 0.5rem;
+  padding: 1rem;
 }
 
 .read-the-docs {
-  color: #888;
+  color: hsl(var(--muted-foreground));
 }
-
 /* Scrollbar styles */
 ::-webkit-scrollbar {
   width: 8px;
@@ -917,3 +960,6 @@ body,
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-borderCard);
 }
+
+/* Tailwind Import */
+@import "tailwindcss";

@@ -64,19 +64,23 @@ const FilesGrid: React.FC<FilesGridProps> = ({
             e.stopPropagation();
             setOpen((prev) => !prev);
           }}
-          className="p-1 rounded hover:bg-gray-100"
+          className="p-1 rounded hover:bg-muted/70"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
         {open && (
-          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow z-10">
+          <div
+            className="absolute right-0 mt-2 w-40 rounded shadow
+                       bg-popover text-popover-foreground border border-border z-10"
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleFileOpen(file);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm 
+                         hover:bg-muted/70"
             >
               <File className="w-4 h-4" />
               Open
@@ -87,7 +91,8 @@ const FilesGrid: React.FC<FilesGridProps> = ({
                 console.log("Downloading", file.name);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm
+                         hover:bg-muted/70"
             >
               <Download className="w-4 h-4" />
               Download
@@ -98,19 +103,21 @@ const FilesGrid: React.FC<FilesGridProps> = ({
                 console.log("Renaming", file.name);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm"
+              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm
+                         hover:bg-muted/70"
             >
               <Pencil className="w-4 h-4" />
               Rename
             </button>
-            <div className="border-t border-gray-200"></div>
+            <div className="border-t border-border"></div>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleFileDelete(file);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-sm text-red-600"
+              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm
+                         text-destructive hover:bg-muted/70"
             >
               <Trash className="w-4 h-4" />
               Delete
@@ -122,26 +129,31 @@ const FilesGrid: React.FC<FilesGridProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
       {files.map((file) => (
         <div
           key={file.id}
-          className="bg-white rounded shadow p-4 cursor-pointer hover:shadow-lg"
+          className="bg-card text-card-foreground border border-border rounded 
+                     p-4 cursor-pointer hover:shadow-lg transition"
           onClick={() => handleFileOpen(file)}
         >
           {/* Preview Section */}
-          <div className="h-36 bg-gray-200 rounded flex items-center justify-center mb-3">
+          <div
+            className="h-36 bg-muted text-muted-foreground rounded 
+                          flex items-center justify-center mb-3"
+          >
             {getFileIcon(file.type)}
           </div>
+
           {/* File Info Section */}
           <div className="flex flex-col gap-1">
             <div className="flex justify-between items-center">
-              <p className="font-bold text-sm flex-1">{file.name}</p>
+              <p className="font-medium text-sm flex-1 truncate">{file.name}</p>
               <div onClick={(e) => e.stopPropagation()}>
                 <FileActions file={file} />
               </div>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {formatDistance(file.lastModified, new Date(), {
                 addSuffix: true,
               })}
