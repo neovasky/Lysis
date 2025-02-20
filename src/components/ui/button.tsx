@@ -1,7 +1,3 @@
-/**
- * File: src/components/ui/button.tsx
- * Description: Button component that applies variant and size classes from buttonVariants.
- */
 "use client";
 
 import * as React from "react";

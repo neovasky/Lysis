@@ -64,7 +64,7 @@
 /* 
   Accent color overrides.
   For each accent, we define a full range of shades (50–900) in light mode, and override them in dark mode.
-  For dark mode, we also add a new –950 value to be used for page backgrounds (or other components).
+  For dark mode, we also add a new –950 or –1000 value to be used for page backgrounds (or other components).
 */
 
 /* SLATE */
@@ -79,6 +79,9 @@
   --slate-700: 215 26% 27%;
   --slate-800: 217 33% 17%;
   --slate-900: 222 38% 12%;
+
+  /* Add your custom accent references: */
+  --color-accent-900: var(--slate-500);
 }
 .dark[data-accent="slate"] {
   --slate-50: 210 24% 88%;
@@ -92,6 +95,9 @@
   --slate-800: 217 33% 10%;
   --slate-900: 222 38% 5%;
   --slate-950: 222 38% 0%;
+  --slate-1000: 222 38% 0%;
+
+  --color-accent-900: var(--slate-500);
 }
 
 /* GRAY */
@@ -106,6 +112,8 @@
   --gray-700: 218 18% 26%;
   --gray-800: 217 22% 17%;
   --gray-900: 220 29% 13%;
+
+  --color-accent-900: var(--gray-500);
 }
 .dark[data-accent="gray"] {
   --gray-50: 210 20% 90%;
@@ -119,6 +127,9 @@
   --gray-800: 217 22% 15%;
   --gray-900: 220 29% 10%;
   --gray-950: 220 29% 5%;
+  --gray-1000: 220 29% 3%;
+
+  --color-accent-900: var(--gray-500);
 }
 
 /* ZINC */
@@ -133,6 +144,8 @@
   --zinc-700: 240 5% 27%;
   --zinc-800: 240 4% 16%;
   --zinc-900: 240 5% 11%;
+
+  --color-accent-900: var(--zinc-500);
 }
 .dark[data-accent="zinc"] {
   --zinc-50: 0 0% 90%;
@@ -146,6 +159,9 @@
   --zinc-800: 240 4% 10%;
   --zinc-900: 240 5% 5%;
   --zinc-950: 240 5% 0%;
+  --zinc-1000: 240 5% 0%;
+
+  --color-accent-900: var(--zinc-500);
 }
 
 /* NEUTRAL */
@@ -160,6 +176,8 @@
   --neutral-700: 0 0% 25%;
   --neutral-800: 0 0% 15%;
   --neutral-900: 0 0% 9%;
+
+  --color-accent-900: var(--neutral-500);
 }
 .dark[data-accent="neutral"] {
   --neutral-50: 0 0% 90%;
@@ -173,6 +191,9 @@
   --neutral-800: 0 0% 7%;
   --neutral-900: 0 0% 3%;
   --neutral-950: 0 0% 0%;
+  --neutral-1000: 0 0% 0%;
+
+  --color-accent-900: var(--neutral-500);
 }
 
 /* STONE */
@@ -187,6 +208,9 @@
   --stone-700: 24 8% 26%;
   --stone-800: 15 9% 16%;
   --stone-900: 20 9% 10%;
+  --stone-1000: 20 9% 0%;
+
+  --color-accent-900: var(--stone-500);
 }
 .dark[data-accent="stone"] {
   --stone-50: 45 7% 90%;
@@ -200,6 +224,9 @@
   --stone-800: 15 9% 10%;
   --stone-900: 20 9% 5%;
   --stone-950: 20 9% 0%;
+  --stone-1000: 20 9% 0%;
+
+  --color-accent-900: var(--stone-500);
 }
 
 /* RED */
@@ -214,6 +241,8 @@
   --red-700: 0 73% 41%;
   --red-800: 0 70% 36%;
   --red-900: 0 64% 30%;
+
+  --color-accent-900: var(--red-500);
 }
 .dark[data-accent="red"] {
   --red-50: 0 78% 88%;
@@ -227,6 +256,9 @@
   --red-800: 0 70% 26%;
   --red-900: 0 64% 20%;
   --red-950: 0 64% 15%;
+  --red-1000: 0 64% 3%;
+
+  --color-accent-900: var(--red-500);
 }
 
 /* ORANGE */
@@ -241,6 +273,8 @@
   --orange-700: 19 88% 42%;
   --orange-800: 19 79% 33%;
   --orange-900: 18 71% 26%;
+
+  --color-accent-900: var(--orange-500);
 }
 .dark[data-accent="orange"] {
   --orange-50: 24 100% 88%;
@@ -254,6 +288,9 @@
   --orange-800: 19 79% 24%;
   --orange-900: 18 71% 18%;
   --orange-950: 18 71% 10%;
+  --orange-1000: 18 71% 3%;
+
+  --color-accent-900: var(--orange-500);
 }
 
 /* AMBER */
@@ -268,6 +305,8 @@
   --amber-700: 33 88% 35%;
   --amber-800: 31 85% 30%;
   --amber-900: 28 77% 26%;
+
+  --color-accent-900: var(--amber-500);
 }
 .dark[data-accent="amber"] {
   --amber-50: 48 100% 88%;
@@ -281,6 +320,9 @@
   --amber-800: 31 85% 23%;
   --amber-900: 28 77% 19%;
   --amber-950: 28 77% 15%;
+  --amber-1000: 28 77% 3%;
+
+  --color-accent-900: var(--amber-500);
 }
 
 /* YELLOW */
@@ -295,6 +337,9 @@
   --yellow-700: 42 88% 27%;
   --yellow-800: 37 84% 23%;
   --yellow-900: 33 73% 18%;
+  --yellow-1000: 33 73% 3%;
+
+  --color-accent-900: var(--yellow-500);
 }
 .dark[data-accent="yellow"] {
   --yellow-50: 50 94% 88%;
@@ -308,6 +353,9 @@
   --yellow-800: 37 84% 15%;
   --yellow-900: 33 73% 10%;
   --yellow-950: 33 73% 5%;
+  --yellow-1000: 33 73% 3%;
+
+  --color-accent-900: var(--yellow-500);
 }
 
 /* LIME */
@@ -322,6 +370,8 @@
   --lime-700: 84 76% 28%;
   --lime-800: 82 68% 23%;
   --lime-900: 83 64% 20%;
+
+  --color-accent-900: var(--lime-500);
 }
 .dark[data-accent="lime"] {
   --lime-50: 90 93% 88%;
@@ -335,6 +385,9 @@
   --lime-800: 82 68% 15%;
   --lime-900: 83 64% 10%;
   --lime-950: 83 64% 5%;
+  --lime-1000: 83 64% 3%;
+
+  --color-accent-900: var(--lime-500);
 }
 
 /* GREEN */
@@ -349,6 +402,8 @@
   --green-700: 134 76% 29%;
   --green-800: 134 66% 25%;
   --green-900: 133 62% 24%;
+
+  --color-accent-900: var(--green-500);
 }
 .dark[data-accent="green"] {
   --green-50: 132 61% 88%;
@@ -362,6 +417,9 @@
   --green-800: 134 66% 17%;
   --green-900: 133 62% 16%;
   --green-950: 133 62% 10%;
+  --green-1000: 133 62% 3%;
+
+  --color-accent-900: var(--green-500);
 }
 
 /* EMERALD */
@@ -376,6 +434,8 @@
   --emerald-700: 169 94% 27%;
   --emerald-800: 167 92% 20%;
   --emerald-900: 167 90% 17%;
+
+  --color-accent-900: var(--emerald-500);
 }
 .dark[data-accent="emerald"] {
   --emerald-50: 154 64% 88%;
@@ -389,6 +449,9 @@
   --emerald-800: 167 92% 14%;
   --emerald-900: 167 90% 11%;
   --emerald-950: 167 90% 5%;
+  --emerald-1000: 167 90% 3%;
+
+  --color-accent-900: var(--emerald-500);
 }
 
 /* TEAL */
@@ -403,6 +466,8 @@
   --teal-700: 176 80% 27%;
   --teal-800: 177 70% 21%;
   --teal-900: 178 66% 17%;
+
+  --color-accent-900: var(--teal-500);
 }
 .dark[data-accent="teal"] {
   --teal-50: 168 66% 88%;
@@ -416,6 +481,9 @@
   --teal-800: 177 70% 15%;
   --teal-900: 178 66% 11%;
   --teal-950: 178 66% 5%;
+  --teal-1000: 178 66% 3%;
+
+  --color-accent-900: var(--teal-500);
 }
 
 /* CYAN */
@@ -430,6 +498,8 @@
   --cyan-700: 191 85% 31%;
   --cyan-800: 194 67% 26%;
   --cyan-900: 197 63% 24%;
+
+  --color-accent-900: var(--cyan-500);
 }
 .dark[data-accent="cyan"] {
   --cyan-50: 185 100% 88%;
@@ -443,6 +513,9 @@
   --cyan-800: 194 67% 18%;
   --cyan-900: 197 63% 16%;
   --cyan-950: 197 63% 10%;
+  --cyan-1000: 197 63% 3%;
+
+  --color-accent-900: var(--cyan-500);
 }
 
 /* SKY */
@@ -457,6 +530,8 @@
   --sky-700: 199 96% 32%;
   --sky-800: 201 91% 28%;
   --sky-900: 202 86% 24%;
+
+  --color-accent-900: var(--sky-500);
 }
 .dark[data-accent="sky"] {
   --sky-50: 205 100% 88%;
@@ -470,6 +545,9 @@
   --sky-800: 201 91% 18%;
   --sky-900: 202 86% 14%;
   --sky-950: 202 86% 10%;
+  --sky-1000: 202 86% 3%;
+
+  --color-accent-900: var(--sky-500);
 }
 
 /* BLUE */
@@ -484,6 +562,8 @@
   --blue-700: 226 76% 47%;
   --blue-800: 226 67% 39%;
   --blue-900: 227 64% 33%;
+
+  --color-accent-900: var(--blue-500);
 }
 .dark[data-accent="blue"] {
   --blue-50: 210 100% 88%;
@@ -497,6 +577,9 @@
   --blue-800: 226 67% 32%;
   --blue-900: 227 64% 26%;
   --blue-950: 227 64% 20%;
+  --blue-1000: 227 64% 3%;
+
+  --color-accent-900: var(--blue-500);
 }
 
 /* INDIGO */
@@ -511,6 +594,8 @@
   --indigo-700: 249 58% 51%;
   --indigo-800: 248 55% 40%;
   --indigo-900: 243 47% 34%;
+
+  --color-accent-900: var(--indigo-500);
 }
 .dark[data-accent="indigo"] {
   --indigo-50: 231 100% 88%;
@@ -524,6 +609,9 @@
   --indigo-800: 248 55% 31%;
   --indigo-900: 243 47% 25%;
   --indigo-950: 243 47% 20%;
+  --indigo-1000: 243 47% 3%;
+
+  --color-accent-900: var(--indigo-500);
 }
 
 /* VIOLET */
@@ -538,6 +626,8 @@
   --violet-700: 263 76% 50%;
   --violet-800: 264 72% 42%;
   --violet-900: 267 68% 34%;
+
+  --color-accent-900: var(--violet-500);
 }
 .dark[data-accent="violet"] {
   --violet-50: 250 100% 88%;
@@ -551,6 +641,9 @@
   --violet-800: 264 72% 32%;
   --violet-900: 267 68% 26%;
   --violet-950: 267 68% 20%;
+  --violet-1000: 267 68% 3%;
+
+  --color-accent-900: var(--violet-500);
 }
 
 /* PURPLE */
@@ -565,6 +658,8 @@
   --purple-700: 271 73% 46%;
   --purple-800: 273 67% 39%;
   --purple-900: 277 66% 32%;
+
+  --color-accent-900: var(--purple-500);
 }
 .dark[data-accent="purple"] {
   --purple-50: 270 100% 88%;
@@ -578,6 +673,9 @@
   --purple-800: 273 67% 29%;
   --purple-900: 277 66% 24%;
   --purple-950: 277 66% 18%;
+  --purple-1000: 277 66% 3%;
+
+  --color-accent-900: var(--purple-500);
 }
 
 /* FUCHSIA */
@@ -592,6 +690,8 @@
   --fuchsia-700: 294 72% 39%;
   --fuchsia-800: 297 79% 32%;
   --fuchsia-900: 301 76% 28%;
+
+  --color-accent-900: var(--fuchsia-500);
 }
 .dark[data-accent="fuchsia"] {
   --fuchsia-50: 280 100% 88%;
@@ -605,6 +705,9 @@
   --fuchsia-800: 297 79% 22%;
   --fuchsia-900: 301 76% 18%;
   --fuchsia-950: 301 76% 12%;
+  --fuchsia-1000: 301 76% 3%;
+
+  --color-accent-900: var(--fuchsia-500);
 }
 
 /* PINK */
@@ -619,6 +722,8 @@
   --pink-700: 336 76% 42%;
   --pink-800: 338 73% 36%;
   --pink-900: 336 67% 30%;
+
+  --color-accent-900: var(--pink-500);
 }
 .dark[data-accent="pink"] {
   --pink-50: 330 78% 88%;
@@ -632,6 +737,9 @@
   --pink-800: 338 73% 27%;
   --pink-900: 336 67% 21%;
   --pink-950: 336 67% 15%;
+  --pink-1000: 336 67% 3%;
+
+  --color-accent-900: var(--pink-500);
 }
 
 /* ROSE */
@@ -646,6 +754,8 @@
   --rose-700: 352 83% 40%;
   --rose-800: 351 79% 34%;
   --rose-900: 350 76% 30%;
+
+  --color-accent-900: var(--rose-500);
 }
 .dark[data-accent="rose"] {
   --rose-50: 354 100% 88%;
@@ -659,12 +769,68 @@
   --rose-800: 351 79% 24%;
   --rose-900: 350 76% 20%;
   --rose-950: 350 76% 15%;
+  --rose-1000: 350 76% 3%;
+
+  --color-accent-900: var(--rose-500);
 }
 
 /* Dark mode overrides for base colors */
 .dark {
   --background: 0 0% 10%; /* dark background */
   --foreground: 210 40% 98%; /* light text */
+}
+
+/* Classic theme block, if you need it */
+:root[data-theme="classic"] {
+  --background: 0 0% 100%; /* white */
+  --foreground: 0 0% 0%; /* black */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 0%;
+  --accent: 0 0% 95%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 0% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 80%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 0%;
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  /* Derived */
+  --color-pageBackground: hsl(var(--background));
+  --color-text-primary: hsl(var(--foreground));
+}
+
+.dark[data-theme="classic"] {
+  --background: 0 0% 0%; /* black */
+  --foreground: 0 0% 100%; /* white */
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 10%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 100%;
+  --accent: 0 0% 15%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 0% 80%;
+  --destructive-foreground: 0 0% 0%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 0% 100%;
+  /* Derived */
+  --color-pageBackground: hsl(var(--background));
+  --color-text-primary: hsl(var(--foreground));
 }
 
 /* Global Element Styles */

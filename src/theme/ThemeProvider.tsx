@@ -24,7 +24,7 @@ function getStoredValue(key: string) {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultMode = "dark",
-  defaultAccent = "slate",
+  defaultAccent = "classic",
 }) => {
   // Initialize state from localStorage if available
   const initialMode =
@@ -52,7 +52,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     if (mode === "dark") {
       root.style.setProperty(
         "--color-pageBackground",
-        `hsl(var(--${accent}-950) / 1)`
+        `hsl(var(--${accent}-1000) / 1)`
       );
     } else {
       root.style.setProperty(

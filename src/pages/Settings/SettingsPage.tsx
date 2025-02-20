@@ -45,6 +45,7 @@ type Setting = SwitchSetting | SelectSetting;
 
 // Update AVAILABLE_ACCENTS to include all accent names from your globalStyles.css
 const AVAILABLE_ACCENTS: readonly ThemeAccent[] = [
+  "classic",
   "slate",
   "gray",
   "zinc",

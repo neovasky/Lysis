@@ -7,6 +7,7 @@ export type ThemeMode = "light" | "dark";
 
 // Updated ThemeAccent union to include all desired accent colors
 export type ThemeAccent =
+  | "classic"
   | "slate"
   | "gray"
   | "zinc"

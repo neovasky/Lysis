@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@plugin "tailwindcss-animate";
-@custom-variant dark (&:is(.dark *));
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -65,25 +63,7 @@ h1 {
   line-height: 1.1;
 }
 
-/* Global button rule – applies to all buttons except those explicitly overridden */
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: transparent; /* REMOVED background-color */
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+/* Removed all button styles since they're now handled by the Button component */
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -92,10 +72,6 @@ button:focus-visible {
   }
   a:hover {
     color: #747bff;
-  }
-  /* No background for icon buttons or regular buttons */
-  button {
-    background-color: transparent;
   }
 }
 
@@ -126,42 +102,40 @@ button:focus-visible {
   --chart-5: hsl(340 75% 55%);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+@layer base {
+  button,
+  input,
+  select,
+  optgroup,
+  textarea,
+  ::file-selector-button {
+    /* Increase the padding for a bigger box */
+    padding: 0.75rem 0.75rem; /* bigger vertical/horizontal padding */
+    font-size: 1.125rem; /* bigger text size */
+
+    /* Increase the corner radius */
+    border-radius: 1rem; /* for more rounded corners */
+
+    /* Keep or adjust your accent color references */
+    background-color: hsl(var(--color-accent-100));
+    color: hsl(var(--accent-foreground));
+
+    transition: background-color 0.25s, border-color 0.25s;
+    cursor: pointer;
+  }
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+@media (prefers-color-scheme: dark) {
+  @layer base {
+    button,
+    input,
+    select,
+    optgroup,
+    textarea,
+    ::file-selector-button {
+      /* Use the darker accent variant in dark mode */
+      background-color: hsl(var(--color-accent-900));
+      color: hsl(var(--accent-foreground));
+    }
   }
 }
