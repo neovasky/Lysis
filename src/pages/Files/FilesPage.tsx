@@ -595,10 +595,11 @@ function GridView({ files, onFileOpen }: GridViewProps) {
 
 function renderIcon(file: FileMetadata, iconSize = 16) {
   if (file.isDirectory)
-    return <Folder size={iconSize} className="text-accent-6" />;
+    // make folder icons a bit lighter in dark mode
+    return <Folder size={iconSize} className="text-[hsl(var(--accent-300))]" />;
   if (file.name.toLowerCase().endsWith(".pdf"))
-    return <FileText size={iconSize} className="text-red-500" />;
+    return <FileText size={iconSize} className="text-red-400" />;
   if (/\.(png|jpe?g|gif)$/i.test(file.name))
-    return <FileImage size={iconSize} className="text-green-500" />;
-  return <FileIcon size={iconSize} className="text-foreground/70" />;
+    return <FileImage size={iconSize} className="text-green-400" />;
+  return <FileIcon size={iconSize} className="text-[hsl(var(--accent-300))]" />;
 }
