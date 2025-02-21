@@ -39,9 +39,8 @@ const FileUploadDialogComponent = ({
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [cancelUpload, setCancelUpload] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // (Removed debug logging for cleaner console output)
 
   const addFiles = useCallback((files: File[]) => {
     const newFiles: UploadingFile[] = files.map((file) => ({
@@ -54,8 +53,13 @@ const FileUploadDialogComponent = ({
     setUploadingFiles((prev) => [...prev, ...newFiles]);
   }, []);
 
+  const handleCancelUpload = () => {
+    setCancelUpload(true);
+  };
+
   const handleUpload = useCallback(async () => {
     setIsProcessing(true);
+    setCancelUpload(false);
     try {
       const targetPath =
         currentFolderPath || (await FileService.getCurrentDirectory());
@@ -64,6 +68,9 @@ const FileUploadDialogComponent = ({
       const pendingFiles = uploadingFiles.filter((f) => f.status === "pending");
 
       for (const uploadFile of pendingFiles) {
+        // If the user cancelled, break out of the loop
+        if (cancelUpload) break;
+
         const filePath = `${targetPath}/${uploadFile.file.name}`;
         setUploadingFiles((prev) =>
           prev.map((f) =>
@@ -88,7 +95,15 @@ const FileUploadDialogComponent = ({
             );
           }, 200);
 
-          await FileService.writeFile(filePath, buffer);
+          // Yield control before starting the file write to allow re-renders.
+          await new Promise<void>((resolve, reject) =>
+            setTimeout(() => {
+              FileService.writeFile(filePath, buffer)
+                .then(() => resolve())
+                .catch(reject);
+            }, 0)
+          );
+
           clearInterval(progressInterval);
           setUploadingFiles((prev) =>
             prev.map((f) =>
@@ -111,17 +126,29 @@ const FileUploadDialogComponent = ({
             )
           );
         }
-      }
+      } // End of for-loop
 
-      onUploadComplete?.();
-      setUploadingFiles([]);
-      onOpenChange(false);
+      // If the upload was cancelled, optionally notify the user here.
+      if (!cancelUpload) {
+        onUploadComplete?.();
+      }
+      // Delay closing the dialog so that users see the final progress and status.
+      setTimeout(() => {
+        setUploadingFiles([]);
+        onOpenChange(false);
+      }, 1000);
     } catch (err) {
       console.error("Upload error:", err);
     } finally {
       setIsProcessing(false);
     }
-  }, [currentFolderPath, uploadingFiles, onUploadComplete, onOpenChange]);
+  }, [
+    currentFolderPath,
+    uploadingFiles,
+    onUploadComplete,
+    onOpenChange,
+    cancelUpload,
+  ]);
 
   const removeFile = useCallback((fileId: string) => {
     setUploadingFiles((prev) => prev.filter((f) => f.id !== fileId));
@@ -236,8 +263,20 @@ const FileUploadDialogComponent = ({
             )}
 
             <div className="flex justify-end gap-4">
+              {/* Show cancel button if processing */}
+              {isProcessing && (
+                <Button
+                  variant="solid"
+                  type="button"
+                  onClick={handleCancelUpload}
+                  className="px-4 py-2 rounded"
+                >
+                  Cancel Upload
+                </Button>
+              )}
+
               <Button
-                variant="solid"
+                variant="icon"
                 type="button"
                 onClick={handleUpload}
                 disabled={
@@ -245,12 +284,12 @@ const FileUploadDialogComponent = ({
                   uploadingFiles.filter((f) => f.status === "pending")
                     .length === 0
                 }
-                className="px-4 py-2 rounded"
               >
                 Upload
               </Button>
+
               <Button
-                variant="outline"
+                variant="solid"
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}

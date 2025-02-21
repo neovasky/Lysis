@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import {
   FileText,
   MoreVertical,
-  Table,
-  File,
+  Table as TableIcon,
+  File as FileIcon,
   Trash,
   Download,
   Pencil,
 } from "lucide-react";
 import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
+
+// Import your new Button component
+import { Button } from "../ui/button";
 
 export interface FilesGridProps {
   files: FileMetadata[];
@@ -28,19 +31,17 @@ const FilesGrid: React.FC<FilesGridProps> = ({
       case "pdf":
         return <FileText className="w-6 h-6" />;
       case "excel":
-        return <Table className="w-6 h-6" />;
+        return <TableIcon className="w-6 h-6" />;
       case "word":
-        return <File className="w-6 h-6" />;
+        return <FileIcon className="w-6 h-6" />;
       default:
-        return <File className="w-6 h-6" />;
+        return <FileIcon className="w-6 h-6" />;
     }
   };
 
   // Handler to open a file.
   const handleFileOpen = (file: FileMetadata) => {
-    if (onFileOpen) {
-      onFileOpen(file);
-    }
+    onFileOpen?.(file);
   };
 
   // Handler to delete a file or folder.
@@ -53,75 +54,90 @@ const FilesGrid: React.FC<FilesGridProps> = ({
     }
   };
 
-  // Minimal custom dropdown for file actions.
+  // Minimal custom dropdown for file actions, now using Button components.
   const FileActions = ({ file }: { file: FileMetadata }) => {
     const [open, setOpen] = useState(false);
 
     return (
       <div className="relative">
-        <button
+        {/* Icon button trigger */}
+        <Button
+          variant="icon"
+          size="sm"
           onClick={(e) => {
             e.stopPropagation();
             setOpen((prev) => !prev);
           }}
-          className="p-1 rounded hover:bg-muted/70"
         >
           <MoreVertical className="w-4 h-4" />
-        </button>
+        </Button>
+
         {open && (
           <div
             className="absolute right-0 mt-2 w-40 rounded shadow
                        bg-popover text-popover-foreground border border-border z-10"
           >
-            <button
+            {/* Open Action */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start px-4 py-2 text-sm"
               onClick={(e) => {
                 e.stopPropagation();
                 handleFileOpen(file);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm 
-                         hover:bg-muted/70"
             >
-              <File className="w-4 h-4" />
+              <FileIcon className="w-4 h-4" />
               Open
-            </button>
-            <button
+            </Button>
+
+            {/* Download Action */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start px-4 py-2 text-sm"
               onClick={(e) => {
                 e.stopPropagation();
                 console.log("Downloading", file.name);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm
-                         hover:bg-muted/70"
             >
               <Download className="w-4 h-4" />
               Download
-            </button>
-            <button
+            </Button>
+
+            {/* Rename Action */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start px-4 py-2 text-sm"
               onClick={(e) => {
                 e.stopPropagation();
                 console.log("Renaming", file.name);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm
-                         hover:bg-muted/70"
             >
               <Pencil className="w-4 h-4" />
               Rename
-            </button>
-            <div className="border-t border-border"></div>
-            <button
+            </Button>
+
+            <div className="border-t border-border my-1" />
+
+            {/* Delete Action */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start px-4 py-2 text-sm text-destructive"
               onClick={(e) => {
                 e.stopPropagation();
                 handleFileDelete(file);
                 setOpen(false);
               }}
-              className="w-full text-left px-4 py-2 flex items-center gap-2 text-sm
-                         text-destructive hover:bg-muted/70"
             >
               <Trash className="w-4 h-4" />
               Delete
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -131,23 +147,24 @@ const FilesGrid: React.FC<FilesGridProps> = ({
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
       {files.map((file) => (
-        <div
+        <Button
           key={file.id}
+          variant="ghost" // or "solid", depending on your design
           className="bg-card text-card-foreground border border-border rounded 
-                     p-4 cursor-pointer hover:shadow-lg transition"
+             p-4 w-full text-left hover:shadow-lg transition flex flex-col items-start"
           onClick={() => handleFileOpen(file)}
         >
           {/* Preview Section */}
           <div
             className="h-36 bg-muted text-muted-foreground rounded 
-                          flex items-center justify-center mb-3"
+                flex items-center justify-center mb-3"
           >
             {getFileIcon(file.type)}
           </div>
 
           {/* File Info Section */}
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-1 w-full">
+            <div className="flex justify-between items-center w-full">
               <p className="font-medium text-sm flex-1 truncate">{file.name}</p>
               <div onClick={(e) => e.stopPropagation()}>
                 <FileActions file={file} />
@@ -159,7 +176,7 @@ const FilesGrid: React.FC<FilesGridProps> = ({
               })}
             </p>
           </div>
-        </div>
+        </Button>
       ))}
     </div>
   );

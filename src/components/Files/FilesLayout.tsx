@@ -12,6 +12,7 @@ import FilesGrid from "../../components/Files/FilesGrid";
 import { useFiles } from "../../components/Files/hooks/useFiles";
 import FileService from "../../services/fileService";
 import { FILE_CONSTANTS } from "../../services/constants";
+import { Button } from "../ui/button";
 
 // Import custom CSS if needed
 import "../../components/Files/dialogstyles.css";
@@ -121,36 +122,34 @@ export const FilesLayout = () => {
           </button>
         )}
         <div className="flex items-center gap-2">
-          <button
+          {/* Upload Files Button */}
+          <Button
+            variant="solid"
             onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-1 bg-primary text-primary-foreground px-3 py-2 rounded hover:bg-primary/90"
+            className="flex items-center gap-1"
           >
             <Upload size={16} />
             Upload Files
-          </button>
+          </Button>
+
+          {/* View Mode Toggle Buttons */}
           <div className="flex gap-1">
-            <button
+            <Button
+              variant={viewMode === "list" ? "solid" : "ghost"}
               onClick={() => setViewMode("list")}
-              className={`p-2 rounded ${
-                viewMode === "list"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-transparent text-muted-foreground hover:bg-muted"
-              }`}
+              className="flex items-center gap-1"
             >
               <ListIcon size={20} />
               List
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "solid" : "ghost"}
               onClick={() => setViewMode("grid")}
-              className={`p-2 rounded ${
-                viewMode === "grid"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-transparent text-muted-foreground hover:bg-muted"
-              }`}
+              className="flex items-center gap-1"
             >
               <LayoutGrid size={20} />
               Grid
-            </button>
+            </Button>
           </div>
         </div>
       </div>

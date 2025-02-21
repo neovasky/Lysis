@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { cn } from "@/lib/utils"; // your className utility
+import { cn } from "@/lib/utils";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,7 +10,10 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "solid", className, style, size = "md", ...props }, ref) => {
+  (
+    { variant = "solid", className, style, size = "md", onClick, ...props },
+    ref
+  ) => {
     const [isHovered, setIsHovered] = useState(false);
 
     let baseStyle: React.CSSProperties = {};
@@ -22,29 +25,32 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             ? "var(--button-background-hover)"
             : "var(--button-background)",
           color: "#fff",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-          border: "1px solid var(--btn-accent)",
+          border: "1px solid var(--button-background)",
         };
         break;
       case "ghost":
         baseStyle = {
-          backgroundColor: "var(--color-accent-950)",
-          color: "#fff",
+          backgroundColor: isHovered
+            ? "var(--button-background-hover)"
+            : "transparent",
+          color: "var(--button-background)",
           border: "1px solid transparent",
         };
         break;
       case "outline":
         baseStyle = {
           backgroundColor: "transparent",
-          color: "#ffffff",
-          border: "1px solid var(--btn-accent)",
+          color: "var(--button-background)",
+          border: "1px solid var(--button-background)",
         };
         break;
       case "icon":
         baseStyle = {
-          backgroundColor: "var(--btn-accent)",
-          color: "#ffffff",
-          border: "1px solid var(--btn-accent)",
+          backgroundColor: isHovered
+            ? "var(--button-background-hover)"
+            : "transparent",
+          color: "var(--button-background)",
+          border: "none",
         };
         break;
       default:
@@ -60,6 +66,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       sizeClasses = "px-4 py-2 text-base";
     }
 
+    // Intercept clicks if disabled
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (props.disabled) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      onClick && onClick(e);
+    };
+
     return (
       <button
         ref={ref}
@@ -69,8 +85,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "rounded shadow transition-all hover:shadow-lg active:shadow-sm",
           className
         )}
+        onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        disabled={props.disabled}
         {...props}
       />
     );
