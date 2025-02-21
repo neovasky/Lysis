@@ -4,6 +4,12 @@
   Base design tokens – these variables define the core colors, fonts, and spacing used throughout your app.
   They’re defined in an @layer base block so they’re part of Tailwind’s base layer.
 */
+/* File: src/theme/globalStyles.css */
+
+/* 
+  Base design tokens – these variables define the core colors, fonts, and spacing used throughout your app.
+  They’re defined in an @layer base block so they’re part of Tailwind’s base layer.
+*/
 @layer base {
   :root {
     /* General Colors */
@@ -30,7 +36,9 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --list-text-color: hsl(var(--accent-800));
+    --list-text-color: hsl(var(--accent-400));
+    --btn-accent: hsl(var(--accent-400));
+    --btn-accent-hover: hsl(var(--accent-500));
 
     /* Text tokens for light mode */
     --body-text-light: hsl(0, 0%, 10%); /* near-black for non-card text */
@@ -41,10 +49,10 @@
     /* Card background in light mode */
     --card-background: 0 0% 100%; /* white */
 
-    /* Button tokens for light mode */
-    --btn-solid-bg-light: hsl(240, 80%, 40%); /* bold accent */
-    --btn-solid-text-light: hsl(0, 0%, 98%); /* near-white text */
-    --btn-ghost-text-light: hsl(0, 0%, 10%); /* near-black text */
+    /* Button tokens for light mode (if using solid/ghost variants) */
+    --btn-solid-bg-light: hsl(240, 80%, 40%);
+    --btn-solid-text-light: hsl(0, 0%, 98%);
+    --btn-ghost-text-light: hsl(0, 0%, 10%);
 
     /* Default to light mode tokens */
     --btn-solid-bg: var(--btn-solid-bg-light);
@@ -54,7 +62,7 @@
 
   .dark {
     /* General Colors for dark mode */
-    --background: 0 0% 10%; /* near-black */
+    --background: 0 0% 10%;
     --foreground: 0 0% 100%;
     --card: 240 10% 3.9%;
     --popover: 240 10% 3.9%;
@@ -77,6 +85,8 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --list-text-color: hsl(var(--accent-50));
+    --btn-accent: hsl(var(--accent-800));
+    --btn-accent-hover: hsl(var(--accent-100));
 
     /* Text tokens for dark mode */
     --body-text-dark: hsl(0, 0%, 90%); /* near-white for non-card text */
@@ -89,7 +99,7 @@
     /* Card background in dark mode */
     --card-background: 240 10% 10%; /* dark tinted background for cards */
 
-    /* Button tokens for dark mode */
+    /* Button tokens for dark mode (if using solid/ghost variants) */
     --btn-solid-bg-dark: hsl(240, 80%, 20%); /* deeper accent */
     --btn-solid-text-dark: hsl(0, 0%, 98%); /* near-white text */
     --btn-ghost-text-dark: hsl(0, 0%, 90%); /* near-white text */
@@ -363,6 +373,7 @@
   --amber-1000: 28 77% 3%;
 
   --color-accent-900: var(--amber-500);
+  --color-accent-950: var(--amber-700);
 }
 
 /* YELLOW */
@@ -932,11 +943,8 @@ body,
 }
 
 .card {
-  background-color: hsl(var(--card-background));
-  color: hsl(var(--card-foreground));
-  border: 1px solid hsl(var(--card-border));
-  border-radius: 0.5rem;
-  padding: 1rem;
+  background-color: hsl(var(--card-background)) !important;
+  color: hsl(var(--card-foreground)) !important;
 }
 
 .read-the-docs {
@@ -959,6 +967,25 @@ body,
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-borderCard);
+}
+
+@layer utilities {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: white;
+  }
+  .btn:hover {
+    background-color: hsl(var(--btn-accent-hover));
+  }
 }
 
 /* Tailwind Import */

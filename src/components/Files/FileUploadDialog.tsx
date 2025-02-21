@@ -3,6 +3,7 @@ import { X, Upload, Trash } from "lucide-react";
 import FileService from "../../services/fileService";
 import "./dialogStyles.css";
 import React from "react";
+import { Button } from "../ui/button";
 
 export interface UploadingFile {
   id: string;
@@ -235,7 +236,8 @@ const FileUploadDialogComponent = ({
             )}
 
             <div className="flex justify-end gap-4">
-              <button
+              <Button
+                variant="solid"
                 type="button"
                 onClick={handleUpload}
                 disabled={
@@ -243,18 +245,19 @@ const FileUploadDialogComponent = ({
                   uploadingFiles.filter((f) => f.status === "pending")
                     .length === 0
                 }
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                className="px-4 py-2 rounded"
               >
                 Upload
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+                className="px-4 py-2 rounded"
               >
                 Add More Files
-              </button>
+              </Button>
             </div>
           </div>
         </form>

@@ -63,8 +63,6 @@ h1 {
   line-height: 1.1;
 }
 
-/* Removed all button styles since they're now handled by the Button component */
-
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -109,12 +107,10 @@ h1 {
   optgroup,
   textarea,
   ::file-selector-button {
-    /* Increase the padding for a bigger box */
-    padding: 0.75rem 0.75rem; /* bigger vertical/horizontal padding */
+    padding: 0.75rem 0.75rem; /* Sidebar Button padding */
     font-size: 1.125rem; /* bigger text size */
 
-    /* Increase the corner radius */
-    border-radius: 1rem; /* for more rounded corners */
+    border-radius: 1rem;
 
     /* Keep or adjust your accent color references */
     background-color: hsl(var(--color-accent-100));

@@ -1,41 +1,50 @@
 "use client";
 
-import React from "react";
-import { cn } from "@/lib/utils";
+import React, { useState } from "react";
+import { cn } from "@/lib/utils"; // your className utility
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "solid" | "ghost" | "outline" | "icon";
-  size?: "sm" | "md" | "lg" | "icon";
+  size?: "sm" | "md" | "lg";
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = "solid", className, style, size = "md", ...props }, ref) => {
-    let baseStyle: React.CSSProperties;
+    const [isHovered, setIsHovered] = useState(false);
+
+    let baseStyle: React.CSSProperties = {};
+
     switch (variant) {
       case "solid":
         baseStyle = {
-          backgroundColor: "var(--btn-solid-bg)",
-          color: "var(--btn-solid-text)",
+          backgroundColor: isHovered
+            ? "var(--button-background-hover)"
+            : "var(--button-background)",
+          color: "#fff",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+          border: "1px solid var(--btn-accent)",
         };
         break;
       case "ghost":
         baseStyle = {
-          backgroundColor: "transparent",
-          color: "var(--btn-ghost-text)",
+          backgroundColor: "var(--color-accent-950)",
+          color: "#fff",
+          border: "1px solid transparent",
         };
         break;
       case "outline":
         baseStyle = {
           backgroundColor: "transparent",
-          color: "var(--btn-outline-text)",
-          border: "1px solid var(--btn-outline-border)",
+          color: "#ffffff",
+          border: "1px solid var(--btn-accent)",
         };
         break;
       case "icon":
         baseStyle = {
-          backgroundColor: "transparent",
-          color: "var(--btn-icon-text)",
+          backgroundColor: "var(--btn-accent)",
+          color: "#ffffff",
+          border: "1px solid var(--btn-accent)",
         };
         break;
       default:
@@ -47,8 +56,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       sizeClasses = "px-2 py-1 text-sm";
     } else if (size === "lg") {
       sizeClasses = "px-6 py-3 text-lg";
-    } else if (size === "icon") {
-      sizeClasses = "p-2"; // icon buttons get uniform padding
     } else {
       sizeClasses = "px-4 py-2 text-base";
     }
@@ -57,7 +64,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         style={{ ...baseStyle, ...style }}
-        className={cn(sizeClasses, "rounded", className)}
+        className={cn(
+          sizeClasses,
+          "rounded shadow transition-all hover:shadow-lg active:shadow-sm",
+          className
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         {...props}
       />
     );

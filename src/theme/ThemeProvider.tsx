@@ -51,6 +51,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         "--color-pageBackground",
         `hsl(var(--${accent}-1000) / 1)`
       );
+      root.style.setProperty(
+        "--button-background",
+        `hsl(var(--${accent}-600) / 1)`
+      );
+      root.style.setProperty(
+        "--button-background-hover",
+        `hsl(var(--${accent}-400) / 1)`
+      );
     } else {
       root.style.setProperty(
         "--card-background",
@@ -61,8 +69,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         "--color-pageBackground",
         `hsl(var(--${accent}-50) / 1)`
       );
+      root.style.setProperty(
+        "--button-background",
+        `hsl(var(--${accent}-500) / 1)`
+      );
+      root.style.setProperty(
+        "--button-background-hover",
+        `hsl(var(--${accent}-600) / 1)`
+      );
     }
-
     localStorage.setItem(MODE_KEY, mode);
     localStorage.setItem(ACCENT_KEY, accent);
 

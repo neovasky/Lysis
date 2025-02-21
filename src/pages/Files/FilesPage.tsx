@@ -23,9 +23,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-// Use a named import for Button
-import { Button } from "@/components/ui/button";
-
+import { Button } from "@/components/ui/button"; // Named import
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -183,6 +181,7 @@ export default function FilesPage() {
       const key = `fileContent_${file.path}`;
       const dataUrl = localStorage.getItem(key);
       if (!dataUrl) {
+        // If there's a real "openFile" from some native API:
         if (window.fileAPI?.openFile) {
           await window.fileAPI.openFile(file.path);
         } else {
@@ -190,6 +189,7 @@ export default function FilesPage() {
         }
         return;
       }
+      // We have a dataUrl in localStorage, parse it
       const mimeMatch = dataUrl.match(/^data:(.*?);base64,/);
       const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
       if (mimeType === "application/pdf") {
@@ -198,10 +198,12 @@ export default function FilesPage() {
         setSelectedPdfData(new Uint8Array(arrayBuf));
         setShowPdfModal(true);
       } else if (mimeType.startsWith("image/")) {
+        // Just open the image in a new tab
         const blob = dataURLtoBlob(dataUrl);
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
       } else {
+        // Fallback text or other type
         const newWindow = window.open("", "_blank");
         if (!newWindow) {
           alert("Popup blocked. Please allow popups for this site.");
@@ -291,25 +293,36 @@ export default function FilesPage() {
     if (activeFilter === "all") {
       return displayItems;
     } else if (activeFilter === "recent") {
+      // Sort by lastModified descending
       return [...displayItems].sort((a, b) => b.lastModified - a.lastModified);
     } else {
+      // Filter by type
       return displayItems.filter((item) => item.type === activeFilter);
     }
   }, [displayItems, activeFilter]);
 
   return (
     <div
-      className="mx-auto w-full max-w-6xl flex flex-col h-screen text-foreground"
-      style={{ backgroundColor: "var(--color-pageBackground)" }}
+      className="mx-auto w-full max-w-6xl flex flex-col h-screen"
+      // Force normal body text to be black in light mode, near-white in dark mode
+      style={{
+        color: "var(--body-foreground)",
+        backgroundColor: "hsl(var(--background))",
+      }}
     >
       {/* Top Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-borderCard">
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b"
+        style={{
+          borderColor: "hsl(var(--border))",
+        }}
+      >
         <div className="flex items-center gap-2">
           {currentDirectory &&
             currentDirectory.path !== DEFAULT_BASE_DIRECTORY && (
               <Button
                 variant="outline"
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                onClick={(e) => {
                   e.stopPropagation();
                   handleBackToRoot();
                 }}
@@ -318,11 +331,12 @@ export default function FilesPage() {
                 Root
               </Button>
             )}
-          <Button variant="icon" onClick={() => setIsNewFolderOpen(true)}>
+          <Button variant="solid" onClick={() => setIsNewFolderOpen(true)}>
             <Plus className="h-4 w-4" />
             New Folder
           </Button>
-          <Button variant="icon" onClick={() => setIsUploadOpen(true)}>
+
+          <Button variant="solid" onClick={() => setIsUploadOpen(true)}>
             <Upload className="h-4 w-4" />
             Upload Files
           </Button>
@@ -373,7 +387,10 @@ export default function FilesPage() {
 
       {/* Filter Bar */}
       {currentDirectory && (
-        <div className="px-4 py-3 border-b border-borderCard">
+        <div
+          className="px-4 py-3 border-b"
+          style={{ borderColor: "hsl(var(--border))" }}
+        >
           <ToggleGroup
             type="single"
             value={activeFilter}
@@ -409,7 +426,10 @@ export default function FilesPage() {
             {directories.map((dir) => (
               <Card
                 key={dir.path}
-                className="cursor-pointer p-4 hover:opacity-90 transition border border-borderCard"
+                className="cursor-pointer p-4 hover:opacity-90 transition"
+                style={{
+                  border: "1px solid hsl(var(--border))",
+                }}
                 onClick={() =>
                   handleFolderOpen({
                     ...dir,
@@ -418,10 +438,11 @@ export default function FilesPage() {
                 }
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Folder className="text-accent-6" size={20} />
+                  {/* Slightly different color for icons in grid mode */}
+                  <Folder size={20} className="text-[hsl(var(--accent-700))]" />
                   <span className="font-medium">{dir.name}</span>
                 </div>
-                <p className="text-sm text-foreground/70">Folder</p>
+                <p className="text-sm opacity-80">Folder</p>
               </Card>
             ))}
           </div>
@@ -487,8 +508,10 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
     <div
       className="rounded-lg p-2"
       style={{
+        // Subtle accent border
         border: "1px solid hsl(var(--accent-700))",
-        color: "var(--list-text-color)",
+        // Use normal body text color (black in light, near-white in dark)
+        color: "var(--body-foreground)",
       }}
     >
       <Table className="w-full">
@@ -508,6 +531,11 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
               key={file.path}
               className="hover:bg-accent-1 cursor-pointer"
               onClick={() => onFileOpen(file)}
+              style={{
+                // If you want a subtle row hover in light/dark:
+                // (You can also rely on a Tailwind class, but here's an inline fallback.)
+                transition: "background 0.15s",
+              }}
             >
               <TableCell className="flex items-center gap-2">
                 {renderIcon(file)}
@@ -529,10 +557,11 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="icon"
-                      size="icon"
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
+                      variant="solid"
+                      size="sm"
+                      style={{
+                        backgroundColor: "hsl(var(--accent-600))",
+                        color: "#fff",
                       }}
                     >
                       <MoreVertical className="h-4 w-4" />
@@ -540,7 +569,7 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                      onClick={(e) => {
                         e.stopPropagation();
                         onDelete(file.path);
                       }}
@@ -548,7 +577,7 @@ function ListView({ files, onFileOpen, onDelete, onRename }: ListViewProps) {
                       Delete
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                      onClick={(e) => {
                         e.stopPropagation();
                         onRename(file);
                       }}
@@ -571,20 +600,28 @@ interface GridViewProps {
   onFileOpen: (item: FileMetadata) => void;
 }
 
+/**
+ * GridView: Use an accent background with white text for each Card
+ */
 function GridView({ files, onFileOpen }: GridViewProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {files.map((file) => (
         <Card
           key={file.path}
-          className="cursor-pointer p-4 hover:opacity-90 transition border border-borderCard"
+          className="cursor-pointer p-4 hover:opacity-90 transition"
+          style={{
+            border: "1px solid hsl(var(--accent-700))",
+            backgroundColor: "hsl(var(--accent-700))", // accent background
+            color: "#ffffff", // force white text
+          }}
           onClick={() => onFileOpen(file)}
         >
           <div className="flex items-center gap-2 mb-2">
-            {renderIcon(file, 24)}
+            {renderIcon(file, 24, /*forceWhite=*/ true)}
             <span className="font-medium truncate">{file.name}</span>
           </div>
-          <p className="text-sm text-foreground/70">
+          <p className="text-sm opacity-90">
             {file.isDirectory ? "Folder" : file.type?.toUpperCase() || "File"}
           </p>
         </Card>
@@ -593,13 +630,25 @@ function GridView({ files, onFileOpen }: GridViewProps) {
   );
 }
 
-function renderIcon(file: FileMetadata, iconSize = 16) {
-  if (file.isDirectory)
-    // make folder icons a bit lighter in dark mode
-    return <Folder size={iconSize} className="text-[hsl(var(--accent-300))]" />;
-  if (file.name.toLowerCase().endsWith(".pdf"))
+/**
+ * renderIcon: If in Grid mode, we may want white icons;
+ * otherwise, we can do a normal accent color.
+ */
+function renderIcon(
+  file: FileMetadata,
+  iconSize = 16,
+  forceWhite = false
+): JSX.Element {
+  const iconClass = forceWhite ? "text-white" : "text-[hsl(var(--accent-600))]"; // or whichever accent step you prefer
+
+  if (file.isDirectory) {
+    return <Folder size={iconSize} className={iconClass} />;
+  }
+  if (file.name.toLowerCase().endsWith(".pdf")) {
     return <FileText size={iconSize} className="text-red-400" />;
-  if (/\.(png|jpe?g|gif)$/i.test(file.name))
+  }
+  if (/\.(png|jpe?g|gif)$/i.test(file.name)) {
     return <FileImage size={iconSize} className="text-green-400" />;
-  return <FileIcon size={iconSize} className="text-[hsl(var(--accent-300))]" />;
+  }
+  return <FileIcon size={iconSize} className={iconClass} />;
 }
