@@ -10,8 +10,6 @@ import {
 } from "lucide-react";
 import { formatDistance } from "date-fns";
 import { FileMetadata } from "../../store/slices/fileSlice";
-
-// Import your new Button component
 import { Button } from "../ui/button";
 
 export interface FilesGridProps {
@@ -54,7 +52,7 @@ const FilesGrid: React.FC<FilesGridProps> = ({
     }
   };
 
-  // Minimal custom dropdown for file actions, now using Button components.
+  // Custom dropdown for file actions, using Button components.
   const FileActions = ({ file }: { file: FileMetadata }) => {
     const [open, setOpen] = useState(false);
 
@@ -149,16 +147,12 @@ const FilesGrid: React.FC<FilesGridProps> = ({
       {files.map((file) => (
         <Button
           key={file.id}
-          variant="ghost" // or "solid", depending on your design
-          className="bg-card text-card-foreground border border-border rounded 
-             p-4 w-full text-left hover:shadow-lg transition flex flex-col items-start"
+          variant="solid"
+          className="p-4 w-full text-left flex flex-col items-start hover:shadow-lg transition"
           onClick={() => handleFileOpen(file)}
         >
           {/* Preview Section */}
-          <div
-            className="h-36 bg-muted text-muted-foreground rounded 
-                flex items-center justify-center mb-3"
-          >
+          <div className="h-36 rounded flex items-center justify-center mb-3">
             {getFileIcon(file.type)}
           </div>
 
@@ -170,7 +164,7 @@ const FilesGrid: React.FC<FilesGridProps> = ({
                 <FileActions file={file} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs">
               {formatDistance(file.lastModified, new Date(), {
                 addSuffix: true,
               })}

@@ -8,7 +8,7 @@ import {
   BarChart,
   Bookmark,
   Bell,
-  File,
+  Folder,
   Calendar,
   FileText,
 } from "lucide-react";
@@ -36,7 +36,7 @@ export const HomePage = () => {
     },
     {
       title: "Files",
-      icon: <File size={24} />,
+      icon: <Folder size={24} />,
       path: "/files",
     },
     {
@@ -100,11 +100,23 @@ export const HomePage = () => {
                 <button
                   key={item.title}
                   onClick={() => navigate(item.path)}
-                  className="rounded-md p-4 flex flex-col items-center gap-2 hover:shadow-md transition"
+                  className="rounded-md p-4 flex flex-col items-center gap-2 hover:opacity-90 transition"
                   style={{
-                    backgroundColor: "hsl(var(--accent-700))",
-                    border: "1px solid hsl(var(--accent-800))",
-                    color: "#ffffff", // force white text for quick access buttons
+                    backgroundColor: "var(--quick-access-background)",
+                    border: "1px solid var(--quick-access-border)",
+                    color: "var(--quick-access-text)",
+                    boxShadow: "var(--quick-access-shadow)",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow =
+                      "var(--quick-access-shadow-hover)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow =
+                      "var(--quick-access-shadow)";
                   }}
                 >
                   {item.icon}

@@ -42,6 +42,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
     // Set card background: use accent-400 in light mode and accent-700 in dark mode.
     if (mode === "dark") {
+      // Regular card variables
       root.style.setProperty(
         "--card-background",
         `hsl(var(--${accent}-700) / 1)`
@@ -51,6 +52,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         "--color-pageBackground",
         `hsl(var(--${accent}-1000) / 1)`
       );
+
+      // Button variables
       root.style.setProperty(
         "--button-background",
         `hsl(var(--${accent}-600) / 1)`
@@ -59,7 +62,46 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         "--button-background-hover",
         `hsl(var(--${accent}-400) / 1)`
       );
+
+      // Grid card variables - with enhanced visibility in dark mode
+      root.style.setProperty(
+        "--grid-card-background",
+        `hsl(var(--${accent}-500) / 1)`
+      );
+      root.style.setProperty(
+        "--grid-card-border",
+        `hsl(var(--${accent}-700) / 1)`
+      );
+      root.style.setProperty("--grid-card-text", "#ffffff");
+      root.style.setProperty(
+        "--grid-card-shadow",
+        "0 4px 8px rgba(0, 0, 0, 0.3)"
+      );
+      root.style.setProperty(
+        "--grid-card-shadow-hover",
+        "0 6px 12px rgba(0, 0, 0, 0.5)"
+      );
+
+      // Quick Access button variables for home page
+      root.style.setProperty(
+        "--quick-access-background",
+        `hsl(var(--${accent}-600) / 1)`
+      );
+      root.style.setProperty(
+        "--quick-access-border",
+        `hsl(var(--${accent}-800) / 1)`
+      );
+      root.style.setProperty("--quick-access-text", "#ffffff");
+      root.style.setProperty(
+        "--quick-access-shadow",
+        "0 4px 8px rgba(0, 0, 0, 0.3)"
+      );
+      root.style.setProperty(
+        "--quick-access-shadow-hover",
+        "0 6px 12px rgba(0, 0, 0, 0.5)"
+      );
     } else {
+      // Regular card variables
       root.style.setProperty(
         "--card-background",
         `hsl(var(--${accent}-500) / 1)`
@@ -69,6 +111,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         "--color-pageBackground",
         `hsl(var(--${accent}-50) / 1)`
       );
+
+      // Button variables
       root.style.setProperty(
         "--button-background",
         `hsl(var(--${accent}-500) / 1)`
@@ -77,7 +121,46 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         "--button-background-hover",
         `hsl(var(--${accent}-600) / 1)`
       );
+
+      // Grid card variables - with appropriate contrast in light mode
+      root.style.setProperty(
+        "--grid-card-background",
+        `hsl(var(--${accent}-600) / 1)`
+      );
+      root.style.setProperty(
+        "--grid-card-border",
+        `hsl(var(--${accent}-800) / 1)`
+      );
+      root.style.setProperty("--grid-card-text", "#ffffff");
+      root.style.setProperty(
+        "--grid-card-shadow",
+        "0 4px 8px rgba(0, 0, 0, 0.2)"
+      );
+      root.style.setProperty(
+        "--grid-card-shadow-hover",
+        "0 6px 12px rgba(0, 0, 0, 0.4)"
+      );
+
+      // Quick Access button variables for home page
+      root.style.setProperty(
+        "--quick-access-background",
+        `hsl(var(--${accent}-500) / 1)`
+      );
+      root.style.setProperty(
+        "--quick-access-border",
+        `hsl(var(--${accent}-700) / 1)`
+      );
+      root.style.setProperty("--quick-access-text", "#ffffff");
+      root.style.setProperty(
+        "--quick-access-shadow",
+        "0 4px 6px rgba(0, 0, 0, 0.2)"
+      );
+      root.style.setProperty(
+        "--quick-access-shadow-hover",
+        "0 6px 10px rgba(0, 0, 0, 0.3)"
+      );
     }
+
     localStorage.setItem(MODE_KEY, mode);
     localStorage.setItem(ACCENT_KEY, accent);
 
@@ -86,6 +169,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       accent,
       dataAccent: root.getAttribute("data-accent"),
       cardBackground: root.style.getPropertyValue("--card-background"),
+      gridCardBackground: root.style.getPropertyValue("--grid-card-background"),
     });
   }, [mode, accent]);
 

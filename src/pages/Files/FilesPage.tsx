@@ -611,14 +611,24 @@ function GridView({ files, onFileOpen }: GridViewProps) {
           key={file.path}
           className="cursor-pointer p-4 hover:opacity-90 transition"
           style={{
-            border: "1px solid hsl(var(--accent-700))",
-            backgroundColor: "hsl(var(--accent-700))", // accent background
-            color: "#ffffff", // force white text
+            backgroundColor: "var(--grid-card-background)",
+            borderColor: "var(--grid-card-border)",
+            color: "var(--grid-card-text)",
+            boxShadow: "var(--grid-card-shadow)",
+            transition: "transform 0.2s ease, box-shadow 0.2s ease",
           }}
           onClick={() => onFileOpen(file)}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "var(--grid-card-shadow-hover)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "var(--grid-card-shadow)";
+          }}
         >
           <div className="flex items-center gap-2 mb-2">
-            {renderIcon(file, 24, /*forceWhite=*/ true)}
+            {renderIcon(file, 24, true)}
             <span className="font-medium truncate">{file.name}</span>
           </div>
           <p className="text-sm opacity-90">
