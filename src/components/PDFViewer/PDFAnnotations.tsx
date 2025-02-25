@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "@/theme/hooks/useTheme";
-import { Sticky, XCircle, Edit3, Save, Trash2, Check, X } from "lucide-react";
+import { StickyNote, X, Edit3, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // PostIt note interface
@@ -30,7 +30,6 @@ export interface TextHighlight {
 interface PDFAnnotationsProps {
   pdfContainerRef: React.RefObject<HTMLDivElement>;
   currentPage: number;
-  numPages: number;
   scale: number;
 }
 
@@ -55,7 +54,6 @@ const HIGHLIGHT_COLORS = [
 const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   pdfContainerRef,
   currentPage,
-  numPages,
   scale,
 }) => {
   const { mode } = useTheme();
@@ -67,9 +65,6 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   const [isAddingPostIt, setIsAddingPostIt] = useState(false);
   const [selectedPostIt, setSelectedPostIt] = useState<string | null>(null);
   const [editingPostItId, setEditingPostItId] = useState<string | null>(null);
-  const [temporaryPostIt, setTemporaryPostIt] = useState<PostItNote | null>(
-    null
-  );
   const [selectedColor, setSelectedColor] = useState(POST_IT_COLORS[0]);
   const [isAddingTextHighlight, setIsAddingTextHighlight] = useState(false);
   const [selectedHighlight, setSelectedHighlight] = useState<string | null>(
@@ -87,7 +82,6 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   });
 
   // References
-  const postItRef = useRef<HTMLDivElement>(null);
   const postItDragRef = useRef<{
     isDragging: boolean;
     offsetX: number;
@@ -96,10 +90,6 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     isDragging: false,
     offsetX: 0,
     offsetY: 0,
-  });
-  const resizeRef = useRef<{ isResizing: boolean; direction: string }>({
-    isResizing: false,
-    direction: "",
   });
 
   // Load annotations from localStorage on component mount
@@ -261,46 +251,50 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   };
 
   // Handle post-it note drag move
-  const handlePostItDragMove = (e: MouseEvent) => {
-    if (
-      !postItDragRef.current.isDragging ||
-      !selectedPostIt ||
-      !pdfContainerRef.current
-    )
-      return;
-
-    const pageElement = pdfContainerRef.current.querySelector(
-      `[data-page-index="${currentPage - 1}"]`
-    );
-    if (!pageElement) return;
-
-    const containerRect = pageElement.getBoundingClientRect();
-
-    // Calculate new position relative to the PDF page
-    const x =
-      (e.clientX - containerRect.left - postItDragRef.current.offsetX) / scale;
-    const y =
-      (e.clientY - containerRect.top - postItDragRef.current.offsetY) / scale;
-
-    // Update post-it position
-    setPostItNotes((prev) =>
-      prev.map((note) =>
-        note.id === selectedPostIt ? { ...note, x, y } : note
+  const handlePostItDragMove = useCallback(
+    (e: MouseEvent) => {
+      if (
+        !postItDragRef.current.isDragging ||
+        !selectedPostIt ||
+        !pdfContainerRef.current
       )
-    );
-  };
+        return;
+
+      const pageElement = pdfContainerRef.current.querySelector(
+        `[data-page-index="${currentPage - 1}"]`
+      );
+      if (!pageElement) return;
+
+      const containerRect = pageElement.getBoundingClientRect();
+
+      // Calculate new position relative to the PDF page
+      const x =
+        (e.clientX - containerRect.left - postItDragRef.current.offsetX) /
+        scale;
+      const y =
+        (e.clientY - containerRect.top - postItDragRef.current.offsetY) / scale;
+
+      // Update post-it position
+      setPostItNotes((prev) =>
+        prev.map((note) =>
+          note.id === selectedPostIt ? { ...note, x, y } : note
+        )
+      );
+    },
+    [currentPage, pdfContainerRef, scale, selectedPostIt]
+  );
 
   // Handle post-it note drag end
-  const handlePostItDragEnd = () => {
+  const handlePostItDragEnd = useCallback(() => {
     postItDragRef.current.isDragging = false;
 
     // Remove event listeners
     document.removeEventListener("mousemove", handlePostItDragMove);
     document.removeEventListener("mouseup", handlePostItDragEnd);
-  };
+  }, [handlePostItDragMove]);
 
   // Create a new text highlight
-  const createTextHighlight = () => {
+  const createTextHighlight = useCallback(() => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed)
       return;
@@ -349,7 +343,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     // Clear the selection and hide the toolbar
     selection.removeAllRanges();
     setShowHighlightToolbar(false);
-  };
+  }, [currentPage, highlightColor, pdfContainerRef, scale]);
 
   // Save a note to a text highlight
   const saveHighlightNote = (id: string, note: string) => {
@@ -407,7 +401,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
               className="w-full h-full flex items-center justify-center"
               onClick={() => toggleMinimize(note.id)}
             >
-              <Sticky size={16} />
+              <StickyNote size={16} />
             </div>
           ) : (
             <>
@@ -694,7 +688,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
             setIsAddingTextHighlight(false);
           }}
         >
-          <Sticky size={16} />
+          <StickyNote size={16} />
         </Button>
 
         {/* Highlight button */}

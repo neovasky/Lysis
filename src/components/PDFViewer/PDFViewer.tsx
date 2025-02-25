@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useMemo,
+  useEffect,
+  useCallback,
+} from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
@@ -36,6 +42,21 @@ interface PDFViewerProps {
   onClose: () => void; // onClose is required
 }
 
+// Define types for PDF text content
+interface TextItem {
+  str: string;
+  dir: string;
+  width: number;
+  height: number;
+  transform: number[];
+  fontName: string;
+}
+
+interface TextContent {
+  items: TextItem[];
+  styles: Record<string, unknown>;
+}
+
 const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const { mode } = useTheme();
   const isDark = mode === "dark";
@@ -56,7 +77,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [editPageInput, setEditPageInput] = useState(false);
   const [pageInputValue, setPageInputValue] = useState("");
-  const [textItems, setTextItems] = useState<{ [key: number]: any[] }>({});
+  const [textItems, setTextItems] = useState<{ [key: number]: TextItem[] }>({});
 
   // Main container ref (for scrolling)
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -78,19 +99,22 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   };
 
   // Handle page render
-  const handlePageRender = async (pageIndex: number, textContent: any) => {
-    setTextItems((prev) => ({
-      ...prev,
-      [pageIndex]: textContent.items,
-    }));
-  };
+  const handlePageRender = useCallback(
+    (pageIndex: number, textContent: TextContent) => {
+      setTextItems((prev) => ({
+        ...prev,
+        [pageIndex]: textContent.items,
+      }));
+    },
+    []
+  );
 
   // Zoom handlers
   const handleZoomIn = () => setScale((s) => s + 0.2);
   const handleZoomOut = () => setScale((s) => Math.max(0.2, s - 0.2));
 
   // Search handlers
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
       setCurrentSearchIndex(-1);
@@ -144,9 +168,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [searchTerm, textItems]);
 
-  const navigateToSearchResult = (result: SearchResult) => {
+  const navigateToSearchResult = useCallback((result: SearchResult) => {
     const pageDiv = mainContainerRef.current?.querySelector(
       `[data-page-index="${result.pageIndex}"]`
     ) as HTMLDivElement | null;
@@ -174,24 +198,24 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         }
       }, 500);
     }
-  };
+  }, []);
 
-  const handleNextSearchResult = () => {
+  const handleNextSearchResult = useCallback(() => {
     if (searchResults.length === 0 || currentSearchIndex === -1) return;
 
     const nextIndex = (currentSearchIndex + 1) % searchResults.length;
     setCurrentSearchIndex(nextIndex);
     navigateToSearchResult(searchResults[nextIndex]);
-  };
+  }, [currentSearchIndex, navigateToSearchResult, searchResults]);
 
-  const handlePrevSearchResult = () => {
+  const handlePrevSearchResult = useCallback(() => {
     if (searchResults.length === 0 || currentSearchIndex === -1) return;
 
     const prevIndex =
       (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
     setCurrentSearchIndex(prevIndex);
     navigateToSearchResult(searchResults[prevIndex]);
-  };
+  }, [currentSearchIndex, navigateToSearchResult, searchResults]);
 
   // Handle search when enter key is pressed
   useEffect(() => {
@@ -206,7 +230,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchTerm, performSearch]);
+  }, [performSearch]);
 
   // Page navigation handlers
   const handlePageNumberClick = () => {
