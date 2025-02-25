@@ -52,9 +52,21 @@ interface TextItem {
   fontName: string;
 }
 
+// Adding TextMarkedContent interface to fix type incompatibility
+interface TextMarkedContent {
+  type: string;
+  items: (TextItem | TextMarkedContent)[];
+}
+
+// Updated TextContent interface to include TextMarkedContent
 interface TextContent {
-  items: TextItem[];
+  items: (TextItem | TextMarkedContent)[];
   styles: Record<string, unknown>;
+}
+
+// Type guard to check if an item is a TextItem
+function isTextItem(item: TextItem | TextMarkedContent): item is TextItem {
+  return "str" in item;
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
@@ -77,7 +89,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [editPageInput, setEditPageInput] = useState(false);
   const [pageInputValue, setPageInputValue] = useState("");
-  const [textItems, setTextItems] = useState<{ [key: number]: TextItem[] }>({});
+  const [textItems, setTextItems] = useState<{
+    [key: number]: (TextItem | TextMarkedContent)[];
+  }>({});
 
   // Main container ref (for scrolling)
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -113,6 +127,37 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const handleZoomIn = () => setScale((s) => s + 0.2);
   const handleZoomOut = () => setScale((s) => Math.max(0.2, s - 0.2));
 
+  // Navigate to search result function (defined first so it can be used in dependencies)
+  const navigateToSearchResult = useCallback((result: SearchResult) => {
+    const pageDiv = mainContainerRef.current?.querySelector(
+      `[data-page-index="${result.pageIndex}"]`
+    ) as HTMLDivElement | null;
+
+    if (pageDiv) {
+      pageDiv.scrollIntoView({ behavior: "smooth" });
+      setCurrentPage(result.pageIndex + 1);
+
+      // Highlight the search result (optional - you'd need to add more code to highlight specific text)
+      setTimeout(() => {
+        try {
+          const textLayers = pageDiv.querySelectorAll(
+            ".react-pdf__Page__textContent"
+          );
+          if (textLayers.length > 0) {
+            // This is a simple approach - for more precise highlighting you'd need
+            // to calculate exact positions based on the result's matchIndex
+            textLayers[0].classList.add("highlight-animation");
+            setTimeout(() => {
+              textLayers[0].classList.remove("highlight-animation");
+            }, 2000);
+          }
+        } catch (e) {
+          console.error("Error highlighting text", e);
+        }
+      }, 500);
+    }
+  }, []);
+
   // Search handlers
   const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
@@ -133,7 +178,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         const pageIndex = parseInt(pageIdxStr, 10);
 
         // Combine text items to find matches that might span multiple items
-        const fullText = items.map((item) => item.str).join(" ");
+        // Use the type guard to filter TextItem objects
+        const textStrings = items.filter(isTextItem).map((item) => item.str);
+
+        const fullText = textStrings.join(" ");
 
         let startIndex = 0;
         let matchIndex = fullText.toLowerCase().indexOf(term, startIndex);
@@ -168,37 +216,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     } finally {
       setIsSearching(false);
     }
-  }, [searchTerm, textItems]);
-
-  const navigateToSearchResult = useCallback((result: SearchResult) => {
-    const pageDiv = mainContainerRef.current?.querySelector(
-      `[data-page-index="${result.pageIndex}"]`
-    ) as HTMLDivElement | null;
-
-    if (pageDiv) {
-      pageDiv.scrollIntoView({ behavior: "smooth" });
-      setCurrentPage(result.pageIndex + 1);
-
-      // Highlight the search result (optional - you'd need to add more code to highlight specific text)
-      setTimeout(() => {
-        try {
-          const textLayers = pageDiv.querySelectorAll(
-            ".react-pdf__Page__textContent"
-          );
-          if (textLayers.length > 0) {
-            // This is a simple approach - for more precise highlighting you'd need
-            // to calculate exact positions based on the result's matchIndex
-            textLayers[0].classList.add("highlight-animation");
-            setTimeout(() => {
-              textLayers[0].classList.remove("highlight-animation");
-            }, 2000);
-          }
-        } catch (e) {
-          console.error("Error highlighting text", e);
-        }
-      }, 500);
-    }
-  }, []);
+  }, [searchTerm, textItems, navigateToSearchResult]);
 
   const handleNextSearchResult = useCallback(() => {
     if (searchResults.length === 0 || currentSearchIndex === -1) return;
@@ -713,7 +731,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                   pageNumber={i + 1}
                   scale={scale}
                   onGetTextSuccess={(textContent) =>
-                    handlePageRender(i, textContent)
+                    handlePageRender(i, textContent as TextContent)
                   }
                   renderTextLayer={true}
                   renderAnnotationLayer={true}
