@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "@/theme/hooks/useTheme";
-import { StickyNote, X, Edit3, Trash2, Check } from "lucide-react";
+import {
+  StickyNote,
+  X,
+  Edit3,
+  Trash2,
+  Check,
+  MessageSquare,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // PostIt note interface
@@ -14,6 +21,8 @@ export interface PostItNote {
   content: string;
   color: string;
   minimized: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // Text highlight interface
@@ -24,6 +33,8 @@ export interface TextHighlight {
   content: string; // The highlighted text
   note: string; // Optional note attached to the highlight
   color: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // Props for the annotation manager component
@@ -31,6 +42,10 @@ interface PDFAnnotationsProps {
   pdfContainerRef: React.RefObject<HTMLDivElement>;
   currentPage: number;
   scale: number;
+  onAnnotationUpdate?: (annotations: {
+    postItNotes: PostItNote[];
+    textHighlights: TextHighlight[];
+  }) => void;
 }
 
 // Available post-it note colors
@@ -55,6 +70,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   pdfContainerRef,
   currentPage,
   scale,
+  onAnnotationUpdate,
 }) => {
   const { mode } = useTheme();
   const isDark = mode === "dark";
@@ -117,7 +133,10 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   // Save annotations to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("pdf-post-it-notes", JSON.stringify(postItNotes));
-  }, [postItNotes]);
+    if (onAnnotationUpdate) {
+      onAnnotationUpdate({ postItNotes, textHighlights });
+    }
+  }, [postItNotes, textHighlights, onAnnotationUpdate]);
 
   useEffect(() => {
     localStorage.setItem("pdf-text-highlights", JSON.stringify(textHighlights));
@@ -174,12 +193,19 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   const createPostIt = (event: React.MouseEvent) => {
     if (!pdfContainerRef.current) return;
 
-    const rect = pdfContainerRef.current.getBoundingClientRect();
+    const pageElement = pdfContainerRef.current.querySelector(
+      `[data-page-index="${currentPage - 1}"]`
+    ) as HTMLDivElement | null;
+
+    if (!pageElement) return;
+
+    const rect = pageElement.getBoundingClientRect();
     const x = (event.clientX - rect.left) / scale;
     const y = (event.clientY - rect.top) / scale;
 
+    const timestamp = Date.now();
     const newPostIt: PostItNote = {
-      id: `postit-${Date.now()}`,
+      id: `postit-${timestamp}`,
       pageIndex: currentPage - 1,
       x,
       y,
@@ -188,6 +214,8 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       content: "",
       color: selectedColor,
       minimized: false,
+      createdAt: timestamp,
+      updatedAt: timestamp,
     };
 
     setPostItNotes((prev) => [...prev, newPostIt]);
@@ -206,7 +234,9 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   const toggleMinimize = (id: string) => {
     setPostItNotes((prev) =>
       prev.map((note) =>
-        note.id === id ? { ...note, minimized: !note.minimized } : note
+        note.id === id
+          ? { ...note, minimized: !note.minimized, updatedAt: Date.now() }
+          : note
       )
     );
   };
@@ -219,7 +249,9 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   // Save edited post-it note content
   const savePostItContent = (id: string, content: string) => {
     setPostItNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, content } : note))
+      prev.map((note) =>
+        note.id === id ? { ...note, content, updatedAt: Date.now() } : note
+      )
     );
     setEditingPostItId(null);
   };
@@ -277,7 +309,9 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       // Update post-it position
       setPostItNotes((prev) =>
         prev.map((note) =>
-          note.id === selectedPostIt ? { ...note, x, y } : note
+          note.id === selectedPostIt
+            ? { ...note, x, y, updatedAt: Date.now() }
+            : note
         )
       );
     },
@@ -326,19 +360,23 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       }
     }
 
+    const timestamp = Date.now();
     // Create new highlight
     const newHighlight: TextHighlight = {
-      id: `highlight-${Date.now()}`,
+      id: `highlight-${timestamp}`,
       pageIndex: currentPage - 1,
       rects,
       content: selection.toString(),
       note: "",
       color: highlightColor,
+      createdAt: timestamp,
+      updatedAt: timestamp,
     };
 
     setTextHighlights((prev) => [...prev, newHighlight]);
     setSelectedHighlight(newHighlight.id);
     setNewNoteContent("");
+    setEditingHighlightId(newHighlight.id); // Automatically open note editor for new highlights
 
     // Clear the selection and hide the toolbar
     selection.removeAllRanges();
@@ -349,11 +387,12 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   const saveHighlightNote = (id: string, note: string) => {
     setTextHighlights((prev) =>
       prev.map((highlight) =>
-        highlight.id === id ? { ...highlight, note } : highlight
+        highlight.id === id
+          ? { ...highlight, note, updatedAt: Date.now() }
+          : highlight
       )
     );
     setEditingHighlightId(null);
-    setSelectedHighlight(null);
   };
 
   // Delete a text highlight
@@ -462,6 +501,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
                       }}
                       onClick={(e) => e.stopPropagation()}
                       autoFocus
+                      placeholder="Add note..."
                     />
                     <div className="flex justify-end mt-2">
                       <button
@@ -480,6 +520,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
                   <div
                     className="whitespace-pre-wrap text-black text-sm"
                     style={{ wordBreak: "break-word" }}
+                    onClick={() => startEditing(note.id)}
                   >
                     {note.content || (
                       <span className="opacity-50">Add note...</span>
@@ -513,12 +554,15 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
                 pointerEvents: "all",
                 cursor: "pointer",
                 zIndex: 998,
+                borderRadius: "2px",
               }}
               onClick={() => {
                 if (selectedHighlight === highlight.id) {
                   setSelectedHighlight(null);
+                  setEditingHighlightId(null);
                 } else {
                   setSelectedHighlight(highlight.id);
+                  setNewNoteContent(highlight.note);
                 }
               }}
             />
@@ -541,10 +585,16 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
             >
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-semibold text-sm">Highlight Note</h4>
+                  <h4 className="font-semibold text-sm flex items-center gap-1">
+                    <MessageSquare size={14} />
+                    Highlight Note
+                  </h4>
                   <button
                     className="p-1 rounded hover:bg-gray-200"
-                    onClick={() => setSelectedHighlight(null)}
+                    onClick={() => {
+                      setSelectedHighlight(null);
+                      setEditingHighlightId(null);
+                    }}
                   >
                     <X size={16} />
                   </button>
@@ -643,7 +693,9 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
             {HIGHLIGHT_COLORS.map((color, index) => (
               <button
                 key={index}
-                className="w-4 h-4 rounded-full"
+                className={`w-4 h-4 rounded-full ${
+                  highlightColor === color ? "ring-2 ring-offset-1" : ""
+                }`}
                 style={{ backgroundColor: color }}
                 onClick={() => setHighlightColor(color)}
               />
@@ -687,6 +739,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
             setIsAddingPostIt(!isAddingPostIt);
             setIsAddingTextHighlight(false);
           }}
+          title="Add Post-it Note"
         >
           <StickyNote size={16} />
         </Button>
@@ -703,6 +756,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
               : ""
           }`}
           onClick={toggleHighlightingMode}
+          title="Highlight Text"
         >
           <Edit3 size={16} />
         </Button>
@@ -713,7 +767,11 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
             {POST_IT_COLORS.map((color, index) => (
               <button
                 key={index}
-                className="w-5 h-5 rounded-full border border-gray-300"
+                className={`w-5 h-5 rounded-full border ${
+                  selectedColor === color
+                    ? "ring-2 ring-offset-1"
+                    : "border-gray-300"
+                }`}
                 style={{ backgroundColor: color }}
                 onClick={() => setSelectedColor(color)}
               />

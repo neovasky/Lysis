@@ -25,6 +25,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PDFAnnotations, { PostItNote, TextHighlight } from "./PDFAnnotations";
+import PDFNotes from "./PDFNotes";
 
 // Ensure pdf.worker.min.mjs is in your public folder
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -93,6 +95,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     [key: number]: (TextItem | TextMarkedContent)[];
   }>({});
 
+  // Annotations state
+  const [postItNotes, setPostItNotes] = useState<PostItNote[]>([]);
+  const [textHighlights, setTextHighlights] = useState<TextHighlight[]>([]);
+
   // Main container ref (for scrolling)
   const mainContainerRef = useRef<HTMLDivElement>(null);
 
@@ -126,6 +132,18 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   // Zoom handlers
   const handleZoomIn = () => setScale((s) => s + 0.2);
   const handleZoomOut = () => setScale((s) => Math.max(0.2, s - 0.2));
+
+  // Handle annotations update
+  const handleAnnotationsUpdate = useCallback(
+    (annotations: {
+      postItNotes: PostItNote[];
+      textHighlights: TextHighlight[];
+    }) => {
+      setPostItNotes(annotations.postItNotes);
+      setTextHighlights(annotations.textHighlights);
+    },
+    []
+  );
 
   // Navigate to search result function (defined first so it can be used in dependencies)
   const navigateToSearchResult = useCallback((result: SearchResult) => {
@@ -297,6 +315,63 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     }
   };
 
+  // Jump to annotation
+  const handleJumpToAnnotation = (pageIndex: number, id: string) => {
+    // First, navigate to the correct page
+    const pageDiv = mainContainerRef.current?.querySelector(
+      `[data-page-index="${pageIndex}"]`
+    ) as HTMLDivElement | null;
+
+    if (pageDiv) {
+      pageDiv.scrollIntoView({ behavior: "smooth" });
+      setCurrentPage(pageIndex + 1);
+
+      // Briefly highlight the element (if it can be found)
+      setTimeout(() => {
+        const annotationElement = document.getElementById(id);
+        if (annotationElement) {
+          // Add a temporary highlight class
+          annotationElement.classList.add("annotation-highlight-pulse");
+          setTimeout(() => {
+            annotationElement.classList.remove("annotation-highlight-pulse");
+          }, 2000);
+        }
+      }, 300);
+    }
+  };
+
+  // Handle post-it note deletion from sidebar
+  const handleDeletePostItNote = (id: string) => {
+    setPostItNotes((prev) => prev.filter((note) => note.id !== id));
+  };
+
+  // Handle highlight deletion from sidebar
+  const handleDeleteHighlight = (id: string) => {
+    setTextHighlights((prev) =>
+      prev.filter((highlight) => highlight.id !== id)
+    );
+  };
+
+  // Handle post-it note editing from sidebar
+  const handleEditPostItNote = (id: string, content: string) => {
+    setPostItNotes((prev) =>
+      prev.map((note) =>
+        note.id === id ? { ...note, content, updatedAt: Date.now() } : note
+      )
+    );
+  };
+
+  // Handle highlight note editing from sidebar
+  const handleEditHighlightNote = (id: string, note: string) => {
+    setTextHighlights((prev) =>
+      prev.map((highlight) =>
+        highlight.id === id
+          ? { ...highlight, note, updatedAt: Date.now() }
+          : highlight
+      )
+    );
+  };
+
   // CSS for search result highlighting
   useEffect(() => {
     const style = document.createElement("style");
@@ -314,6 +389,17 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
       .search-highlight {
         background-color: rgba(255, 255, 0, 0.3);
         border-radius: 2px;
+      }
+      
+      @keyframes annotation-pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+      }
+      
+      .annotation-highlight-pulse {
+        animation: annotation-pulse 1s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+        z-index: 1010 !important;
       }
     `;
     document.head.appendChild(style);
@@ -464,7 +550,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
             variant="ghost"
             size="sm"
             onClick={() => {
-              console.log("Close button clicked");
               onClose();
             }}
             className="p-2 rounded hover:bg-gray-800 hover:bg-opacity-50"
@@ -507,6 +592,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                   ? "hover:bg-gray-800 text-gray-300"
                   : "hover:bg-gray-100 text-gray-700"
               }`}
+              title="Thumbnails"
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -523,6 +609,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                   ? "hover:bg-gray-800 text-gray-300"
                   : "hover:bg-gray-100 text-gray-700"
               }`}
+              title="Notes"
             >
               <FileText className="h-4 w-4" />
             </Button>
@@ -539,6 +626,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                   ? "hover:bg-gray-800 text-gray-300"
                   : "hover:bg-gray-100 text-gray-700"
               }`}
+              title="Outline"
             >
               <BookOpen className="h-4 w-4" />
             </Button>
@@ -555,6 +643,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                   ? "hover:bg-gray-800 text-gray-300"
                   : "hover:bg-gray-100 text-gray-700"
               }`}
+              title="Search Results"
             >
               <SearchIcon className="h-4 w-4" />
             </Button>
@@ -580,17 +669,24 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                   return (
                     <div
                       key={`thumb-${i}`}
-                      className={`m-2 cursor-pointer border border-transparent hover:border-blue-500 p-1 ${
-                        isDark ? "bg-gray-800" : "bg-gray-100"
-                      }`}
+                      className={`m-2 cursor-pointer border-2 ${
+                        currentPage === i + 1
+                          ? "border-blue-500"
+                          : "border-transparent hover:border-blue-300"
+                      } p-1 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
                       onClick={() => handleThumbClick(i)}
                     >
-                      <Page
-                        pageNumber={i + 1}
-                        width={isLandscape ? 160 : 120}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                      />
+                      <div className="relative">
+                        <Page
+                          pageNumber={i + 1}
+                          width={isLandscape ? 160 : 120}
+                          renderTextLayer={false}
+                          renderAnnotationLayer={false}
+                        />
+                        <div className="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-tl">
+                          {i + 1}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -599,11 +695,21 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
 
             {/* Notes */}
             <div
-              className={`absolute inset-0 overflow-y-auto p-2 ${
+              className={`absolute inset-0 overflow-y-auto ${
                 sidebarTab === "notes" ? "" : "hidden"
               }`}
             >
-              <p className="text-sm">Notes placeholder...</p>
+              <PDFNotes
+                postItNotes={postItNotes}
+                textHighlights={textHighlights}
+                currentPage={currentPage}
+                totalPages={numPages}
+                onDeletePostItNote={handleDeletePostItNote}
+                onDeleteHighlight={handleDeleteHighlight}
+                onEditPostItNote={handleEditPostItNote}
+                onEditHighlightNote={handleEditHighlightNote}
+                onJumpToAnnotation={handleJumpToAnnotation}
+              />
             </div>
 
             {/* Outline */}
@@ -724,7 +830,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                 data-page-index={i}
                 className={`my-4 mx-auto border ${
                   isDark ? "border-gray-700" : "border-gray-300"
-                } bg-white`}
+                } bg-white relative`}
                 style={{ width: "fit-content" }}
               >
                 <Page
@@ -739,6 +845,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
               </div>
             ))}
           </Document>
+
+          {/* Add the PDF Annotations component here */}
+          <PDFAnnotations
+            pdfContainerRef={mainContainerRef}
+            currentPage={currentPage}
+            scale={scale}
+            onAnnotationUpdate={handleAnnotationsUpdate}
+          />
         </div>
       </div>
     </div>
