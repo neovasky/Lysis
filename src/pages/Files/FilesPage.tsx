@@ -6,8 +6,8 @@ import FileService from "@/services/fileService";
 import { FILE_CONSTANTS } from "@/services/constants";
 import { CreateFolderDialog } from "@/components/Files/CreateFolderDialog";
 import FileUploadDialog from "@/components/Files/FileUploadDialog";
-import PDFViewer from "@/components/PDFViewer/PDFViewer";
 import { useFiles } from "@/components/Files/hooks/useFiles";
+import { useTabContext } from "@/contexts/TabContext";
 
 import {
   Upload,
@@ -23,7 +23,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button"; // Named import
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -92,6 +92,8 @@ function humanFileSize(size: number) {
 
 export default function FilesPage() {
   const { error } = useFiles();
+  const { addTab } = useTabContext();
+
   // Initialize viewMode from localStorage or default to "list"
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem(VIEW_MODE_KEY);
@@ -109,12 +111,6 @@ export default function FilesPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
-
-  // PDF modal
-  const [showPdfModal, setShowPdfModal] = useState(false);
-  const [selectedPdfData, setSelectedPdfData] = useState<Uint8Array | null>(
-    null
-  );
 
   // Save viewMode to localStorage whenever it changes
   useEffect(() => {
@@ -194,6 +190,7 @@ export default function FilesPage() {
     try {
       const key = `fileContent_${file.path}`;
       const dataUrl = localStorage.getItem(key);
+
       if (!dataUrl) {
         // If there's a real "openFile" from some native API:
         if (window.fileAPI?.openFile) {
@@ -201,47 +198,52 @@ export default function FilesPage() {
         } else {
           alert("File interaction not implemented.");
         }
+        setIsOpening(false);
         return;
       }
-      // We have a dataUrl in localStorage, parse it
+
+      // We have a dataUrl in localStorage
       const mimeMatch = dataUrl.match(/^data:(.*?);base64,/);
       const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+
+      // Create a new tab for the file
       if (mimeType === "application/pdf") {
         const blob = dataURLtoBlob(dataUrl);
         const arrayBuf = await blob.arrayBuffer();
-        setSelectedPdfData(new Uint8Array(arrayBuf));
-        setShowPdfModal(true);
+        const pdfData = new Uint8Array(arrayBuf);
+
+        // Add a new tab with PDF data
+        addTab({
+          id: `file-${file.path}-${Date.now()}`,
+          title: file.name,
+          type: "file",
+          fileData: {
+            metadata: file,
+            content: pdfData,
+          },
+        });
       } else if (mimeType.startsWith("image/")) {
-        // Just open the image in a new tab
-        const blob = dataURLtoBlob(dataUrl);
-        const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
+        // Add a new tab with image data
+        addTab({
+          id: `file-${file.path}-${Date.now()}`,
+          title: file.name,
+          type: "file",
+          fileData: {
+            metadata: file,
+            content: dataUrl,
+          },
+        });
       } else {
-        // Fallback text or other type
-        const newWindow = window.open("", "_blank");
-        if (!newWindow) {
-          alert("Popup blocked. Please allow popups for this site.");
-          return;
-        }
-        newWindow.document.open();
-        newWindow.document.write(`
-          <!DOCTYPE html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8">
-              <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:;">
-              <title>${file.name}</title>
-              <style>
-                html, body { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #f1f5f9; }
-                embed { width: 100%; height: 100%; border: none; }
-              </style>
-            </head>
-            <body>
-              <embed src="${dataUrl}" type="${mimeType}">
-            </body>
-          </html>
-        `);
-        newWindow.document.close();
+        // Text or other file types
+        addTab({
+          id: `file-${file.path}-${Date.now()}`,
+          title: file.name,
+          type: "file",
+          fileData: {
+            metadata: file,
+            content: dataUrl,
+          },
+        });
       }
     } catch (err) {
       console.error("Error opening file:", err);
@@ -476,32 +478,6 @@ export default function FilesPage() {
         onConfirm={handleCreateFolder}
         currentPath={currentDirectory?.path ?? undefined}
       />
-
-      {/* PDF Modal */}
-      {showPdfModal && selectedPdfData && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
-          <div className="flex justify-end p-2 bg-surface1">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowPdfModal(false);
-                setSelectedPdfData(null);
-              }}
-            >
-              Close
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto">
-            <PDFViewer
-              pdfData={selectedPdfData}
-              onClose={() => {
-                setShowPdfModal(false);
-                setSelectedPdfData(null);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

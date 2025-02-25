@@ -123,7 +123,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col ${
+      className={`w-full h-full z-0 flex flex-col ${
         isDark ? "bg-background text-foreground" : "bg-white text-black"
       }`}
     >
