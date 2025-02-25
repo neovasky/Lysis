@@ -1,5 +1,3 @@
-"use client";
-
 import React, {
   useState,
   useRef,
@@ -23,6 +21,10 @@ import {
   BookOpen,
   ChevronUp,
   ChevronDown,
+  StickyNote,
+  Edit3,
+  HelpCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PDFAnnotations, { PostItNote, TextHighlight } from "./PDFAnnotations";
@@ -99,6 +101,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const [postItNotes, setPostItNotes] = useState<PostItNote[]>([]);
   const [textHighlights, setTextHighlights] = useState<TextHighlight[]>([]);
 
+  // New: Annotation mode and help states
+  const [isAddingPostIt, setIsAddingPostIt] = useState(false);
+  const [isAddingTextHighlight, setIsAddingTextHighlight] = useState(false);
+  const [showAnnotationHelp, setShowAnnotationHelp] = useState(false);
+  const [showOnboardingTip, setShowOnboardingTip] = useState(true);
+
   // Main container ref (for scrolling)
   const mainContainerRef = useRef<HTMLDivElement>(null);
 
@@ -144,6 +152,43 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     },
     []
   );
+
+  // Toggle annotation modes
+  const togglePostItMode = () => {
+    setIsAddingPostIt(!isAddingPostIt);
+    setIsAddingTextHighlight(false);
+
+    // Show the onboarding tip
+    if (!isAddingPostIt && showOnboardingTip) {
+      setTimeout(() => {
+        const tip = document.getElementById("annotation-tip");
+        if (tip) {
+          tip.style.opacity = "1";
+          setTimeout(() => {
+            tip.style.opacity = "0";
+          }, 5000);
+        }
+      }, 500);
+    }
+  };
+
+  const toggleHighlightMode = () => {
+    setIsAddingTextHighlight(!isAddingTextHighlight);
+    setIsAddingPostIt(false);
+
+    // Show the onboarding tip
+    if (!isAddingTextHighlight && showOnboardingTip) {
+      setTimeout(() => {
+        const tip = document.getElementById("annotation-tip");
+        if (tip) {
+          tip.style.opacity = "1";
+          setTimeout(() => {
+            tip.style.opacity = "0";
+          }, 5000);
+        }
+      }, 500);
+    }
+  };
 
   // Navigate to search result function (defined first so it can be used in dependencies)
   const navigateToSearchResult = useCallback((result: SearchResult) => {
@@ -372,6 +417,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     );
   };
 
+  // Disable annotation tips after they've been shown
+  const disableOnboardingTips = () => {
+    setShowOnboardingTip(false);
+    localStorage.setItem("pdf-annotation-tips-shown", "true");
+  };
+
   // CSS for search result highlighting
   useEffect(() => {
     const style = document.createElement("style");
@@ -401,8 +452,17 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         animation: annotation-pulse 1s cubic-bezier(0.4, 0, 0.6, 1) forwards;
         z-index: 1010 !important;
       }
+      
+      #annotation-tip {
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+      }
     `;
     document.head.appendChild(style);
+
+    // Check if we've shown tips before
+    const tipsShown = localStorage.getItem("pdf-annotation-tips-shown");
+    setShowOnboardingTip(tipsShown !== "true");
 
     return () => {
       document.head.removeChild(style);
@@ -544,8 +604,51 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
           </div>
         </div>
 
-        {/* Right: Close Button */}
-        <div className="flex items-center">
+        {/* Right: Annotation Tools and Close Button */}
+        <div className="flex items-center gap-2">
+          {/* Enhanced Annotation Tools */}
+          <div className="flex items-center gap-1 border rounded-md p-1 mr-2">
+            <Button
+              variant={isAddingPostIt ? "solid" : "ghost"}
+              size="sm"
+              onClick={togglePostItMode}
+              className={`p-2 rounded flex items-center gap-1 ${
+                isAddingPostIt
+                  ? isDark
+                    ? "bg-blue-700 text-white"
+                    : "bg-blue-500 text-white"
+                  : ""
+              }`}
+            >
+              <StickyNote className="h-4 w-4" />
+              <span className="text-xs">Note</span>
+            </Button>
+            <Button
+              variant={isAddingTextHighlight ? "solid" : "ghost"}
+              size="sm"
+              onClick={toggleHighlightMode}
+              className={`p-2 rounded flex items-center gap-1 ${
+                isAddingTextHighlight
+                  ? isDark
+                    ? "bg-blue-700 text-white"
+                    : "bg-blue-500 text-white"
+                  : ""
+              }`}
+            >
+              <Edit3 className="h-4 w-4" />
+              <span className="text-xs">Highlight</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAnnotationHelp(!showAnnotationHelp)}
+              className="p-2 rounded"
+              title="Annotation Help"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+          </div>
+
           <Button
             variant="ghost"
             size="sm"
@@ -558,6 +661,79 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
           </Button>
         </div>
       </div>
+
+      {/* Annotation Help Modal */}
+      {showAnnotationHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div
+            className={`relative w-full max-w-lg p-6 rounded-lg shadow-xl ${
+              isDark ? "bg-gray-800" : "bg-white"
+            }`}
+          >
+            <button
+              onClick={() => setShowAnnotationHelp(false)}
+              className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-200"
+            >
+              <XIcon className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-xl font-bold mb-4">How to Add Annotations</h3>
+
+            <div className="space-y-4">
+              <div className="border-l-4 border-blue-500 pl-3">
+                <h4 className="font-bold flex items-center gap-2">
+                  <StickyNote className="h-5 w-5 text-yellow-500" />
+                  Adding Post-it Notes
+                </h4>
+                <ol className="list-decimal ml-5 space-y-1 mt-2">
+                  <li>Click the "Note" button in the toolbar</li>
+                  <li>Click anywhere on the PDF page to place your note</li>
+                  <li>Type your note content</li>
+                  <li>Click the checkmark to save</li>
+                </ol>
+              </div>
+
+              <div className="border-l-4 border-green-500 pl-3">
+                <h4 className="font-bold flex items-center gap-2">
+                  <Edit3 className="h-5 w-5 text-green-500" />
+                  Adding Text Highlights
+                </h4>
+                <ol className="list-decimal ml-5 space-y-1 mt-2">
+                  <li>Click the "Highlight" button in the toolbar</li>
+                  <li>Select text on the PDF page by clicking and dragging</li>
+                  <li>Choose a highlight color from the popup toolbar</li>
+                  <li>Click "Highlight" to confirm</li>
+                  <li>Optionally add a note to your highlight later</li>
+                </ol>
+              </div>
+
+              <div className="border-l-4 border-purple-500 pl-3">
+                <h4 className="font-bold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-purple-500" />
+                  Managing Annotations
+                </h4>
+                <p className="mt-2">
+                  View, edit and manage all your annotations in the "Notes"
+                  panel in the sidebar. You can jump to any annotation by
+                  clicking on it in the list.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 text-right">
+              <Button
+                variant="solid"
+                onClick={() => {
+                  setShowAnnotationHelp(false);
+                  disableOnboardingTips();
+                }}
+              >
+                Got it!
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PDF Viewer Body */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -846,13 +1022,41 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
             ))}
           </Document>
 
-          {/* Add the PDF Annotations component here */}
+          {/* Add the PDF Annotations component here with the necessary props */}
           <PDFAnnotations
             pdfContainerRef={mainContainerRef}
             currentPage={currentPage}
             scale={scale}
             onAnnotationUpdate={handleAnnotationsUpdate}
           />
+
+          {/* Annotation Tips */}
+          {(isAddingPostIt || isAddingTextHighlight) && showOnboardingTip && (
+            <div
+              id="annotation-tip"
+              className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-4 py-3 rounded-lg shadow-lg ${
+                isDark ? "bg-blue-900" : "bg-blue-100"
+              } flex items-center gap-2 z-40 max-w-md`}
+            >
+              <AlertCircle className="h-5 w-5 flex-shrink-0 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">
+                  {isAddingPostIt
+                    ? "Click anywhere on the document to add a note"
+                    : "Select text on the document to highlight it"}
+                </p>
+                <p className="text-xs mt-1 opacity-75">
+                  You can view and edit all annotations in the Notes panel
+                </p>
+              </div>
+              <button
+                onClick={disableOnboardingTips}
+                className="ml-2 text-xs underline"
+              >
+                Don't show again
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

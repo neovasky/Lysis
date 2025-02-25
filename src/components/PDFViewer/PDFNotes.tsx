@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 interface PDFNotesProps {
   postItNotes: PostItNote[];
   textHighlights: TextHighlight[];
-  currentPage: number;
+  currentPage: number; // We'll keep this in the interface but not use it in the component
   totalPages: number;
   onDeletePostItNote: (id: string) => void;
   onDeleteHighlight: (id: string) => void;
@@ -31,7 +31,7 @@ type SortOption = "newest" | "oldest" | "page";
 const PDFNotes: React.FC<PDFNotesProps> = ({
   postItNotes,
   textHighlights,
-  currentPage,
+  // Removed 'currentPage' from here since it's not used
   totalPages,
   onDeletePostItNote,
   onDeleteHighlight,
@@ -91,12 +91,8 @@ const PDFNotes: React.FC<PDFNotesProps> = ({
     return a.pageIndex - b.pageIndex;
   });
 
-  // Start editing a note
-  const startEditing = (
-    id: string,
-    content: string,
-    type: "postit" | "highlight"
-  ) => {
+  // Start editing a note - removed 'type' parameter since it's unused
+  const startEditing = (id: string, content: string) => {
     setEditingNoteId(id);
     setEditingContent(content);
   };
@@ -243,9 +239,7 @@ const PDFNotes: React.FC<PDFNotesProps> = ({
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() =>
-                            startEditing(note.id, note.content, "postit")
-                          }
+                          onClick={() => startEditing(note.id, note.content)}
                           className="p-1 rounded hover:bg-gray-600"
                         >
                           <Edit3 size={12} />
@@ -295,9 +289,7 @@ const PDFNotes: React.FC<PDFNotesProps> = ({
                       <>
                         <div
                           className="text-xs whitespace-pre-wrap mb-1 cursor-pointer"
-                          onClick={() =>
-                            startEditing(note.id, note.content, "postit")
-                          }
+                          onClick={() => startEditing(note.id, note.content)}
                         >
                           {note.content || (
                             <span className="text-gray-500 italic">
@@ -377,11 +369,7 @@ const PDFNotes: React.FC<PDFNotesProps> = ({
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() =>
-                            startEditing(
-                              highlight.id,
-                              highlight.note,
-                              "highlight"
-                            )
+                            startEditing(highlight.id, highlight.note)
                           }
                           className="p-1 rounded hover:bg-gray-600"
                         >
@@ -451,11 +439,7 @@ const PDFNotes: React.FC<PDFNotesProps> = ({
                             <div
                               className="text-xs whitespace-pre-wrap cursor-pointer"
                               onClick={() =>
-                                startEditing(
-                                  highlight.id,
-                                  highlight.note,
-                                  "highlight"
-                                )
+                                startEditing(highlight.id, highlight.note)
                               }
                             >
                               {highlight.note}
@@ -464,9 +448,7 @@ const PDFNotes: React.FC<PDFNotesProps> = ({
                         ) : (
                           <div
                             className="text-xs text-gray-500 italic mt-1 cursor-pointer"
-                            onClick={() =>
-                              startEditing(highlight.id, "", "highlight")
-                            }
+                            onClick={() => startEditing(highlight.id, "")}
                           >
                             <span className="flex items-center gap-1">
                               <MessageSquare size={12} />
