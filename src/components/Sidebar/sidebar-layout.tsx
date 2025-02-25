@@ -2,7 +2,6 @@
 // File: src/components/Sidebar/sidebar-layout.tsx
 import React, { createContext, useContext, useState } from "react";
 import { PanelLeft } from "lucide-react";
-import { useTheme } from "@/theme/hooks/useTheme";
 
 interface SidebarContextValue {
   isOpen: boolean;
@@ -55,8 +54,6 @@ export const SidebarTrigger: React.FC<
   React.ComponentPropsWithoutRef<"button">
 > = (props) => {
   const { toggle } = useSidebar();
-  const { mode } = useTheme();
-  const iconColor = mode === "dark" ? "white" : "black";
   return (
     <button
       onClick={toggle}
@@ -65,7 +62,7 @@ export const SidebarTrigger: React.FC<
         props.className || ""
       }`}
     >
-      <PanelLeft size={24} style={{ color: iconColor }} />
+      <PanelLeft size={24} style={{ color: "white" }} />
     </button>
   );
 };

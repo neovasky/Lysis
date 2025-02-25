@@ -48,6 +48,10 @@ import {
 
 const { DEFAULT_BASE_DIRECTORY, LAST_DIRECTORY_KEY } = FILE_CONSTANTS;
 
+// Constants for localStorage keys
+const VIEW_MODE_KEY = "lysis_files_view_mode";
+
+type ViewMode = "list" | "grid";
 type FileFilter = "all" | "recent" | "pdf" | "excel" | "word";
 
 function dataURLtoBlob(dataUrl: string): Blob {
@@ -88,7 +92,12 @@ function humanFileSize(size: number) {
 
 export default function FilesPage() {
   const { error } = useFiles();
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  // Initialize viewMode from localStorage or default to "list"
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedViewMode = localStorage.getItem(VIEW_MODE_KEY);
+    return (savedViewMode as ViewMode) || "list";
+  });
+
   const [currentDirectory, setCurrentDirectory] = useState<{
     path: string;
     name: string;
@@ -106,6 +115,11 @@ export default function FilesPage() {
   const [selectedPdfData, setSelectedPdfData] = useState<Uint8Array | null>(
     null
   );
+
+  // Save viewMode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const initDir = async () => {

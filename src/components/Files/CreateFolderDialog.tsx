@@ -60,13 +60,10 @@ export const CreateFolderDialog = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black bg-opacity-50"
-        onClick={() => onOpenChange(false)}
-      ></div>
+      {/* Overlay - using our new glassy style */}
+      <div className="dialogOverlay" onClick={() => onOpenChange(false)}></div>
       {/* Modal Content */}
-      <div className="relative bg-white rounded shadow p-6 w-96">
+      <div className="dialogContent createFolderDialog">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <File className="w-6 h-6 text-blue-500" />
