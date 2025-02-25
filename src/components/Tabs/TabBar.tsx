@@ -3,7 +3,7 @@ import { useTabContext, Tab } from "@/contexts/TabContext";
 import { FileText, X, Home } from "lucide-react";
 
 const TabBar: React.FC = () => {
-  const { tabs, activeTabId, activateTab, closeTab } = useTabContext();
+  const { tabs, activateTab, closeTab } = useTabContext();
 
   const getFileIcon = (tab: Tab) => {
     if (tab.type === "main") {
