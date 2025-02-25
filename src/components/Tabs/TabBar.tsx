@@ -5,6 +5,11 @@ import { FileText, X, Home } from "lucide-react";
 const TabBar: React.FC = () => {
   const { tabs, activateTab, closeTab } = useTabContext();
 
+  // If no tabs, return null to avoid taking up space
+  if (tabs.length <= 1) {
+    return null;
+  }
+
   const getFileIcon = (tab: Tab) => {
     if (tab.type === "main") {
       return <Home className="w-4 h-4" />;
@@ -27,26 +32,15 @@ const TabBar: React.FC = () => {
     }
   };
 
-  if (tabs.length <= 1) {
-    // If only the main tab exists, don't show the tab bar
-    return null;
-  }
-
   return (
-    <div
-      className="flex overflow-x-auto border-b border-gray-200"
-      style={{
-        backgroundColor: "var(--color-pageBackground)",
-        height: "40px",
-      }}
-    >
+    <div className="flex overflow-x-auto h-full">
       {tabs.map((tab) => (
         <div
           key={tab.id}
           className={`
-            flex items-center min-w-[140px] max-w-[200px] h-[40px] px-3 py-1 
-            border-r border-gray-300 cursor-pointer select-none
-            ${tab.isActive ? "bg-blue-500 text-white" : "hover:bg-gray-100"}
+            flex items-center min-w-[140px] max-w-[200px] h-full px-3 py-1
+            border-r border-gray-300 cursor-pointer select-none transition-all duration-200
+            ${tab.isActive ? "bg-blue-500 text-white" : "hover:bg-blue-100"}
           `}
           onClick={() => activateTab(tab.id)}
         >
@@ -57,8 +51,8 @@ const TabBar: React.FC = () => {
 
           {tab.type !== "main" && (
             <button
-              className={`p-1 rounded-full ${
-                tab.isActive ? "hover:bg-blue-600" : "hover:bg-gray-200"
+              className={`p-1 rounded-full transition-all duration-200 ${
+                tab.isActive ? "hover:bg-blue-600" : "hover:bg-blue-200"
               }`}
               onClick={(e) => {
                 e.stopPropagation();

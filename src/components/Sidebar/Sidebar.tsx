@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/theme/hooks/useTheme";
 import { useSidebar } from "@/components/Sidebar/sidebar-layout";
+import { useTabContext } from "@/contexts/TabContext";
 import {
   Home,
   BookOpen,
@@ -45,12 +46,21 @@ function SidebarItem({ item }: { item: MenuItem }) {
   const location = useLocation();
   const { accent } = useTheme();
   const { isOpen } = useSidebar();
+  const { activateTab } = useTabContext(); // Add this
 
   const isActive = location.pathname === item.path;
 
+  const handleClick = () => {
+    // Navigate to the path
+    navigate(item.path);
+
+    // Also activate the main tab to ensure we show the new page content
+    activateTab("main-app");
+  };
+
   return (
     <div
-      onClick={() => navigate(item.path)}
+      onClick={handleClick}
       className={cn(
         "flex items-center rounded-md cursor-pointer transition-all duration-300 ease-in-out",
         {
@@ -140,7 +150,7 @@ export const Sidebar: React.FC = () => {
   return (
     <div
       className={cn(
-        "h-screen overflow-hidden flex-shrink-0 z-40 transition-all duration-300 ease-in-out",
+        "h-screen overflow-hidden flex-shrink-0 z-40 transition-all duration-300 ease-in-out relative",
         isOpen ? "w-60" : "w-16"
       )}
       style={{
@@ -148,7 +158,25 @@ export const Sidebar: React.FC = () => {
         borderRight: "none", // Remove any border that might be causing the black line
       }}
     >
+      {/* No sidebar toggle button here - moved to MainLayout */}
+
       <div className="p-3 overflow-y-auto h-full flex flex-col">
+        {/* Logo or App Name Area */}
+        <div className="flex items-center justify-center h-14 mb-3">
+          <div
+            className="font-bold text-xl text-white overflow-hidden whitespace-nowrap"
+            style={{
+              maxWidth: isOpen ? "150px" : "0px",
+              opacity: isOpen ? 1 : 0,
+              transition:
+                "max-width 300ms ease-in-out, opacity 300ms ease-in-out 100ms",
+            }}
+          >
+            LYSIS
+          </div>
+          {!isOpen && <div className="text-white font-bold">L</div>}
+        </div>
+
         <SidebarSection heading="MAIN" items={mainItems} />
         <SidebarSection heading="RESOURCES" items={resourceItems} />
         <SidebarSection heading="RESEARCH" items={researchItems} />

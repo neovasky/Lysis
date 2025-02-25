@@ -2,11 +2,9 @@
 
 import "react";
 import { Outlet } from "react-router-dom";
-import {
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/Sidebar/sidebar-layout";
+import { SidebarProvider } from "@/components/Sidebar/sidebar-layout";
 import { Sidebar } from "@/components/Sidebar/Sidebar";
+import { SidebarToggle } from "@/components/Sidebar/SidebarToggle";
 import { ModeToggle } from "@/components/ThemeSwitcher/ModeToggle";
 import { TabProvider } from "@/contexts/TabContext";
 import TabBar from "@/components/Tabs/TabBar";
@@ -22,19 +20,24 @@ export const MainLayout = () => {
 
           {/* Content area with proper spacing */}
           <div className="flex flex-col flex-1 overflow-hidden">
-            {/* Header */}
+            {/* Header with integrated tabs and controls */}
             <header
-              className="flex h-16 shrink-0 items-center gap-2 px-4 border-b-0"
+              className="flex h-12 shrink-0 items-center px-4 justify-between"
               style={{ backgroundColor: "var(--color-pageBackground)" }}
             >
-              {/* Sidebar trigger (with updated icon) */}
-              <SidebarTrigger className="mr-2" />
-              <div className="flex-1" />
-              <ModeToggle />
-            </header>
+              {/* Left section with sidebar toggle */}
+              <SidebarToggle className="mr-2" />
 
-            {/* Tab Bar */}
-            <TabBar />
+              {/* Middle section with tabs - will expand to fill available space */}
+              <div className="flex-1 flex overflow-x-auto">
+                <TabBar />
+              </div>
+
+              {/* Right section with theme toggle */}
+              <div className="ml-2">
+                <ModeToggle />
+              </div>
+            </header>
 
             {/* Main Content with Tab Management */}
             <main
