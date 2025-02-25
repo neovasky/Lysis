@@ -1,7 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
 // File: src/components/Sidebar/sidebar-layout.tsx
-/* eslint-disable react-refresh/only-export-components */
-// File: src/components/Sidebar/sidebar-layout.tsx
 import React, { createContext, useContext, useState } from "react";
 import { PanelLeft } from "lucide-react";
 import { useTheme } from "@/theme/hooks/useTheme";
@@ -34,6 +32,9 @@ export const useSidebar = (): SidebarContextValue => {
   return context;
 };
 
+// This component is not needed anymore since we're using flexbox layout
+// Keeping it commented in case you need to reference it later
+/*
 export const SidebarInset: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -48,6 +49,7 @@ export const SidebarInset: React.FC<{ children: React.ReactNode }> = ({
     </div>
   );
 };
+*/
 
 export const SidebarTrigger: React.FC<
   React.ComponentPropsWithoutRef<"button">

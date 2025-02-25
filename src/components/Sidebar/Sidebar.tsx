@@ -140,12 +140,13 @@ export const Sidebar: React.FC = () => {
   return (
     <div
       className={cn(
-        "fixed top-0 left-0 bottom-0 border-r border-gray-300 overflow-hidden z-40",
-        "transition-all duration-300 ease-in-out",
-        // Use a custom class for rounding the right corners to 0.3rem
-        isOpen ? "w-60 rounded-r-[0.3rem]" : "w-16 rounded-r-[0.3rem]"
+        "h-screen overflow-hidden flex-shrink-0 z-40 transition-all duration-300 ease-in-out",
+        isOpen ? "w-60" : "w-16"
       )}
-      style={{ backgroundColor: `hsl(var(--${accent}-500))` }}
+      style={{
+        backgroundColor: `hsl(var(--${accent}-500))`,
+        borderRight: "none", // Remove any border that might be causing the black line
+      }}
     >
       <div className="p-3 overflow-y-auto h-full flex flex-col">
         <SidebarSection heading="MAIN" items={mainItems} />

@@ -122,7 +122,7 @@ const ViewerSwitcher: React.FC<ViewerSwitcherProps> = ({
               No preview available for this file type ({ext})
             </p>
             <Button
-              variant="default"
+              variant="solid"
               onClick={handleOpenInSystemApp}
               className="flex items-center gap-2"
             >
