@@ -1063,12 +1063,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
             ))}
           </Document>
 
-          {/* PDF Annotations component */}
+          {/* PDF Annotations component - Pass the annotation mode states! */}
           <PDFAnnotations
             pdfContainerRef={mainContainerRef}
             currentPage={currentPage}
             scale={scale}
             onAnnotationUpdate={handleAnnotationsUpdate}
+            isAddingPostIt={isAddingPostIt}
+            isAddingTextHighlight={isAddingTextHighlight}
           />
 
           {/* Annotation Tips */}
