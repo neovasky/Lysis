@@ -199,9 +199,10 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       const rect = selection.getRangeAt(0).getBoundingClientRect();
       const pageRect = currentPageElement.getBoundingClientRect();
 
+      // Position the toolbar above the selection
       setHighlightToolbarPosition({
         x: rect.left + rect.width / 2 - pageRect.left,
-        y: rect.top - pageRect.top - 40, // Position above the selection
+        y: rect.top - pageRect.top - 40,
       });
 
       setShowHighlightToolbar(true);
@@ -216,17 +217,19 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   const createPostIt = (event: React.MouseEvent) => {
     if (!pdfContainerRef.current) return;
 
-    // Find which page we're on
+    // Find the current page element
     const pageElement = pdfContainerRef.current.querySelector(
       `[data-page-index="${currentPage - 1}"]`
     ) as HTMLDivElement | null;
 
     if (!pageElement) return;
 
+    // Calculate position relative to the page element
     const rect = pageElement.getBoundingClientRect();
     const x = (event.clientX - rect.left) / scale;
     const y = (event.clientY - rect.top) / scale;
 
+    // Create new post-it note
     const timestamp = Date.now();
     const newPostIt: PostItNote = {
       id: `postit-${timestamp}`,
@@ -242,8 +245,11 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       updatedAt: timestamp,
     };
 
+    // Add to state and open editor
     setPostItNotes((prev) => [...prev, newPostIt]);
     setEditingPostItId(newPostIt.id);
+
+    // Important: Turn off post-it mode after creating one
     setIsAddingPostIt(false);
   };
 
@@ -301,7 +307,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
 
     setSelectedPostIt(id);
 
-    // Add mousemove and mouseup event listeners
+    // Add event listeners for drag movement and ending
     document.addEventListener("mousemove", handlePostItDragMove);
     document.addEventListener("mouseup", handlePostItDragEnd);
   };
@@ -359,20 +365,23 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
 
     // Get all the client rects of the selection
     const rects: { x: number; y: number; width: number; height: number }[] = [];
+
+    // Process each range in the selection
     for (let i = 0; i < selection.rangeCount; i++) {
       const clientRects = selection.getRangeAt(i).getClientRects();
 
-      for (let j = 0; j < clientRects.length; j++) {
-        const clientRect = clientRects[j];
+      // Get the current page element for coordinate conversion
+      if (pdfContainerRef.current) {
+        const pageElement = pdfContainerRef.current.querySelector(
+          `[data-page-index="${currentPage - 1}"]`
+        );
 
-        // Convert client rect coordinates to be relative to the PDF page
-        if (pdfContainerRef.current) {
-          const pageElement = pdfContainerRef.current.querySelector(
-            `[data-page-index="${currentPage - 1}"]`
-          );
-          if (pageElement) {
-            const pageRect = pageElement.getBoundingClientRect();
+        if (pageElement) {
+          const pageRect = pageElement.getBoundingClientRect();
 
+          // Convert each client rect to be relative to the PDF page
+          for (let j = 0; j < clientRects.length; j++) {
+            const clientRect = clientRects[j];
             rects.push({
               x: (clientRect.left - pageRect.left) / scale,
               y: (clientRect.top - pageRect.top) / scale,
@@ -384,7 +393,11 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       }
     }
 
+    // Only create highlight if we have valid rectangles
+    if (rects.length === 0) return;
+
     const timestamp = Date.now();
+
     // Create new highlight
     const newHighlight: TextHighlight = {
       id: `highlight-${timestamp}`,
@@ -400,12 +413,23 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     setTextHighlights((prev) => [...prev, newHighlight]);
     setSelectedHighlight(newHighlight.id);
     setNewNoteContent("");
-    setEditingHighlightId(newHighlight.id); // Automatically open note editor for new highlights
+
+    // Optionally open the note editor for the new highlight
+    setEditingHighlightId(newHighlight.id);
 
     // Clear the selection and hide the toolbar
     selection.removeAllRanges();
     setShowHighlightToolbar(false);
-  }, [currentPage, highlightColor, pdfContainerRef, scale]);
+
+    // Turn off highlight mode after creating one
+    setIsAddingTextHighlight(false);
+  }, [
+    currentPage,
+    highlightColor,
+    pdfContainerRef,
+    scale,
+    setIsAddingTextHighlight,
+  ]);
 
   // Save a note to a text highlight
   const saveHighlightNote = (id: string, note: string) => {
@@ -605,7 +629,9 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
                     Highlight Note
                   </h4>
                   <button
-                    className="p-1 rounded hover:bg-gray-200"
+                    className={`p-1 rounded ${
+                      isDark ? "hover:bg-gray-700" : "hover:bg-gray-200"
+                    }`}
                     onClick={() => {
                       setSelectedHighlight(null);
                       setEditingHighlightId(null);
@@ -731,9 +757,33 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     );
   };
 
-  const pdfContainerParent = pdfContainerRef.current;
+  // When in post-it mode, ensure the cursor is a crosshair over the entire PDF area
+  useEffect(() => {
+    const addOverlay = () => {
+      if (isAddingPostItState && pdfContainerRef.current) {
+        pdfContainerRef.current.style.cursor = "crosshair";
+      }
+    };
 
-  // Only render the annotations container if we have a parent container to position within
+    const removeOverlay = () => {
+      if (pdfContainerRef.current) {
+        pdfContainerRef.current.style.cursor = "auto";
+      }
+    };
+
+    if (isAddingPostItState) {
+      addOverlay();
+    } else {
+      removeOverlay();
+    }
+
+    return () => {
+      removeOverlay();
+    };
+  }, [isAddingPostItState, pdfContainerRef]);
+
+  // Don't try to render if the PDF container doesn't exist
+  const pdfContainerParent = pdfContainerRef.current;
   if (!pdfContainerParent) return null;
 
   return (
@@ -741,7 +791,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       className="absolute inset-0 pointer-events-none"
       ref={pdfAnnotationsRef}
     >
-      {/* Container for rendering annotations on top of PDF */}
+      {/* Container for PDF annotations */}
       <div
         className={`absolute inset-0 ${
           isAddingPostItState ? "pointer-events-auto" : "pointer-events-none"
@@ -754,17 +804,13 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
         style={{ cursor: isAddingPostItState ? "crosshair" : "default" }}
       >
         {/* Post-it notes */}
-        <div className="pointer-events-auto z-[999]">{renderPostItNotes()}</div>
+        <div className="pointer-events-auto">{renderPostItNotes()}</div>
 
         {/* Text highlights */}
-        <div className="pointer-events-auto z-[998]">
-          {renderTextHighlights()}
-        </div>
+        <div className="pointer-events-auto">{renderTextHighlights()}</div>
 
         {/* Highlight toolbar */}
-        <div className="pointer-events-auto z-[1001]">
-          {renderHighlightToolbar()}
-        </div>
+        <div className="pointer-events-auto">{renderHighlightToolbar()}</div>
       </div>
     </div>
   );

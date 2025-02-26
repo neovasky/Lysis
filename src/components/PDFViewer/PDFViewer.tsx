@@ -107,7 +107,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const [showAnnotationHelp, setShowAnnotationHelp] = useState(false);
   const [showOnboardingTip, setShowOnboardingTip] = useState(true);
 
-  // Main container ref (for scrolling)
+  // Main container ref (for scrolling and positioning annotations)
   const mainContainerRef = useRef<HTMLDivElement>(null);
 
   // Prepare PDF files
@@ -478,6 +478,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   useEffect(() => {
     const style = document.createElement("style");
     style.innerHTML = `
+      /* Search result highlighting */
       @keyframes highlight-pulse {
         0% { background-color: rgba(255, 255, 0, 0.2); }
         50% { background-color: rgba(255, 255, 0, 0.5); }
@@ -493,6 +494,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         border-radius: 2px;
       }
       
+      /* Annotation highlighting */
       @keyframes annotation-pulse {
         0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
         50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
@@ -504,9 +506,15 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         z-index: 1010 !important;
       }
       
+      /* Annotation tip */
       #annotation-tip {
         opacity: 0;
         transition: opacity 0.5s ease-in-out;
+      }
+
+      /* Fix pointer events for annotations */
+      .react-pdf__Page__textLayer {
+        pointer-events: ${isAddingTextHighlight ? "auto" : "none"} !important;
       }
     `;
     document.head.appendChild(style);
@@ -518,7 +526,18 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     return () => {
       document.head.removeChild(style);
     };
-  }, []);
+  }, [isAddingTextHighlight]);
+
+  // Add a class to the PDF container for better text selection when highlighting
+  useEffect(() => {
+    if (mainContainerRef.current) {
+      if (isAddingTextHighlight) {
+        mainContainerRef.current.classList.add("text-selection-mode");
+      } else {
+        mainContainerRef.current.classList.remove("text-selection-mode");
+      }
+    }
+  }, [isAddingTextHighlight]);
 
   return (
     <div
@@ -1032,7 +1051,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         <div
           className={`relative flex-1 overflow-auto ${
             isDark ? "bg-gray-900" : "bg-gray-100"
-          }`}
+          } ${isAddingTextHighlight ? "text-selection-mode" : ""}`}
           ref={mainContainerRef}
         >
           <Document
@@ -1063,7 +1082,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
             ))}
           </Document>
 
-          {/* PDF Annotations component - Pass the annotation mode states! */}
+          {/* PDF Annotations component - passing the annotation mode states */}
           <PDFAnnotations
             pdfContainerRef={mainContainerRef}
             currentPage={currentPage}
