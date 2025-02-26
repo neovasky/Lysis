@@ -45,6 +45,8 @@ interface PDFAnnotationsProps {
     postItNotes: PostItNote[];
     textHighlights: TextHighlight[];
   }) => void;
+  isAddingPostIt?: boolean;
+  isAddingTextHighlight?: boolean;
 }
 
 // Available post-it note colors
@@ -70,6 +72,8 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   currentPage,
   scale,
   onAnnotationUpdate,
+  isAddingPostIt = false,
+  isAddingTextHighlight = false,
 }) => {
   const { mode } = useTheme();
   const isDark = mode === "dark";
@@ -77,11 +81,13 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   // State for post-it notes and text highlights
   const [postItNotes, setPostItNotes] = useState<PostItNote[]>([]);
   const [textHighlights, setTextHighlights] = useState<TextHighlight[]>([]);
-  const [isAddingPostIt, setIsAddingPostIt] = useState(false);
+  const [isAddingPostItState, setIsAddingPostIt] = useState(isAddingPostIt);
   const [selectedPostIt, setSelectedPostIt] = useState<string | null>(null);
   const [editingPostItId, setEditingPostItId] = useState<string | null>(null);
   const [selectedColor] = useState(POST_IT_COLORS[0]);
-  const [isAddingTextHighlight] = useState(false);
+  const [isAddingTextHighlightState, setIsAddingTextHighlight] = useState(
+    isAddingTextHighlight
+  );
   const [selectedHighlight, setSelectedHighlight] = useState<string | null>(
     null
   );
@@ -95,6 +101,15 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     x: 0,
     y: 0,
   });
+
+  // Update internal state when props change
+  useEffect(() => {
+    setIsAddingPostIt(isAddingPostIt);
+  }, [isAddingPostIt]);
+
+  useEffect(() => {
+    setIsAddingTextHighlight(isAddingTextHighlight);
+  }, [isAddingTextHighlight]);
 
   // References
   const postItDragRef = useRef<{
@@ -149,7 +164,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
 
   // Handle text selection for highlighting
   useEffect(() => {
-    if (!isAddingTextHighlight || !pdfContainerRef.current) return;
+    if (!isAddingTextHighlightState || !pdfContainerRef.current) return;
 
     const handleSelection = () => {
       const selection = window.getSelection();
@@ -195,7 +210,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     document.addEventListener("selectionchange", handleSelection);
     return () =>
       document.removeEventListener("selectionchange", handleSelection);
-  }, [isAddingTextHighlight, currentPage, pdfContainerRef]);
+  }, [isAddingTextHighlightState, currentPage, pdfContainerRef]);
 
   // Create a new post-it note
   const createPostIt = (event: React.MouseEvent) => {
@@ -729,14 +744,14 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       {/* Container for rendering annotations on top of PDF */}
       <div
         className={`absolute inset-0 ${
-          isAddingPostIt ? "pointer-events-auto" : "pointer-events-none"
+          isAddingPostItState ? "pointer-events-auto" : "pointer-events-none"
         }`}
         onClick={(e) => {
-          if (isAddingPostIt) {
+          if (isAddingPostItState) {
             createPostIt(e);
           }
         }}
-        style={{ cursor: isAddingPostIt ? "crosshair" : "default" }}
+        style={{ cursor: isAddingPostItState ? "crosshair" : "default" }}
       >
         {/* Post-it notes */}
         <div className="pointer-events-auto z-[999]">{renderPostItNotes()}</div>
