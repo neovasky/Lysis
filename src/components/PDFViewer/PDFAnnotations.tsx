@@ -210,22 +210,64 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
 
       // Find which page contains the selection
       const range = selection.getRangeAt(0);
-      const closestPageElement =
-        range.commonAncestorContainer.parentElement?.closest(
-          "[data-page-index]"
-        );
+      let containerNode = range.commonAncestorContainer;
 
-      if (!closestPageElement) {
+      // If containerNode is a text node, get its parent element
+      if (containerNode.nodeType === Node.TEXT_NODE) {
+        containerNode = containerNode.parentElement;
+      }
+
+      // Now search up the DOM tree for the closest element with data-page-index
+      let pageElement = null;
+      let currentNode = containerNode as HTMLElement | null;
+
+      while (currentNode && !pageElement) {
+        if (
+          currentNode.hasAttribute &&
+          currentNode.hasAttribute("data-page-index")
+        ) {
+          pageElement = currentNode;
+          break;
+        }
+        // Try to find the data-page-index in ancestors
+        const closestWithPageIndex = currentNode.closest
+          ? currentNode.closest("[data-page-index]")
+          : null;
+
+        if (closestWithPageIndex) {
+          pageElement = closestWithPageIndex;
+          break;
+        }
+
+        currentNode = currentNode.parentElement;
+      }
+
+      // If we couldn't find a page element, look through all pages to see if they contain the selection
+      if (!pageElement && pdfContainerRef.current) {
+        const allPages =
+          pdfContainerRef.current.querySelectorAll("[data-page-index]");
+        for (let i = 0; i < allPages.length; i++) {
+          const page = allPages[i];
+          if (page.contains(range.commonAncestorContainer)) {
+            pageElement = page as HTMLElement;
+            break;
+          }
+        }
+      }
+
+      if (!pageElement) {
+        console.log("Could not find page element for selection");
         setShowHighlightToolbar(false);
         return;
       }
 
       const pageIndex = parseInt(
-        closestPageElement.getAttribute("data-page-index") || "-1",
+        pageElement.getAttribute("data-page-index") || "-1",
         10
       );
 
       if (pageIndex === -1) {
+        console.log("Invalid page index");
         setShowHighlightToolbar(false);
         return;
       }
@@ -234,13 +276,17 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       setSelectionPageIndex(pageIndex);
 
       // Calculate position for the toolbar
-      const rect = range.getBoundingClientRect();
-      const pageRect = closestPageElement.getBoundingClientRect();
+      const selectionRect = range.getBoundingClientRect();
+      const pageRect = pageElement.getBoundingClientRect();
 
+      const toolbarX =
+        selectionRect.left + selectionRect.width / 2 - pageRect.left;
       // Position the toolbar above the selection
+      const toolbarY = Math.max(0, selectionRect.top - pageRect.top - 40);
+
       setHighlightToolbarPosition({
-        x: rect.left + rect.width / 2 - pageRect.left,
-        y: Math.max(0, rect.top - pageRect.top - 40),
+        x: toolbarX,
+        y: toolbarY,
       });
 
       setShowHighlightToolbar(true);
@@ -406,7 +452,8 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       !selection ||
       selection.rangeCount === 0 ||
       selection.isCollapsed ||
-      selectionPageIndex === null
+      selectionPageIndex === null ||
+      !pdfContainerRef.current
     )
       return;
 
@@ -414,41 +461,42 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     const rects: { x: number; y: number; width: number; height: number }[] = [];
 
     // Get the page element where the selection occurred
-    const pageElement = pdfContainerRef.current?.querySelector(
+    const pageElement = pdfContainerRef.current.querySelector(
       `[data-page-index="${selectionPageIndex}"]`
     ) as HTMLElement | null;
 
-    if (!pageElement) return;
+    if (!pageElement) {
+      console.log(
+        "Could not find page element for highlight at index",
+        selectionPageIndex
+      );
+      return;
+    }
 
     const pageRect = pageElement.getBoundingClientRect();
 
     // Process each range in the selection
     for (let i = 0; i < selection.rangeCount; i++) {
       const range = selection.getRangeAt(i);
-      const containerElement =
-        range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
-          ? (range.commonAncestorContainer as Element)
-          : range.commonAncestorContainer.parentElement;
+      const clientRects = range.getClientRects();
 
-      // Check if the selection is within our PDF page
-      if (pageElement.contains(containerElement)) {
-        const clientRects = range.getClientRects();
-
-        // Convert each client rect to be relative to the PDF page
-        for (let j = 0; j < clientRects.length; j++) {
-          const clientRect = clientRects[j];
-          rects.push({
-            x: (clientRect.left - pageRect.left) / scale,
-            y: (clientRect.top - pageRect.top) / scale,
-            width: clientRect.width / scale,
-            height: clientRect.height / scale,
-          });
-        }
+      // Convert each client rect to be relative to the PDF page
+      for (let j = 0; j < clientRects.length; j++) {
+        const clientRect = clientRects[j];
+        rects.push({
+          x: (clientRect.left - pageRect.left) / scale,
+          y: (clientRect.top - pageRect.top) / scale,
+          width: clientRect.width / scale,
+          height: clientRect.height / scale,
+        });
       }
     }
 
     // Only create highlight if we have valid rectangles
-    if (rects.length === 0) return;
+    if (rects.length === 0) {
+      console.log("No valid rects found for highlight");
+      return;
+    }
 
     const timestamp = Date.now();
 
@@ -463,6 +511,14 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       createdAt: timestamp,
       updatedAt: timestamp,
     };
+
+    console.log(
+      "Created highlight on page",
+      selectionPageIndex,
+      "with",
+      rects.length,
+      "rects"
+    );
 
     setTextHighlights((prev) => [...prev, newHighlight]);
     setSelectedHighlight(newHighlight.id);
