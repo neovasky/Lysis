@@ -80,8 +80,8 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   const [isAddingPostIt, setIsAddingPostIt] = useState(false);
   const [selectedPostIt, setSelectedPostIt] = useState<string | null>(null);
   const [editingPostItId, setEditingPostItId] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState(POST_IT_COLORS[0]);
-  const [isAddingTextHighlight, setIsAddingTextHighlight] = useState(false);
+  const [selectedColor] = useState(POST_IT_COLORS[0]);
+  const [isAddingTextHighlight] = useState(false);
   const [selectedHighlight, setSelectedHighlight] = useState<string | null>(
     null
   );
