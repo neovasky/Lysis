@@ -198,6 +198,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   }, [isAddingTextHighlightState, pdfContainerRef]);
 
   // Handle text selection for highlighting on any page
+  // Handle text selection for highlighting on any page
   useEffect(() => {
     if (!isAddingTextHighlightState || !pdfContainerRef.current) return;
 
@@ -243,12 +244,15 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       }
 
       // If we couldn't find a page element, look through all pages to see if they contain the selection
+      // If we couldn't find a page element, look through all pages to see if they contain the selection
       if (!pageElement && pdfContainerRef.current) {
         const allPages =
           pdfContainerRef.current.querySelectorAll("[data-page-index]");
         for (let i = 0; i < allPages.length; i++) {
           const page = allPages[i];
-          if (page.contains(range.commonAncestorContainer)) {
+          const ancestor = range.commonAncestorContainer;
+          // Make sure ancestor is a Node before calling contains()
+          if (ancestor instanceof Node && page.contains(ancestor)) {
             pageElement = page as HTMLElement;
             break;
           }
