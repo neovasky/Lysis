@@ -101,11 +101,19 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     x: 0,
     y: 0,
   });
+  // Track the page where the selection is occurring
+  const [selectionPageIndex, setSelectionPageIndex] = useState<number | null>(
+    null
+  );
 
   // Update internal state when props change
   useEffect(() => {
     setIsAddingPostIt(isAddingPostIt);
-  }, [isAddingPostIt]);
+    // Reset highlight toolbar when toggling the highlight mode
+    if (isAddingTextHighlight && !isAddingTextHighlightState) {
+      setShowHighlightToolbar(false);
+    }
+  }, [isAddingPostIt, isAddingTextHighlight, isAddingTextHighlightState]);
 
   useEffect(() => {
     setIsAddingTextHighlight(isAddingTextHighlight);
@@ -162,7 +170,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     localStorage.setItem("pdf-text-highlights", JSON.stringify(textHighlights));
   }, [textHighlights]);
 
-  // Handle text selection for highlighting
+  // Handle text selection for highlighting on any page
   useEffect(() => {
     if (!isAddingTextHighlightState || !pdfContainerRef.current) return;
 
@@ -173,31 +181,38 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
         return;
       }
 
-      // Get the current page element
-      const currentPageElement = pdfContainerRef.current?.querySelector(
-        `[data-page-index="${currentPage - 1}"]`
-      );
+      // Find which page contains the selection
+      const range = selection.getRangeAt(0);
+      const allPages =
+        pdfContainerRef.current?.querySelectorAll("[data-page-index]");
+      let pageElement = null;
+      let pageIndex = -1;
 
-      if (!currentPageElement) return;
-
-      // Check if selection is within the current page
-      let isWithinPage = false;
-      for (let i = 0; i < selection.rangeCount; i++) {
-        const range = selection.getRangeAt(i);
-        if (currentPageElement.contains(range.commonAncestorContainer)) {
-          isWithinPage = true;
-          break;
+      if (allPages) {
+        for (let i = 0; i < allPages.length; i++) {
+          const page = allPages[i];
+          if (page.contains(range.commonAncestorContainer)) {
+            pageElement = page;
+            pageIndex = parseInt(
+              page.getAttribute("data-page-index") || "-1",
+              10
+            );
+            break;
+          }
         }
       }
 
-      if (!isWithinPage) {
+      if (!pageElement || pageIndex === -1) {
         setShowHighlightToolbar(false);
         return;
       }
 
+      // Set the current selection page
+      setSelectionPageIndex(pageIndex);
+
       // Calculate position for the toolbar
-      const rect = selection.getRangeAt(0).getBoundingClientRect();
-      const pageRect = currentPageElement.getBoundingClientRect();
+      const rect = range.getBoundingClientRect();
+      const pageRect = pageElement.getBoundingClientRect();
 
       // Position the toolbar above the selection
       setHighlightToolbarPosition({
@@ -211,7 +226,25 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     document.addEventListener("selectionchange", handleSelection);
     return () =>
       document.removeEventListener("selectionchange", handleSelection);
-  }, [isAddingTextHighlightState, currentPage, pdfContainerRef]);
+  }, [isAddingTextHighlightState, pdfContainerRef]);
+
+  // Make sure text layers are selectable on all pages when in highlight mode
+  useEffect(() => {
+    if (!pdfContainerRef.current) return;
+
+    const textLayers = pdfContainerRef.current.querySelectorAll(
+      ".react-pdf__Page__textLayer"
+    );
+    textLayers.forEach((layer) => {
+      if (layer instanceof HTMLElement) {
+        if (isAddingTextHighlightState) {
+          layer.style.pointerEvents = "auto";
+        } else {
+          layer.style.pointerEvents = "none";
+        }
+      }
+    });
+  }, [isAddingTextHighlightState, pdfContainerRef]);
 
   // Create a new post-it note
   const createPostIt = (event: React.MouseEvent) => {
@@ -360,35 +393,43 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   // Create a new text highlight
   const createTextHighlight = useCallback(() => {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || selection.isCollapsed)
+    if (
+      !selection ||
+      selection.rangeCount === 0 ||
+      selection.isCollapsed ||
+      selectionPageIndex === null
+    )
       return;
 
     // Get all the client rects of the selection
     const rects: { x: number; y: number; width: number; height: number }[] = [];
 
+    // Get the page element where the selection occurred
+    const pageElement = pdfContainerRef.current?.querySelector(
+      `[data-page-index="${selectionPageIndex}"]`
+    ) as HTMLElement | null;
+
+    if (!pageElement) return;
+
+    const pageRect = pageElement.getBoundingClientRect();
+
     // Process each range in the selection
     for (let i = 0; i < selection.rangeCount; i++) {
-      const clientRects = selection.getRangeAt(i).getClientRects();
+      const range = selection.getRangeAt(i);
 
-      // Get the current page element for coordinate conversion
-      if (pdfContainerRef.current) {
-        const pageElement = pdfContainerRef.current.querySelector(
-          `[data-page-index="${currentPage - 1}"]`
-        );
+      // Only process ranges within the current page
+      if (pageElement.contains(range.commonAncestorContainer)) {
+        const clientRects = range.getClientRects();
 
-        if (pageElement) {
-          const pageRect = pageElement.getBoundingClientRect();
-
-          // Convert each client rect to be relative to the PDF page
-          for (let j = 0; j < clientRects.length; j++) {
-            const clientRect = clientRects[j];
-            rects.push({
-              x: (clientRect.left - pageRect.left) / scale,
-              y: (clientRect.top - pageRect.top) / scale,
-              width: clientRect.width / scale,
-              height: clientRect.height / scale,
-            });
-          }
+        // Convert each client rect to be relative to the PDF page
+        for (let j = 0; j < clientRects.length; j++) {
+          const clientRect = clientRects[j];
+          rects.push({
+            x: (clientRect.left - pageRect.left) / scale,
+            y: (clientRect.top - pageRect.top) / scale,
+            width: clientRect.width / scale,
+            height: clientRect.height / scale,
+          });
         }
       }
     }
@@ -401,7 +442,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     // Create new highlight
     const newHighlight: TextHighlight = {
       id: `highlight-${timestamp}`,
-      pageIndex: currentPage - 1,
+      pageIndex: selectionPageIndex,
       rects,
       content: selection.toString(),
       note: "",
@@ -420,11 +461,12 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     // Clear the selection and hide the toolbar
     selection.removeAllRanges();
     setShowHighlightToolbar(false);
+    setSelectionPageIndex(null);
 
     // Turn off highlight mode after creating one
     setIsAddingTextHighlight(false);
   }, [
-    currentPage,
+    selectionPageIndex,
     highlightColor,
     pdfContainerRef,
     scale,

@@ -511,10 +511,17 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         opacity: 0;
         transition: opacity 0.5s ease-in-out;
       }
-
+  
       /* Fix pointer events for annotations */
       .react-pdf__Page__textLayer {
         pointer-events: ${isAddingTextHighlight ? "auto" : "none"} !important;
+      }
+  
+      /* Ensure text selection works in highlight mode */
+      .text-selection-mode .react-pdf__Page__textLayer {
+        pointer-events: auto !important;
+        user-select: text !important;
+        -webkit-user-select: text !important;
       }
     `;
     document.head.appendChild(style);
