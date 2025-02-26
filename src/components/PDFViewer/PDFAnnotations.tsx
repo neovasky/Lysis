@@ -8,7 +8,6 @@ import {
   Check,
   MessageSquare,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 // PostIt note interface
 export interface PostItNote {
@@ -108,6 +107,15 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     offsetY: 0,
   });
 
+  const pdfAnnotationsRef = useRef<HTMLDivElement>(null);
+
+  // Check parent props
+  useEffect(() => {
+    if (onAnnotationUpdate) {
+      onAnnotationUpdate({ postItNotes, textHighlights });
+    }
+  }, [postItNotes, textHighlights, onAnnotationUpdate]);
+
   // Load annotations from localStorage on component mount
   useEffect(() => {
     const savedPostIts = localStorage.getItem("pdf-post-it-notes");
@@ -133,10 +141,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   // Save annotations to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("pdf-post-it-notes", JSON.stringify(postItNotes));
-    if (onAnnotationUpdate) {
-      onAnnotationUpdate({ postItNotes, textHighlights });
-    }
-  }, [postItNotes, textHighlights, onAnnotationUpdate]);
+  }, [postItNotes]);
 
   useEffect(() => {
     localStorage.setItem("pdf-text-highlights", JSON.stringify(textHighlights));
@@ -157,6 +162,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       const currentPageElement = pdfContainerRef.current?.querySelector(
         `[data-page-index="${currentPage - 1}"]`
       );
+
       if (!currentPageElement) return;
 
       // Check if selection is within the current page
@@ -177,10 +183,12 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
       // Calculate position for the toolbar
       const rect = selection.getRangeAt(0).getBoundingClientRect();
       const pageRect = currentPageElement.getBoundingClientRect();
+
       setHighlightToolbarPosition({
         x: rect.left + rect.width / 2 - pageRect.left,
         y: rect.top - pageRect.top - 40, // Position above the selection
       });
+
       setShowHighlightToolbar(true);
     };
 
@@ -193,6 +201,7 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
   const createPostIt = (event: React.MouseEvent) => {
     if (!pdfContainerRef.current) return;
 
+    // Find which page we're on
     const pageElement = pdfContainerRef.current.querySelector(
       `[data-page-index="${currentPage - 1}"]`
     ) as HTMLDivElement | null;
@@ -402,15 +411,6 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     );
     setSelectedHighlight(null);
     setEditingHighlightId(null);
-  };
-
-  // Toggle text highlight toolbar
-  const toggleHighlightingMode = () => {
-    setIsAddingTextHighlight(!isAddingTextHighlight);
-    if (!isAddingTextHighlight) {
-      // Clear any existing selection when entering highlight mode
-      window.getSelection()?.removeAllRanges();
-    }
   };
 
   // Render post-it notes for the current page
@@ -716,73 +716,21 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
     );
   };
 
+  const pdfContainerParent = pdfContainerRef.current;
+
+  // Only render the annotations container if we have a parent container to position within
+  if (!pdfContainerParent) return null;
+
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {/* Annotation toolbar */}
-      <div
-        className={`absolute top-4 right-20 p-2 z-[1002] rounded shadow-md flex items-center gap-2 pointer-events-auto ${
-          isDark ? "bg-gray-800" : "bg-white"
-        }`}
-      >
-        {/* Post-it note button */}
-        <Button
-          variant={isAddingPostIt ? "solid" : "ghost"}
-          size="sm"
-          className={`p-2 rounded ${
-            isAddingPostIt
-              ? isDark
-                ? "bg-yellow-700 text-white"
-                : "bg-yellow-500 text-white"
-              : ""
-          }`}
-          onClick={() => {
-            setIsAddingPostIt(!isAddingPostIt);
-            setIsAddingTextHighlight(false);
-          }}
-          title="Add Post-it Note"
-        >
-          <StickyNote size={16} />
-        </Button>
-
-        {/* Highlight button */}
-        <Button
-          variant={isAddingTextHighlight ? "solid" : "ghost"}
-          size="sm"
-          className={`p-2 rounded ${
-            isAddingTextHighlight
-              ? isDark
-                ? "bg-blue-700 text-white"
-                : "bg-blue-500 text-white"
-              : ""
-          }`}
-          onClick={toggleHighlightingMode}
-          title="Highlight Text"
-        >
-          <Edit3 size={16} />
-        </Button>
-
-        {/* Color picker for post-it notes */}
-        {isAddingPostIt && (
-          <div className="flex items-center gap-1 ml-2">
-            {POST_IT_COLORS.map((color, index) => (
-              <button
-                key={index}
-                className={`w-5 h-5 rounded-full border ${
-                  selectedColor === color
-                    ? "ring-2 ring-offset-1"
-                    : "border-gray-300"
-                }`}
-                style={{ backgroundColor: color }}
-                onClick={() => setSelectedColor(color)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
+    <div
+      className="absolute inset-0 pointer-events-none"
+      ref={pdfAnnotationsRef}
+    >
       {/* Container for rendering annotations on top of PDF */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className={`absolute inset-0 ${
+          isAddingPostIt ? "pointer-events-auto" : "pointer-events-none"
+        }`}
         onClick={(e) => {
           if (isAddingPostIt) {
             createPostIt(e);
@@ -790,19 +738,18 @@ const PDFAnnotations: React.FC<PDFAnnotationsProps> = ({
         }}
         style={{ cursor: isAddingPostIt ? "crosshair" : "default" }}
       >
-        {/* This div enables click events for the entire container when adding post-it notes */}
-        {isAddingPostIt && (
-          <div className="absolute inset-0 pointer-events-auto"></div>
-        )}
+        {/* Post-it notes */}
+        <div className="pointer-events-auto z-[999]">{renderPostItNotes()}</div>
 
-        {/* Render post-it notes */}
-        <div className="pointer-events-auto">{renderPostItNotes()}</div>
+        {/* Text highlights */}
+        <div className="pointer-events-auto z-[998]">
+          {renderTextHighlights()}
+        </div>
 
-        {/* Render text highlights */}
-        <div className="pointer-events-auto">{renderTextHighlights()}</div>
-
-        {/* Render highlight toolbar */}
-        <div className="pointer-events-auto">{renderHighlightToolbar()}</div>
+        {/* Highlight toolbar */}
+        <div className="pointer-events-auto z-[1001]">
+          {renderHighlightToolbar()}
+        </div>
       </div>
     </div>
   );

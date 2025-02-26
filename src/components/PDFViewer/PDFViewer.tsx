@@ -101,7 +101,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const [postItNotes, setPostItNotes] = useState<PostItNote[]>([]);
   const [textHighlights, setTextHighlights] = useState<TextHighlight[]>([]);
 
-  // New: Annotation mode and help states
+  // Annotation mode and help states
   const [isAddingPostIt, setIsAddingPostIt] = useState(false);
   const [isAddingTextHighlight, setIsAddingTextHighlight] = useState(false);
   const [showAnnotationHelp, setShowAnnotationHelp] = useState(false);
@@ -190,7 +190,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     }
   };
 
-  // Navigate to search result function (defined first so it can be used in dependencies)
+  // Navigate to search result function
   const navigateToSearchResult = useCallback((result: SearchResult) => {
     const pageDiv = mainContainerRef.current?.querySelector(
       `[data-page-index="${result.pageIndex}"]`
@@ -200,15 +200,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
       pageDiv.scrollIntoView({ behavior: "smooth" });
       setCurrentPage(result.pageIndex + 1);
 
-      // Highlight the search result (optional - you'd need to add more code to highlight specific text)
+      // Highlight the search result (optional)
       setTimeout(() => {
         try {
           const textLayers = pageDiv.querySelectorAll(
             ".react-pdf__Page__textContent"
           );
           if (textLayers.length > 0) {
-            // This is a simple approach - for more precise highlighting you'd need
-            // to calculate exact positions based on the result's matchIndex
             textLayers[0].classList.add("highlight-animation");
             setTimeout(() => {
               textLayers[0].classList.remove("highlight-animation");
@@ -241,7 +239,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         const pageIndex = parseInt(pageIdxStr, 10);
 
         // Combine text items to find matches that might span multiple items
-        // Use the type guard to filter TextItem objects
         const textStrings = items.filter(isTextItem).map((item) => item.str);
 
         const fullText = textStrings.join(" ");
@@ -422,6 +419,60 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     setShowOnboardingTip(false);
     localStorage.setItem("pdf-annotation-tips-shown", "true");
   };
+
+  // Add event listener to detect when user scrolls to update current page
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!mainContainerRef.current) return;
+
+      // Find which page is most visible in the viewport
+      const container = mainContainerRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const containerMiddle = containerRect.top + containerRect.height / 2;
+
+      let bestVisiblePage = 1;
+      let bestVisibleArea = 0;
+
+      for (let i = 0; i < numPages; i++) {
+        const pageElement = container.querySelector(
+          `[data-page-index="${i}"]`
+        ) as HTMLElement;
+
+        if (pageElement) {
+          const pageRect = pageElement.getBoundingClientRect();
+
+          // Calculate how much of the page is visible
+          const visibleTop = Math.max(pageRect.top, containerRect.top);
+          const visibleBottom = Math.min(pageRect.bottom, containerRect.bottom);
+          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+          // If this page is more visible than our previous best, update
+          if (visibleHeight > bestVisibleArea) {
+            bestVisibleArea = visibleHeight;
+            bestVisiblePage = i + 1;
+          }
+
+          // Alternative: use distance from center to determine current page
+          const distance = Math.abs(
+            pageRect.top + pageRect.height / 2 - containerMiddle
+          );
+          if (distance < containerRect.height / 2 && visibleHeight > 0) {
+            bestVisiblePage = i + 1;
+          }
+        }
+      }
+
+      if (bestVisiblePage !== currentPage) {
+        setCurrentPage(bestVisiblePage);
+      }
+    };
+
+    const container = mainContainerRef.current;
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+      return () => container.removeEventListener("scroll", handleScroll);
+    }
+  }, [currentPage, numPages]);
 
   // CSS for search result highlighting
   useEffect(() => {
@@ -943,39 +994,29 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                     <p className="text-xs mt-1">
                       {/* Highlight the search term in the context */}
                       {(() => {
-                        const termRegex = new RegExp(searchTerm, "gi");
+                        const termRegex = new RegExp(
+                          searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                          "gi"
+                        );
                         const parts = result.text.split(termRegex);
-                        let lastIndex = 0;
+
+                        if (parts.length <= 1) {
+                          return result.text;
+                        }
 
                         return (
                           <>
-                            {parts.map((part, i) => {
-                              const beforePart = result.text.substring(
-                                lastIndex,
-                                lastIndex + part.length
-                              );
-                              lastIndex += part.length;
-
-                              const match =
-                                i < parts.length - 1
-                                  ? result.text.substring(
-                                      lastIndex,
-                                      lastIndex + searchTerm.length
-                                    )
-                                  : "";
-                              lastIndex += searchTerm.length;
-
-                              return (
-                                <React.Fragment key={i}>
-                                  {beforePart}
-                                  {match && (
-                                    <span className="bg-yellow-200 text-gray-800 rounded px-0.5">
-                                      {match}
-                                    </span>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })}
+                            {parts.map((part, i) => (
+                              <React.Fragment key={i}>
+                                {part}
+                                {i < parts.length - 1 && (
+                                  <span className="bg-yellow-200 text-gray-800 rounded px-0.5">
+                                    {result.text.match(termRegex)?.[i] ||
+                                      searchTerm}
+                                  </span>
+                                )}
+                              </React.Fragment>
+                            ))}
                           </>
                         );
                       })()}
@@ -1022,7 +1063,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
             ))}
           </Document>
 
-          {/* Add the PDF Annotations component here with the necessary props */}
+          {/* PDF Annotations component */}
           <PDFAnnotations
             pdfContainerRef={mainContainerRef}
             currentPage={currentPage}
