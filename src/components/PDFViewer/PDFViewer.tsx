@@ -1,9 +1,9 @@
 import React, {
   useState,
   useRef,
-  useMemo,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/TextLayer.css";
@@ -27,8 +27,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PDFAnnotations, { PostItNote, TextHighlight } from "./PDFAnnotations";
+import PDFAnnotations from "./PDFAnnotations";
 import PDFNotes from "./PDFNotes";
+import { PostItNote, TextHighlight } from "./types";
 
 // Ensure pdf.worker.min.mjs is in your public folder
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -43,7 +44,7 @@ interface SearchResult {
 
 interface PDFViewerProps {
   pdfData: Uint8Array;
-  onClose: () => void; // onClose is required
+  onClose: () => void;
 }
 
 // Define types for PDF text content
@@ -56,7 +57,7 @@ interface TextItem {
   fontName: string;
 }
 
-// Adding TextMarkedContent interface to fix type incompatibility
+// TextMarkedContent interface to fix type incompatibility
 interface TextMarkedContent {
   type: string;
   items: (TextItem | TextMarkedContent)[];
@@ -66,11 +67,6 @@ interface TextMarkedContent {
 interface TextContent {
   items: (TextItem | TextMarkedContent)[];
   styles: Record<string, unknown>;
-}
-
-// Type guard to check if an item is a TextItem
-function isTextItem(item: TextItem | TextMarkedContent): item is TextItem {
-  return "str" in item;
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
@@ -93,22 +89,28 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [editPageInput, setEditPageInput] = useState(false);
   const [pageInputValue, setPageInputValue] = useState("");
-  const [textItems, setTextItems] = useState<{
-    [key: number]: (TextItem | TextMarkedContent)[];
-  }>({});
+  const [pdfTextContent, setPdfTextContent] = useState<Record<number, string>>(
+    {}
+  );
 
-  // Annotations state
+  // Keep track of rendered pages for annotation positioning
+  const [renderedPages, setRenderedPages] = useState<number[]>([]);
+  const [pageRefs, setPageRefs] = useState<
+    Record<number, HTMLDivElement | null>
+  >({});
+
+  // Annotation state - now centralized
+  const [annotationMode, setAnnotationMode] = useState<
+    "none" | "postit" | "highlight"
+  >("none");
   const [postItNotes, setPostItNotes] = useState<PostItNote[]>([]);
   const [textHighlights, setTextHighlights] = useState<TextHighlight[]>([]);
-
-  // Annotation mode and help states
-  const [isAddingPostIt, setIsAddingPostIt] = useState(false);
-  const [isAddingTextHighlight, setIsAddingTextHighlight] = useState(false);
   const [showAnnotationHelp, setShowAnnotationHelp] = useState(false);
   const [showOnboardingTip, setShowOnboardingTip] = useState(true);
 
   // Main container ref (for scrolling and positioning annotations)
   const mainContainerRef = useRef<HTMLDivElement>(null);
+  const documentRef = useRef<HTMLDivElement>(null);
 
   // Prepare PDF files
   const fileForMain = useMemo(() => {
@@ -122,26 +124,76 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   }, [pdfData]);
 
   // Main document load handler
-  const handleMainLoad = (pdf: pdfjs.PDFDocumentProxy) => {
+  const handleMainLoad = useCallback((pdf: pdfjs.PDFDocumentProxy) => {
     setNumPages(pdf.numPages);
-  };
+  }, []);
 
-  // Handle page render
-  const handlePageRender = useCallback(
-    (pageIndex: number, textContent: TextContent) => {
-      setTextItems((prev) => ({
-        ...prev,
-        [pageIndex]: textContent.items,
-      }));
+  // Record page ref when a page is rendered
+  const handlePageRef = useCallback(
+    (pageIndex: number, ref: HTMLDivElement | null) => {
+      if (ref) {
+        setPageRefs((prev) => ({
+          ...prev,
+          [pageIndex]: ref,
+        }));
+
+        // Immediately add to rendered pages to prevent multiple additions
+        setRenderedPages((prev) => {
+          if (!prev.includes(pageIndex)) {
+            return [...prev, pageIndex].sort((a, b) => a - b);
+          }
+          return prev;
+        });
+      }
     },
     []
   );
 
   // Zoom handlers
-  const handleZoomIn = () => setScale((s) => s + 0.2);
-  const handleZoomOut = () => setScale((s) => Math.max(0.2, s - 0.2));
+  const handleZoomIn = useCallback(
+    () => setScale((s) => Math.min(s + 0.2, 3)),
+    []
+  );
+  const handleZoomOut = useCallback(
+    () => setScale((s) => Math.max(0.2, s - 0.2)),
+    []
+  );
 
-  // Handle annotations update
+  // Handle page text content
+  const handleTextContent = useCallback(
+    (pageIndex: number, textContent: TextContent) => {
+      // Extract text strings from the content
+      const extractText = (items: (TextItem | TextMarkedContent)[]): string => {
+        let text = "";
+        for (const item of items) {
+          if ("str" in item) {
+            text += item.str + " ";
+          } else if (item.items) {
+            text += extractText(item.items);
+          }
+        }
+        return text;
+      };
+
+      const pageText = extractText(textContent.items);
+      setPdfTextContent((prev) => ({
+        ...prev,
+        [pageIndex]: pageText,
+      }));
+    },
+    []
+  );
+
+  // Toggle annotation modes
+  const togglePostItMode = useCallback(() => {
+    setAnnotationMode((prev) => (prev === "postit" ? "none" : "postit"));
+  }, []);
+
+  const toggleHighlightMode = useCallback(() => {
+    setAnnotationMode((prev) => (prev === "highlight" ? "none" : "highlight"));
+  }, []);
+
+  // Function to update annotations from annotation layer
   const handleAnnotationsUpdate = useCallback(
     (annotations: {
       postItNotes: PostItNote[];
@@ -153,73 +205,136 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     []
   );
 
-  // Toggle annotation modes
-  const togglePostItMode = () => {
-    setIsAddingPostIt(!isAddingPostIt);
-    setIsAddingTextHighlight(false);
+  // Load annotations from localStorage on component mount
+  useEffect(() => {
+    const savedPostIts = localStorage.getItem("pdf-post-it-notes");
+    const savedHighlights = localStorage.getItem("pdf-text-highlights");
 
-    // Show the onboarding tip
-    if (!isAddingPostIt && showOnboardingTip) {
-      setTimeout(() => {
-        const tip = document.getElementById("annotation-tip");
-        if (tip) {
-          tip.style.opacity = "1";
-          setTimeout(() => {
-            tip.style.opacity = "0";
-          }, 5000);
-        }
-      }, 500);
+    if (savedPostIts) {
+      try {
+        setPostItNotes(JSON.parse(savedPostIts));
+      } catch (error) {
+        console.error("Error loading post-it notes:", error);
+      }
     }
-  };
 
-  const toggleHighlightMode = () => {
-    setIsAddingTextHighlight(!isAddingTextHighlight);
-    setIsAddingPostIt(false);
-
-    // Show the onboarding tip
-    if (!isAddingTextHighlight && showOnboardingTip) {
-      setTimeout(() => {
-        const tip = document.getElementById("annotation-tip");
-        if (tip) {
-          tip.style.opacity = "1";
-          setTimeout(() => {
-            tip.style.opacity = "0";
-          }, 5000);
-        }
-      }, 500);
-    }
-  };
-
-  // Navigate to search result function
-  const navigateToSearchResult = useCallback((result: SearchResult) => {
-    const pageDiv = mainContainerRef.current?.querySelector(
-      `[data-page-index="${result.pageIndex}"]`
-    ) as HTMLDivElement | null;
-
-    if (pageDiv) {
-      pageDiv.scrollIntoView({ behavior: "smooth" });
-      setCurrentPage(result.pageIndex + 1);
-
-      // Highlight the search result (optional)
-      setTimeout(() => {
-        try {
-          const textLayers = pageDiv.querySelectorAll(
-            ".react-pdf__Page__textContent"
-          );
-          if (textLayers.length > 0) {
-            textLayers[0].classList.add("highlight-animation");
-            setTimeout(() => {
-              textLayers[0].classList.remove("highlight-animation");
-            }, 2000);
-          }
-        } catch (e) {
-          console.error("Error highlighting text", e);
-        }
-      }, 500);
+    if (savedHighlights) {
+      try {
+        setTextHighlights(JSON.parse(savedHighlights));
+      } catch (error) {
+        console.error("Error loading text highlights:", error);
+      }
     }
   }, []);
 
-  // Search handlers
+  // Save annotations to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("pdf-post-it-notes", JSON.stringify(postItNotes));
+  }, [postItNotes]);
+
+  useEffect(() => {
+    localStorage.setItem("pdf-text-highlights", JSON.stringify(textHighlights));
+  }, [textHighlights]);
+
+  // Thumbnails load handler
+  const handleThumbDocLoad = useCallback(
+    async (pdf: pdfjs.PDFDocumentProxy) => {
+      setThumbNumPages(pdf.numPages);
+      const dims: { width: number; height: number }[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        try {
+          const page = await pdf.getPage(i);
+          const { width, height } = page.getViewport({ scale: 1 });
+          dims.push({ width, height });
+        } catch (error) {
+          console.error(`Error loading page ${i}:`, error);
+          dims.push({ width: 0, height: 0 });
+        }
+      }
+      setPageDimensions(dims);
+    },
+    []
+  );
+
+  // Thumbnail click handler
+  const handleThumbClick = useCallback(
+    (pageIndex: number) => {
+      const pageDiv = pageRefs[pageIndex];
+      if (pageDiv) {
+        pageDiv.scrollIntoView({ behavior: "smooth" });
+        setCurrentPage(pageIndex + 1);
+      }
+    },
+    [pageRefs]
+  );
+
+  // Function to get current visible page
+  const updateCurrentPageFromScroll = useCallback(() => {
+    if (!mainContainerRef.current) return;
+
+    const container = mainContainerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const containerMiddle = containerRect.top + containerRect.height / 2;
+
+    let bestVisiblePage = 1;
+    let bestVisibility = 0;
+
+    Object.entries(pageRefs).forEach(([pageIndex, pageDiv]) => {
+      if (!pageDiv) return;
+
+      const pageRect = pageDiv.getBoundingClientRect();
+      const visibleHeight =
+        Math.min(containerRect.bottom, pageRect.bottom) -
+        Math.max(containerRect.top, pageRect.top);
+
+      // Only consider pages that are actually visible
+      if (visibleHeight <= 0) return;
+
+      // Calculate how centered the page is
+      const pageCenterY = pageRect.top + pageRect.height / 2;
+      const distanceFromCenter = Math.abs(pageCenterY - containerMiddle);
+
+      // Combine visibility and centeredness for ranking
+      const visibility =
+        visibleHeight * (1 - distanceFromCenter / containerRect.height);
+
+      if (visibility > bestVisibility) {
+        bestVisibility = visibility;
+        bestVisiblePage = parseInt(pageIndex) + 1;
+      }
+    });
+
+    if (bestVisiblePage !== currentPage) {
+      setCurrentPage(bestVisiblePage);
+    }
+  }, [pageRefs, currentPage]);
+
+  // Handle scroll events to update current page
+  useEffect(() => {
+    const container = mainContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      requestAnimationFrame(updateCurrentPageFromScroll);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [updateCurrentPageFromScroll]);
+
+  // Navigate to search result
+  const navigateToSearchResult = useCallback(
+    (result: SearchResult) => {
+      const pageDiv = pageRefs[result.pageIndex];
+      if (pageDiv) {
+        pageDiv.scrollIntoView({ behavior: "smooth" });
+        setCurrentPage(result.pageIndex + 1);
+      }
+    },
+    [pageRefs]
+  );
+
+  // Search functionality
   const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -235,25 +350,21 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
       const term = searchTerm.toLowerCase();
 
       // Search through all pages' text content
-      Object.entries(textItems).forEach(([pageIdxStr, items]) => {
+      Object.entries(pdfTextContent).forEach(([pageIdxStr, pageText]) => {
         const pageIndex = parseInt(pageIdxStr, 10);
-
-        // Combine text items to find matches that might span multiple items
-        const textStrings = items.filter(isTextItem).map((item) => item.str);
-
-        const fullText = textStrings.join(" ");
+        const pageTextLower = pageText.toLowerCase();
 
         let startIndex = 0;
-        let matchIndex = fullText.toLowerCase().indexOf(term, startIndex);
+        let matchIndex = pageTextLower.indexOf(term, startIndex);
 
         while (matchIndex !== -1) {
           // Get surrounding context for the match (up to 40 chars)
           const contextStart = Math.max(0, matchIndex - 20);
           const contextEnd = Math.min(
-            fullText.length,
+            pageText.length,
             matchIndex + term.length + 20
           );
-          const context = fullText.substring(contextStart, contextEnd);
+          const context = pageText.substring(contextStart, contextEnd);
 
           results.push({
             pageIndex,
@@ -262,7 +373,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
           });
 
           startIndex = matchIndex + term.length;
-          matchIndex = fullText.toLowerCase().indexOf(term, startIndex);
+          matchIndex = pageTextLower.indexOf(term, startIndex);
         }
       });
 
@@ -276,8 +387,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     } finally {
       setIsSearching(false);
     }
-  }, [searchTerm, textItems, navigateToSearchResult]);
+  }, [searchTerm, pdfTextContent, navigateToSearchResult]);
 
+  // Navigation through search results
   const handleNextSearchResult = useCallback(() => {
     if (searchResults.length === 0 || currentSearchIndex === -1) return;
 
@@ -311,100 +423,78 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   }, [performSearch]);
 
   // Page navigation handlers
-  const handlePageNumberClick = () => {
+  const handlePageNumberClick = useCallback(() => {
     setEditPageInput(true);
     setPageInputValue(String(currentPage));
-  };
+  }, [currentPage]);
 
-  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPageInputValue(e.target.value);
-  };
+  const handlePageInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setPageInputValue(e.target.value);
+    },
+    []
+  );
 
-  const handlePageInputBlur = () => {
+  const handlePageInputBlur = useCallback(() => {
     setEditPageInput(false);
     const pageNum = parseInt(pageInputValue, 10);
     if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= numPages) {
-      const pageDiv = mainContainerRef.current?.querySelector(
-        `[data-page-index="${pageNum - 1}"]`
-      ) as HTMLDivElement | null;
+      const pageDiv = pageRefs[pageNum - 1];
       if (pageDiv) {
         pageDiv.scrollIntoView({ behavior: "smooth" });
         setCurrentPage(pageNum);
       }
     }
-  };
-
-  // Thumbnails load handler
-  const handleThumbDocLoad = async (pdf: pdfjs.PDFDocumentProxy) => {
-    setThumbNumPages(pdf.numPages);
-    const dims: { width: number; height: number }[] = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const { width, height } = page.getViewport({ scale: 1 });
-      dims.push({ width, height });
-    }
-    setPageDimensions(dims);
-  };
-
-  // Thumbnail click handler
-  const handleThumbClick = (pageIndex: number) => {
-    const pageDiv = mainContainerRef.current?.querySelector(
-      `[data-page-index="${pageIndex}"]`
-    ) as HTMLDivElement | null;
-    if (pageDiv) {
-      pageDiv.scrollIntoView({ behavior: "smooth" });
-      setCurrentPage(pageIndex + 1);
-    }
-  };
+  }, [pageInputValue, numPages, pageRefs]);
 
   // Jump to annotation
-  const handleJumpToAnnotation = (pageIndex: number, id: string) => {
-    // First, navigate to the correct page
-    const pageDiv = mainContainerRef.current?.querySelector(
-      `[data-page-index="${pageIndex}"]`
-    ) as HTMLDivElement | null;
+  const handleJumpToAnnotation = useCallback(
+    (pageIndex: number, id: string) => {
+      // Navigate to the correct page
+      const pageDiv = pageRefs[pageIndex];
+      if (pageDiv) {
+        pageDiv.scrollIntoView({ behavior: "smooth" });
+        setCurrentPage(pageIndex + 1);
 
-    if (pageDiv) {
-      pageDiv.scrollIntoView({ behavior: "smooth" });
-      setCurrentPage(pageIndex + 1);
-
-      // Briefly highlight the element (if it can be found)
-      setTimeout(() => {
-        const annotationElement = document.getElementById(id);
-        if (annotationElement) {
-          // Add a temporary highlight class
-          annotationElement.classList.add("annotation-highlight-pulse");
-          setTimeout(() => {
-            annotationElement.classList.remove("annotation-highlight-pulse");
-          }, 2000);
-        }
-      }, 300);
-    }
-  };
+        // Briefly highlight the element (if it can be found)
+        setTimeout(() => {
+          const annotationElement = document.getElementById(id);
+          if (annotationElement) {
+            // Add a temporary highlight class
+            annotationElement.classList.add("annotation-highlight-pulse");
+            setTimeout(() => {
+              annotationElement.classList.remove("annotation-highlight-pulse");
+            }, 2000);
+          }
+        }, 300);
+      }
+    },
+    [pageRefs]
+  );
 
   // Handle post-it note deletion from sidebar
-  const handleDeletePostItNote = (id: string) => {
+  const handleDeletePostItNote = useCallback((id: string) => {
     setPostItNotes((prev) => prev.filter((note) => note.id !== id));
-  };
+  }, []);
 
   // Handle highlight deletion from sidebar
-  const handleDeleteHighlight = (id: string) => {
+  const handleDeleteHighlight = useCallback((id: string) => {
     setTextHighlights((prev) =>
       prev.filter((highlight) => highlight.id !== id)
     );
-  };
+  }, []);
 
   // Handle post-it note editing from sidebar
-  const handleEditPostItNote = (id: string, content: string) => {
+  const handleEditPostItNote = useCallback((id: string, content: string) => {
     setPostItNotes((prev) =>
       prev.map((note) =>
         note.id === id ? { ...note, content, updatedAt: Date.now() } : note
       )
     );
-  };
+  }, []);
 
   // Handle highlight note editing from sidebar
-  const handleEditHighlightNote = (id: string, note: string) => {
+  const handleEditHighlightNote = useCallback((id: string, note: string) => {
     setTextHighlights((prev) =>
       prev.map((highlight) =>
         highlight.id === id
@@ -412,88 +502,18 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
           : highlight
       )
     );
-  };
+  }, []);
 
   // Disable annotation tips after they've been shown
-  const disableOnboardingTips = () => {
+  const disableOnboardingTips = useCallback(() => {
     setShowOnboardingTip(false);
     localStorage.setItem("pdf-annotation-tips-shown", "true");
-  };
+  }, []);
 
-  // Add event listener to detect when user scrolls to update current page
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!mainContainerRef.current) return;
-
-      // Find which page is most visible in the viewport
-      const container = mainContainerRef.current;
-      const containerRect = container.getBoundingClientRect();
-      const containerMiddle = containerRect.top + containerRect.height / 2;
-
-      let bestVisiblePage = 1;
-      let bestVisibleArea = 0;
-
-      for (let i = 0; i < numPages; i++) {
-        const pageElement = container.querySelector(
-          `[data-page-index="${i}"]`
-        ) as HTMLElement;
-
-        if (pageElement) {
-          const pageRect = pageElement.getBoundingClientRect();
-
-          // Calculate how much of the page is visible
-          const visibleTop = Math.max(pageRect.top, containerRect.top);
-          const visibleBottom = Math.min(pageRect.bottom, containerRect.bottom);
-          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-
-          // If this page is more visible than our previous best, update
-          if (visibleHeight > bestVisibleArea) {
-            bestVisibleArea = visibleHeight;
-            bestVisiblePage = i + 1;
-          }
-
-          // Alternative: use distance from center to determine current page
-          const distance = Math.abs(
-            pageRect.top + pageRect.height / 2 - containerMiddle
-          );
-          if (distance < containerRect.height / 2 && visibleHeight > 0) {
-            bestVisiblePage = i + 1;
-          }
-        }
-      }
-
-      if (bestVisiblePage !== currentPage) {
-        setCurrentPage(bestVisiblePage);
-      }
-    };
-
-    const container = mainContainerRef.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
-      return () => container.removeEventListener("scroll", handleScroll);
-    }
-  }, [currentPage, numPages]);
-
-  // CSS for search result highlighting
+  // Setup CSS styles for annotations
   useEffect(() => {
     const style = document.createElement("style");
     style.innerHTML = `
-      /* Search result highlighting */
-      @keyframes highlight-pulse {
-        0% { background-color: rgba(255, 255, 0, 0.2); }
-        50% { background-color: rgba(255, 255, 0, 0.5); }
-        100% { background-color: rgba(255, 255, 0, 0.2); }
-      }
-      
-      .highlight-animation {
-        animation: highlight-pulse 1.5s ease-in-out;
-      }
-      
-      .search-highlight {
-        background-color: rgba(255, 255, 0, 0.3);
-        border-radius: 2px;
-      }
-      
       /* Annotation highlighting */
       @keyframes annotation-pulse {
         0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
@@ -512,16 +532,28 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         transition: opacity 0.5s ease-in-out;
       }
   
-      /* Fix pointer events for annotations */
-      .react-pdf__Page__textLayer {
-        pointer-events: ${isAddingTextHighlight ? "auto" : "none"} !important;
-      }
-  
-      /* Ensure text selection works in highlight mode */
-      .text-selection-mode .react-pdf__Page__textLayer {
+      /* Enable text selection in the PDF viewer when in highlight mode */
+      .highlight-mode .react-pdf__Page__textLayer {
         pointer-events: auto !important;
         user-select: text !important;
         -webkit-user-select: text !important;
+        cursor: text !important;
+      }
+
+      /* Make sure text layers are always behind other elements but can receive events */
+      .react-pdf__Page__textLayer {
+        z-index: 1 !important;
+      }
+
+      /* Make annotations appear above text */
+      .pdf-annotation-layer {
+        z-index: 2 !important;
+      }
+
+      /* Search highlight styling */
+      .search-highlight {
+        background-color: rgba(255, 255, 0, 0.3);
+        border-radius: 2px;
       }
     `;
     document.head.appendChild(style);
@@ -533,24 +565,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
     return () => {
       document.head.removeChild(style);
     };
-  }, [isAddingTextHighlight]);
-
-  // Add a class to the PDF container for better text selection when highlighting
-  useEffect(() => {
-    if (mainContainerRef.current) {
-      if (isAddingTextHighlight) {
-        mainContainerRef.current.classList.add("text-selection-mode");
-      } else {
-        mainContainerRef.current.classList.remove("text-selection-mode");
-      }
-    }
-  }, [isAddingTextHighlight]);
+  }, []);
 
   return (
     <div
       className={`w-full h-full z-0 flex flex-col ${
         isDark ? "bg-background text-foreground" : "bg-white text-black"
-      }`}
+      } ${annotationMode === "highlight" ? "highlight-mode" : ""}`}
     >
       {/* PDF Top Bar */}
       <div
@@ -686,11 +707,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
           {/* Enhanced Annotation Tools */}
           <div className="flex items-center gap-1 border rounded-md p-1 mr-2">
             <Button
-              variant={isAddingPostIt ? "solid" : "ghost"}
+              variant={annotationMode === "postit" ? "solid" : "ghost"}
               size="sm"
               onClick={togglePostItMode}
               className={`p-2 rounded flex items-center gap-1 ${
-                isAddingPostIt
+                annotationMode === "postit"
                   ? isDark
                     ? "bg-blue-700 text-white"
                     : "bg-blue-500 text-white"
@@ -701,11 +722,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
               <span className="text-xs">Note</span>
             </Button>
             <Button
-              variant={isAddingTextHighlight ? "solid" : "ghost"}
+              variant={annotationMode === "highlight" ? "solid" : "ghost"}
               size="sm"
               onClick={toggleHighlightMode}
               className={`p-2 rounded flex items-center gap-1 ${
-                isAddingTextHighlight
+                annotationMode === "highlight"
                   ? isDark
                     ? "bg-blue-700 text-white"
                     : "bg-blue-500 text-white"
@@ -729,9 +750,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              onClose();
-            }}
+            onClick={onClose}
             className="p-2 rounded hover:bg-gray-800 hover:bg-opacity-50"
           >
             <XIcon className="h-5 w-5 text-current" strokeWidth={2} />
@@ -777,7 +796,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
                 </h4>
                 <ol className="list-decimal ml-5 space-y-1 mt-2">
                   <li>Click the "Highlight" button in the toolbar</li>
-                  <li>Select text on the PDF page by clicking and dragging</li>
+                  <li>Select text on any PDF page by clicking and dragging</li>
                   <li>Choose a highlight color from the popup toolbar</li>
                   <li>Click "Highlight" to confirm</li>
                   <li>Optionally add a note to your highlight later</li>
@@ -1058,59 +1077,66 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
         <div
           className={`relative flex-1 overflow-auto ${
             isDark ? "bg-gray-900" : "bg-gray-100"
-          } ${isAddingTextHighlight ? "text-selection-mode" : ""}`}
+          }`}
           ref={mainContainerRef}
         >
-          <Document
-            file={fileForMain}
-            onLoadSuccess={handleMainLoad}
-            onLoadError={(err) => console.error("Main doc error:", err)}
-            loading={<p className="p-4">Loading PDF...</p>}
-          >
-            {Array.from({ length: numPages }, (_, i) => (
-              <div
-                key={`page-${i}`}
-                data-page-index={i}
-                className={`my-4 mx-auto border ${
-                  isDark ? "border-gray-700" : "border-gray-300"
-                } bg-white relative`}
-                style={{ width: "fit-content" }}
-              >
-                <Page
-                  pageNumber={i + 1}
-                  scale={scale}
-                  onGetTextSuccess={(textContent) =>
-                    handlePageRender(i, textContent as TextContent)
-                  }
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                />
-              </div>
-            ))}
-          </Document>
+          <div ref={documentRef}>
+            <Document
+              file={fileForMain}
+              onLoadSuccess={handleMainLoad}
+              onLoadError={(err) => console.error("Main doc error:", err)}
+              loading={<p className="p-4">Loading PDF...</p>}
+            >
+              {Array.from({ length: numPages }, (_, i) => (
+                <div
+                  key={`page-${i}`}
+                  ref={(ref) => handlePageRef(i, ref)}
+                  data-page-index={i}
+                  className={`my-4 mx-auto border ${
+                    isDark ? "border-gray-700" : "border-gray-300"
+                  } bg-white relative`}
+                  style={{ width: "fit-content" }}
+                >
+                  <Page
+                    pageNumber={i + 1}
+                    scale={scale}
+                    onGetTextSuccess={(textContent) =>
+                      handleTextContent(i, textContent as TextContent)
+                    }
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                    className="pdf-page"
+                  />
+                </div>
+              ))}
+            </Document>
+          </div>
 
-          {/* PDF Annotations component - passing the annotation mode states */}
+          {/* PDF Annotation Layer - positioned absolutely over the PDF */}
           <PDFAnnotations
-            pdfContainerRef={mainContainerRef}
-            currentPage={currentPage}
+            postItNotes={postItNotes}
+            textHighlights={textHighlights}
+            annotationMode={annotationMode}
+            pageRefs={pageRefs}
             scale={scale}
-            onAnnotationUpdate={handleAnnotationsUpdate}
-            isAddingPostIt={isAddingPostIt}
-            isAddingTextHighlight={isAddingTextHighlight}
+            currentPage={currentPage - 1}
+            renderedPages={renderedPages}
+            onAnnotationsChange={handleAnnotationsUpdate}
           />
 
           {/* Annotation Tips */}
-          {(isAddingPostIt || isAddingTextHighlight) && showOnboardingTip && (
+          {annotationMode !== "none" && showOnboardingTip && (
             <div
               id="annotation-tip"
               className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-4 py-3 rounded-lg shadow-lg ${
                 isDark ? "bg-blue-900" : "bg-blue-100"
               } flex items-center gap-2 z-40 max-w-md`}
+              style={{ opacity: 1 }}
             >
               <AlertCircle className="h-5 w-5 flex-shrink-0 text-blue-500" />
               <div>
                 <p className="text-sm font-medium">
-                  {isAddingPostIt
+                  {annotationMode === "postit"
                     ? "Click anywhere on the document to add a note"
                     : "Select text on the document to highlight it"}
                 </p>
