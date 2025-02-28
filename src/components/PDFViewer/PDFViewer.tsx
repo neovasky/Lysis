@@ -94,7 +94,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
   );
 
   // Keep track of rendered pages for annotation positioning
-  const [renderedPages, setRenderedPages] = useState<number[]>([]);
   const [pageRefs, setPageRefs] = useState<
     Record<number, HTMLDivElement | null>
   >({});
@@ -136,14 +135,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
           ...prev,
           [pageIndex]: ref,
         }));
-
-        // Immediately add to rendered pages to prevent multiple additions
-        setRenderedPages((prev) => {
-          if (!prev.includes(pageIndex)) {
-            return [...prev, pageIndex].sort((a, b) => a - b);
-          }
-          return prev;
-        });
       }
     },
     []
@@ -1114,14 +1105,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfData, onClose }) => {
 
           {/* PDF Annotation Layer - positioned absolutely over the PDF */}
           <PDFAnnotations
-            postItNotes={postItNotes}
-            textHighlights={textHighlights}
-            annotationMode={annotationMode}
-            pageRefs={pageRefs}
+            pdfContainerRef={mainContainerRef}
+            currentPage={currentPage}
             scale={scale}
-            currentPage={currentPage - 1}
-            renderedPages={renderedPages}
-            onAnnotationsChange={handleAnnotationsUpdate}
+            onAnnotationUpdate={handleAnnotationsUpdate}
+            isAddingPostIt={annotationMode === "postit"}
+            isAddingTextHighlight={annotationMode === "highlight"}
           />
 
           {/* Annotation Tips */}
