@@ -1,0 +1,8 @@
+So I am having major issues in the pdf viewer/annotations. 
+
+These issues range from only being able to highlight on the first page, having to reclick the highlight button after highlighting once. 
+
+Many more. FIX THESE ISSUES AT THE MOMENT. I have tried many ways to fix this but to no luck. In an earlier version of this code which I no longer have, when I was able to highlight on multiple pages, and would highlight on lets say the 5th page of the pdf, I would be pushed back to first page, unable to scroll out of the first page.
+
+DEEPLY THINK ABOUT THESE ISSUES, THEN RETHINK, the FUNDAMENTALLY REDESIGN THE IDEA AND REBUILD. THE ISSUE COULD BE ANYWHERE, In the PDFViewer, ANNOTATION, NOTES, PDF.JS, REACT, REACTPDF; ANYWHERE!
+

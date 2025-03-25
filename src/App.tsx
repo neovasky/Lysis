@@ -14,6 +14,7 @@ import FilesPage from "./pages/Files/FilesPage"; // default import for FilesPage
 import { CalendarPage } from "./pages/Calendar/CalendarPage";
 import { NotesPage } from "./pages/Notes/NotesPage";
 import { AnalysisPage } from "./pages/Analysis/AnalysisPage";
+import DCFAnalysisPage from "./pages/Analysis/DCFAnalysisPage"; // Import the DCF Analysis page
 import { AuthProvider } from "./contexts/AuthContext";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
@@ -87,6 +88,11 @@ export function App() {
                   <Route index element={<HomePage />} />
                   <Route path="glossary" element={<GlossaryPage />} />
                   <Route path="analysis" element={<AnalysisPage />} />
+                  <Route
+                    path="analysis/dcf"
+                    element={<DCFAnalysisPage />}
+                  />{" "}
+                  {/* Added DCF Analysis route */}
                   <Route path="alerts" element={<AlertsPage />} />
                   <Route path="files" element={<FilesPage />} />
                   <Route path="calendar" element={<CalendarPage />} />
